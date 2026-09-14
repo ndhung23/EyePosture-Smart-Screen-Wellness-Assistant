@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, powerMonitor, Notification } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, powerMonitor, Notification, session } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -180,6 +180,18 @@ ipcMain.handle('sqlite:get-wasm-binary', () => {
 });
 
 app.whenReady().then(() => {
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    if (permission === 'media') {
+      callback(true);
+      return;
+    }
+    callback(false);
+  });
+
+  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
+    return permission === 'media';
+  });
+
   createWindow();
   createTray();
   setupPowerMonitoring();

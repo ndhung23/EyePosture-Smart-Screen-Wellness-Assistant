@@ -58,6 +58,10 @@ interface AppContextValue {
   connectedCameras: CameraDeviceInfo[];
   selectedCameraId: string;
   selectCamera: (id: string) => void;
+  cameraStream: MediaStream | null;
+  cameraError: string | null;
+  startCamera: (deviceId?: string) => Promise<void>;
+  stopCamera: () => void;
   useSimulatedCamera: boolean;
   setUseSimulatedCamera: (val: boolean) => void;
   simulationMode: 'UPRIGHT' | 'SLOUCH' | 'TOO_CLOSE' | 'TILT';
@@ -92,10 +96,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const reminderEngineRef = useRef<ReminderEngine | null>(null);
 
   // Vision & Hardware state
-  const [useSimulatedCamera, setUseSimulatedCamera] = useState<boolean>(true);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [useSimulatedCamera, setUseSimulatedCamera] = useState<boolean>(false);
   const [simulationMode, setSimulationMode] = useState<'UPRIGHT' | 'SLOUCH' | 'TOO_CLOSE' | 'TILT'>('UPRIGHT');
   const [connectedCameras, setConnectedCameras] = useState<CameraDeviceInfo[]>([
-    { deviceId: 'default', label: 'Chicony USB2.0 Integrated Camera', isDefault: true },
+    { deviceId: 'default', label: 'Default Integrated Camera', isDefault: true },
   ]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('default');
 
@@ -214,6 +220,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       reposRef.current.settingsRepo.saveSettings(activeProfile.id, updated);
     }
   };
+
+  // Real Camera Hardware Controller
+  const enumerateCameras = async () => {
+    try {
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) return;
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter((d) => d.kind === 'videoinput');
+      if (videoDevices.length > 0) {
+        setConnectedCameras(
+          videoDevices.map((d, idx) => ({
+            deviceId: d.deviceId || `cam-${idx}`,
+            label: d.label || `Camera ${idx + 1}`,
+            isDefault: idx === 0,
+          }))
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to enumerate cameras:', err);
+    }
+  };
+
+  const startCamera = async (deviceId?: string) => {
+    try {
+      setCameraError(null);
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Camera API (getUserMedia) not supported');
+      }
+
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((t) => t.stop());
+      }
+
+      const targetId = deviceId || selectedCameraId;
+      const constraints: MediaStreamConstraints = {
+        video:
+          targetId && targetId !== 'default'
+            ? { deviceId: { exact: targetId }, width: { ideal: 640 }, height: { ideal: 480 } }
+            : { width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      setCameraStream(stream);
+      setUseSimulatedCamera(false);
+
+      await enumerateCameras();
+    } catch (err: any) {
+      console.warn('Webcam start failed:', err);
+      setCameraError(err.message || 'Không thể truy cập camera thực tế');
+      setUseSimulatedCamera(true);
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((t) => t.stop());
+      setCameraStream(null);
+    }
+  };
+
+  useEffect(() => {
+    enumerateCameras();
+    startCamera();
+
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
   // Main 1-second system tick loop
   useEffect(() => {
@@ -417,6 +491,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (settings) {
       updateSettings({ ...settings, camera: { ...settings.camera, deviceId: id } });
     }
+    startCamera(id);
   };
 
   return (
@@ -454,6 +529,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         connectedCameras,
         selectedCameraId,
         selectCamera,
+        cameraStream,
+        cameraError,
+        startCamera,
+        stopCamera,
         useSimulatedCamera,
         setUseSimulatedCamera,
         simulationMode,
