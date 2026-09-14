@@ -6,8 +6,10 @@ node_modules/
 # Production and Build Artifacts
 dist/
 dist-electron/
+release/
 build/
 out/
+*.exe
 coverage/
 .nyc_output/
 

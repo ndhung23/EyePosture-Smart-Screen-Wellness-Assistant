@@ -18,11 +18,11 @@ function createWindow() {
     frame: true,
     titleBarStyle: 'default',
     backgroundColor: '#0b0f19',
-    show: false,
+    show: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
 
@@ -45,19 +45,20 @@ function createWindow() {
 }
 
 function createTray() {
-  // Create a clean 16x16 tray icon programmatically if asset not found
-  const icon = nativeImage.createEmpty();
-  tray = new Tray(icon);
-  tray.setToolTip('EyePosture - Screen Wellness Assistant');
+  try {
+    const iconPath = path.join(__dirname, 'icon.png');
+    const icon = nativeImage.createFromPath(iconPath);
+    tray = new Tray(icon.isEmpty() ? nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAZklEQVQ4T2NkoBAwUqifYdQAYgz4D8TvgHgLEP9nIB38h6rFp5gBqh6bgfxlqHoYGg2YgRroQAzGf4hT/wea8B+o/h9QjQ96eBhGQeNhaDRgBmqQAzEY/yFO/R9o4n+g+n9ANT4AZ/iR/09iSsoAAAAASUVORK5CYII=') : icon);
+    tray.setToolTip('EyePosture - Screen Wellness Assistant');
 
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Open EyePosture Dashboard',
-      click: () => {
-        mainWindow?.show();
-        mainWindow?.focus();
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: 'Open EyePosture Dashboard',
+        click: () => {
+          mainWindow?.show();
+          mainWindow?.focus();
+        },
       },
-    },
     { type: 'separator' },
     {
       label: 'Pause Monitoring',
@@ -94,11 +95,14 @@ function createTray() {
     },
   ]);
 
-  tray.setContextMenu(contextMenu);
-  tray.on('double-click', () => {
-    mainWindow?.show();
-    mainWindow?.focus();
-  });
+    tray.setContextMenu(contextMenu);
+    tray.on('double-click', () => {
+      mainWindow?.show();
+      mainWindow?.focus();
+    });
+  } catch (err) {
+    console.warn('System tray could not be initialized:', err);
+  }
 }
 
 // Power Monitoring (Battery / Sleep / Wake)
