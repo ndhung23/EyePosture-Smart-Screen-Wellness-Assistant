@@ -6,7 +6,7 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite --open",
-    "build:electron": "tsc electron/main.ts --outDir dist-electron --module NodeNext --moduleResolution NodeNext --target ES2022 --skipLibCheck && node -e \"const fs=require('fs'); fs.copyFileSync('electron/preload.cjs','dist-electron/preload.cjs'); if(fs.existsSync('electron/icon.png')) fs.copyFileSync('electron/icon.png','dist-electron/icon.png');\"",
+    "build:electron": "tsc electron/main.ts --outDir dist-electron --module NodeNext --moduleResolution NodeNext --target ES2022 --skipLibCheck && node -e \"const fs=require('fs'); fs.copyFileSync('electron/preload.cjs','dist-electron/preload.cjs'); if(fs.existsSync('electron/icon.png')) fs.copyFileSync('electron/icon.png','dist-electron/icon.png'); if(fs.existsSync('public/sql-wasm.wasm')) fs.copyFileSync('public/sql-wasm.wasm','dist-electron/sql-wasm.wasm');\"",
     "build": "tsc && vite build && npm run build:electron",
     "start": "electron .",
     "preview": "vite preview"

@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronApi', {
+  getSqlWasmBinary: () => ipcRenderer.invoke('sqlite:get-wasm-binary'),
   showNotification: (title, body) =>
     ipcRenderer.invoke('notification:show', { title, body }),
   getPowerStatus: () => ipcRenderer.invoke('power:get-status'),

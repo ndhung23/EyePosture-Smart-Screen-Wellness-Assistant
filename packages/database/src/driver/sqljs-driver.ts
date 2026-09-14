@@ -1,6 +1,15 @@
 import initSqlJs, { Database, SqlValue } from 'sql.js';
 import { IDatabaseDriver, RunResult } from './interface.js';
 
+declare global {
+  interface Window {
+    electronApi?: {
+      getSqlWasmBinary?: () => Promise<Uint8Array | null> | Uint8Array | null;
+      [key: string]: unknown;
+    };
+  }
+}
+
 export class SqlJsDriver implements IDatabaseDriver {
   private db: Database;
 
@@ -9,7 +18,23 @@ export class SqlJsDriver implements IDatabaseDriver {
   }
 
   public static async create(initialData?: Uint8Array): Promise<SqlJsDriver> {
-    const SQL = await initSqlJs();
+    let wasmBinary: ArrayBuffer | undefined;
+    if (typeof window !== 'undefined' && typeof window.electronApi?.getSqlWasmBinary === 'function') {
+      try {
+        const bin = await window.electronApi.getSqlWasmBinary();
+        if (bin && bin.byteLength > 0) {
+          wasmBinary = bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength) as ArrayBuffer;
+        }
+      } catch (err) {
+        console.warn('Could not load wasm binary from electronApi:', err);
+      }
+    }
+
+    const config = wasmBinary
+      ? { wasmBinary }
+      : (typeof window !== 'undefined' ? { locateFile: (file: string) => `./${file}` } : undefined);
+
+    const SQL = await initSqlJs(config);
     const db = initialData ? new SQL.Database(initialData) : new SQL.Database();
     return new SqlJsDriver(db);
   }

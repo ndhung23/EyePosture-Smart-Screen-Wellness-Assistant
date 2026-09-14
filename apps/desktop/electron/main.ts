@@ -1,9 +1,36 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, powerMonitor, Notification } from 'electron';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+let cachedWasmBinary: Uint8Array | null = null;
+
+function loadWasmBinary(): Uint8Array | null {
+  if (cachedWasmBinary) return cachedWasmBinary;
+  const candidates = [
+    path.join(__dirname, '../dist/sql-wasm.wasm'),
+    path.join(__dirname, 'sql-wasm.wasm'),
+    path.join(__dirname, '../../public/sql-wasm.wasm'),
+    path.join(__dirname, '../../node_modules/sql.js/dist/sql-wasm.wasm'),
+    path.join(__dirname, '../../../node_modules/sql.js/dist/sql-wasm.wasm'),
+    path.join(process.resourcesPath || '', 'app/dist/sql-wasm.wasm'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) {
+      try {
+        const buf = fs.readFileSync(c);
+        cachedWasmBinary = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+        return cachedWasmBinary;
+      } catch (err) {
+        console.warn('Failed to read wasm candidate:', c, err);
+      }
+    }
+  }
+  return null;
+}
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -23,7 +50,16 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.cjs'),
+      webSecurity: false,
     },
+  });
+
+  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    console.log(`[Renderer L${level}]: ${message} (${sourceId}:${line})`);
+  });
+
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[Renderer fail-load]: ${errorCode} - ${errorDescription} (${validatedURL})`);
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -137,6 +173,10 @@ ipcMain.handle('power:get-status', () => {
   return {
     isOnBattery: powerMonitor.isOnBatteryPower(),
   };
+});
+
+ipcMain.handle('sqlite:get-wasm-binary', () => {
+  return loadWasmBinary();
 });
 
 app.whenReady().then(() => {
