@@ -5,8 +5,10 @@
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "vite --open",
+    "build:electron": "tsc electron/main.ts electron/preload.ts --outDir dist-electron --module NodeNext --moduleResolution NodeNext --target ES2022 --skipLibCheck",
+    "build": "tsc && vite build && npm run build:electron",
+    "start": "electron .",
     "preview": "vite preview"
   },
   "dependencies": {

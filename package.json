@@ -8,6 +8,8 @@
     "apps/*"
   ],
   "scripts": {
+    "dev": "npm run dev -w @eyeposture/desktop",
+    "desktop": "npm run start -w @eyeposture/desktop",
     "build": "npm run build --workspaces --if-present",
     "test": "vitest run",
     "test:watch": "vitest",
