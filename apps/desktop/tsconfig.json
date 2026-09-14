@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": false,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@eyeposture/shared-types": ["../../packages/shared-types/src/index.ts"],
+      "@eyeposture/i18n": ["../../packages/i18n/src/index.ts"],
+      "@eyeposture/database": ["../../packages/database/src/index.ts"],
+      "@eyeposture/vision": ["../../packages/vision/src/index.ts"],
+      "@eyeposture/reminder-engine": ["../../packages/reminder-engine/src/index.ts"],
+      "@eyeposture/billing": ["../../packages/billing/src/index.ts"]
+    }
+  },
+  "include": ["src", "electron"]
+}

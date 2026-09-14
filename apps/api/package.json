@@ -1,0 +1,15 @@
+{
+  "name": "@eyeposture/api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@eyeposture/shared-types": "*",
+    "@eyeposture/billing": "*"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@eyeposture/desktop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@eyeposture/billing": "*",
+    "@eyeposture/database": "*",
+    "@eyeposture/i18n": "*",
+    "@eyeposture/reminder-engine": "*",
+    "@eyeposture/shared-types": "*",
+    "@eyeposture/vision": "*",
+    "lucide-react": "^1.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "vite": "^6.0.7"
+  }
+}
