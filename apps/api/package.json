@@ -4,8 +4,8 @@
   "private": true,
   "main": "./dist/server.js",
   "scripts": {
-    "build": "tsc",
-    "build:api": "tsc",
+    "build": "npm --prefix ../.. run build -w @eyeposture/shared-types && npm --prefix ../.. run build -w @eyeposture/billing && tsc",
+    "build:api": "npm --prefix ../.. run build -w @eyeposture/shared-types && npm --prefix ../.. run build -w @eyeposture/billing && tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
