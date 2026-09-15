@@ -5,13 +5,17 @@
 EyePosture enforces strict server-authoritative licensing. The desktop client never relies on insecure flags like `isPro = true`. Instead, entitlements are cryptographically minted by the cloud backend and verified locally using public/shared cryptographic keys.
 
 ```
-Desktop Client                    Cloud API                  Payment Provider (Stripe)
+Desktop Client                    Cloud API                  SePay (VietQR & Webhook)
       │                               │                                 │
       ├────── Request Checkout ──────►│                                 │
-      │                               ├────── Create Checkout ─────────►│
-      │◄───── Return Checkout URL ────┤                                 │
+      │                               ├────── Generate VietQR QR ───────►│
+      │◄───── Return VietQR Code ─────┤ (qr.sepay.vn / Bank Details)   │
       │                               │                                 │
-      │                               │◄───── Webhook (Payment Done) ───┤
+ [User scans VietQR with Bank App]    │                                 │
+ [User completes bank transfer]       │                                 │
+      │                               │◄───── Webhook (Payment "in") ───┤
+      │                               │ (Verify Apikey & Idempotency)   │
+      │                               │ (Set User Subscription to PRO)  │
       │                               │                                 │
       ├────── Fetch Entitlements ────►│                                 │
       │◄───── Signed Token ───────────┤                                 │
@@ -55,12 +59,35 @@ The entitlement token uses a compact, URL-safe three-part structure: `header.pay
 
 ---
 
-## 3. Stripe Webhook Idempotency
+## 3. SePay Webhook Architecture & Idempotency
 
-Webhooks from the payment gateway (`/api/v1/webhooks/stripe`) process:
-- `subscription_created`
-- `subscription_updated`
-- `subscription_cancelled`
-- `payment_failed`
+EyePosture utilizes **SePay Webhooks** (`POST /api/v1/webhooks/sepay`) for automated, real-time reconciliation of bank transfers (VietQR).
 
-Each webhook event ID is recorded in an idempotency cache to prevent double-crediting or duplicate processing.
+### SePay Webhook Inbound Payload Format
+```json
+{
+  "id": 92704,
+  "gateway": "MBBank",
+  "transactionDate": "2026-09-15 12:30:00",
+  "accountNumber": "0333222111",
+  "code": null,
+  "content": "EYEPOSTURE usr_94a2b1c8 ORD123456",
+  "transferType": "in",
+  "transferAmount": 59000,
+  "accumulated": 5000000,
+  "subAccount": null,
+  "referenceCode": "MBVCB.12345678",
+  "description": "Chuyen tien nang cap goi Pro"
+}
+```
+
+### Security & Processing Pipeline
+1. **API Key Authentication**: SePay sends an `Authorization: Apikey <SEPAY_API_KEY>` header. Requests without a valid API key are rejected with `401 Unauthorized`.
+2. **Transaction Filtering**: Only transactions with `transferType === 'in'` (incoming deposits) are processed. Outbound transfers (`out`) are safely ignored.
+3. **Idempotency Guarantee**: Each transaction ID (`sepay_${id}`) is recorded in an idempotency set. Replays or duplicate webhook retries respond with `{ success: true, idempotent: true }` without double-crediting.
+4. **Content Syntax Parsing**: The transfer content (`content`) is parsed using regular expressions to extract the customer's `userId` (syntax: `EYEPOSTURE <userId> <orderCode>`).
+5. **Dynamic Tier Duration**:
+   - $\ge$ 490,000 VND: 1 Year PRO subscription.
+   - $\ge$ 59,000 VND: 30 Days PRO subscription.
+   - Family plan keywords: activates `FAMILY` tier.
+6. **Token Issuance**: Once updated, the desktop client requests `/api/v1/entitlements` and receives an HMAC-SHA256 signed license token for offline use.

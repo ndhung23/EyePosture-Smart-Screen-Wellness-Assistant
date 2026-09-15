@@ -15,7 +15,7 @@ npm test
 - **`@eyeposture/vision`**: Synthetic landmark harness tests validating distance ratios, head pitch/roll angles, slouching detection, calibration baselines, and temporal hysteresis smoothing.
 - **`@eyeposture/reminder-engine`**: Validates 20-20-20 break timer, hydration countdowns, anti-fatigue cooldown escalation, quiet hours suppression, and resource governor mode switches.
 - **`@eyeposture/billing`**: Validates cryptographic signature minting, tamper rejection, device GUID validation, 14-day offline grace periods, and clock rollback detection.
-- **`@eyeposture/api`**: HTTP integration tests for registration, authentication, checkout session creation, signed entitlement issuance, and Stripe webhook idempotency.
+- **`@eyeposture/api`**: HTTP integration tests for registration, authentication, checkout session creation, signed entitlement issuance, and SePay webhook idempotency.
 
 ---
 
@@ -36,6 +36,6 @@ npm test
 | **K** | **Multiple Profiles** | Data, settings, and calibration baselines strictly isolated between adult and child profiles. |
 | **M** | **Offline Mode** | Monitoring, reminders, and local statistics operate with zero internet connection. |
 | **N** | **Subscription Expired** | Enters 14-day offline grace period before gracefully downgrading to Free without data loss. |
-| **P** | **Webhook Duplication** | Idempotency layer detects duplicate Stripe events and ignores repeated execution. |
+| **P** | **Webhook Duplication** | Idempotency layer detects duplicate SePay/Stripe events and ignores repeated execution. |
 | **U** | **Laptop on Battery** | `ResourceGovernor` switches to `POWER_SAVER` mode (2 FPS) to conserve power. |
 | **X** | **Fullscreen Application** | Suppresses intrusive posture and distance alerts while movies or games are playing. |

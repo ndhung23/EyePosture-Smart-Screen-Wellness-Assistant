@@ -5,6 +5,8 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  status?: 'ACTIVE' | 'BLOCKED';
+  isBlocked?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -16,6 +18,8 @@ export interface Device {
   deviceName: string;
   os: string;
   appVersion: string;
+  status?: 'ACTIVE' | 'BLOCKED';
+  isBlocked?: boolean;
   lastActiveAt: string;
   createdAt: string;
 }

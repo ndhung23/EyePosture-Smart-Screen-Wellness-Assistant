@@ -30,6 +30,39 @@ export interface WebhookEventPayload {
   };
 }
 
+export interface SePayWebhookPayload {
+  id: number;
+  gateway: string;
+  transactionDate: string;
+  accountNumber: string;
+  code?: string | null;
+  content: string;
+  transferType: 'in' | 'out';
+  transferAmount: number;
+  accumulated: number;
+  subAccount?: string | null;
+  referenceCode?: string;
+  description?: string;
+}
+
+export interface SePayConfig {
+  apiKey: string;
+  accountNumber: string;
+  bankName: string;
+  accountHolder?: string;
+  transferPrefix?: string;
+}
+
+export interface SePayQrResult {
+  qrUrl: string;
+  accountNumber: string;
+  bankName: string;
+  accountHolder?: string;
+  amount: number;
+  transferContent: string;
+  orderCode: string;
+}
+
 export interface IBillingProvider {
   createCheckoutSession(options: CheckoutSessionOptions): Promise<CheckoutSessionResult>;
   cancelSubscription(subscriptionId: string): Promise<boolean>;

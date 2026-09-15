@@ -37,6 +37,9 @@ PORT=8080
 JWT_SECRET=strong_random_jwt_secret_64_bytes
 ENTITLEMENT_SECRET=strong_random_entitlement_secret_64_bytes
 STRIPE_SECRET_KEY=sk_live_...
+SEPAY_API_KEY=sepay_live_secret_key
+SEPAY_ACCOUNT_NUMBER=0333222111
+SEPAY_BANK_NAME=MBBank
 
 # Start API server
 node apps/api/dist/server.js

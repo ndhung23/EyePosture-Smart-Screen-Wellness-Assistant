@@ -21,7 +21,7 @@ EyePosture is an intelligent, local-first desktop application engineered to help
 ```
 /apps
   /desktop              # React 18 + Vite + Electron desktop application
-  /api                  # Modular Express/Node Cloud API (Auth, Licensing, Stripe Webhooks)
+  /api                  # Modular Express/Node Cloud API (Auth, Licensing, SePay & Stripe Webhooks)
 /packages
   /shared-types         # Domain models, DTOs, and system enums
   /i18n                 # English & Vietnamese translation dictionaries & helper
@@ -45,11 +45,17 @@ EyePosture is an intelligent, local-first desktop application engineered to help
 # Install dependencies across all monorepo workspaces
 npm install
 
-# Run automated unit and integration tests (35+ test suites)
+# Run automated unit and integration tests (38 test suites)
 npm test
 
+# Launch Web Admin Dashboard (Open http://localhost:8080/admin in your browser)
+npm run admin
+
 # Launch desktop app development server
-npm run dev -w @eyeposture/desktop
+npm run dev
+
+# Package Windows Desktop Application (.exe installer)
+npm run package:win
 ```
 
 ---

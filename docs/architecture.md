@@ -54,7 +54,7 @@ The architecture strictly adheres to unidirectional dependency layering:
    Zero-trust entitlement verification. Handles portable HMAC-SHA256 signatures, device hardware GUID binding, 14-day offline grace periods, and system clock rollback detection.
 
 7. **`@eyeposture/api`**:
-   Modular REST service providing JWT authentication, user registration, device registration, signed entitlement minting, and Stripe webhook handling.
+   Modular REST service providing JWT authentication, user registration, device registration, signed entitlement minting, and SePay & Stripe webhook handling.
 
 8. **`@eyeposture/desktop`**:
    Desktop frontend built with React 18, Vite, Lucide icons, and modern design tokens, running inside an Electron desktop shell with system tray, minimize-to-tray, and power monitoring.

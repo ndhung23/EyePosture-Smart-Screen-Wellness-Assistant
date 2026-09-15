@@ -3,6 +3,7 @@ import {
   EntitlementSigner,
   LicenseVerifier,
   MockBillingProvider,
+  SePayBillingProvider,
   FREE_FEATURES,
   PRO_FEATURES,
 } from '../src/index.js';
@@ -158,5 +159,36 @@ describe('Billing & Entitlement Security Layer', () => {
 
     expect(session.sessionId).toContain('mock_sess_');
     expect(session.checkoutUrl).toContain('mock-checkout');
+  });
+
+  it('should generate VietQR URL and parse payment content with SePayBillingProvider', async () => {
+    const sepay = new SePayBillingProvider({
+      apiKey: 'test_sepay_key_123',
+      accountNumber: '0333222111',
+      bankName: 'MBBank',
+      transferPrefix: 'EYEPOSTURE',
+    });
+
+    const qrResult = sepay.createQrPayment({
+      userId: 'usr_abc123',
+      tier: 'PRO',
+      interval: 'month',
+    });
+
+    expect(qrResult.qrUrl).toContain('https://qr.sepay.vn/img?');
+    expect(qrResult.qrUrl).toContain('acc=0333222111');
+    expect(qrResult.qrUrl).toContain('bank=MBBank');
+    expect(qrResult.amount).toBe(59000);
+    expect(qrResult.transferContent).toContain('EYEPOSTURE usr_abc123');
+
+    // Test content parsing
+    const parsed = sepay.parsePaymentContent('chuyen khoan EYEPOSTURE usr_abc123 ORD999999');
+    expect(parsed.userId).toBe('usr_abc123');
+    expect(parsed.tier).toBe('PRO');
+
+    // Test API key verification
+    expect(sepay.verifyApiKey('Apikey test_sepay_key_123')).toBe(true);
+    expect(sepay.verifyApiKey('Bearer test_sepay_key_123')).toBe(true);
+    expect(sepay.verifyApiKey('wrong_key')).toBe(false);
   });
 });

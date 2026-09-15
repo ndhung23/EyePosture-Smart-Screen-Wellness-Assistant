@@ -1,18 +1,58 @@
 import React, { useState } from 'react';
-import { Sparkles, Check, Crown, Laptop, ShieldCheck, Zap } from 'lucide-react';
+import { Sparkles, Check, Crown, QrCode, Copy, CheckCircle2, X, RefreshCw } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
 
 export const SubscriptionPage: React.FC = () => {
   const { subscriptionTier, upgradeToPro } = useApp();
   const [isUpgrading, setIsUpgrading] = useState<boolean>(false);
+  const [showQrModal, setShowQrModal] = useState<boolean>(false);
+  const [selectedPlan, setSelectedPlan] = useState<'PRO_MONTH' | 'PRO_YEAR' | 'FAMILY_MONTH'>('PRO_MONTH');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const handleUpgrade = async () => {
+  const planDetails = {
+    PRO_MONTH: {
+      title: 'EyePosture Pro (1 Tháng)',
+      amountVnd: 59000,
+      amountUsd: '$4.99',
+      content: 'EYEPOSTURE PRO',
+    },
+    PRO_YEAR: {
+      title: 'EyePosture Pro (1 Năm - Tiết kiệm 30%)',
+      amountVnd: 499000,
+      amountUsd: '$39.99',
+      content: 'EYEPOSTURE PRO YEAR',
+    },
+    FAMILY_MONTH: {
+      title: 'EyePosture Family (1 Tháng - 5 máy)',
+      amountVnd: 99000,
+      amountUsd: '$8.99',
+      content: 'EYEPOSTURE FAMILY',
+    },
+  };
+
+  const bankCode = ((import.meta as any).env?.PAYMENT_BANK_CODE as string) || 'BIDV';
+  const bankAccount = ((import.meta as any).env?.PAYMENT_BANK_ACCOUNT as string) || '4661398013';
+  const bankAccountName = ((import.meta as any).env?.PAYMENT_BANK_ACCOUNT_NAME as string) || 'NGUYEN DUY HUNG';
+
+  const currentPlanInfo = planDetails[selectedPlan];
+  const qrUrl = `https://qr.sepay.vn/img?acc=${bankAccount}&bank=${bankCode}&amount=${currentPlanInfo.amountVnd}&des=${encodeURIComponent(
+    currentPlanInfo.content
+  )}`;
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const handleSimulateWebhookSuccess = async () => {
     setIsUpgrading(true);
     await upgradeToPro();
     setTimeout(() => {
       setIsUpgrading(false);
-    }, 800);
+      setShowQrModal(false);
+    }, 600);
   };
 
   const featureMatrix = [
@@ -31,7 +71,7 @@ export const SubscriptionPage: React.FC = () => {
       <div>
         <h2 className="font-display font-bold text-2xl text-slate-100">{t('subscription.title')}</h2>
         <p className="text-sm text-slate-400 mt-1">
-          Flexible commercial licensing tailored for individual professionals and families.
+          Bản quyền phần mềm thanh toán linh hoạt qua cổng **SePay Webhook (VietQR)** và thẻ quốc tế.
         </p>
       </div>
 
@@ -52,19 +92,22 @@ export const SubscriptionPage: React.FC = () => {
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
               {subscriptionTier === 'PRO'
-                ? 'Cryptographically verified license active with full CV posture & distance models.'
-                : 'Free tier with basic eye-breaks and hydration reminders.'}
+                ? 'Bản quyền Pro đã được xác thực mã hóa an toàn với đầy đủ các mô hình góc nghiêng & khoảng cách mắt.'
+                : 'Gói Free miễn phí với bộ đếm 20-20-20 và nhắc nhở uống nước cơ bản.'}
             </p>
           </div>
         </div>
 
         {subscriptionTier !== 'PRO' && (
           <button
-            onClick={handleUpgrade}
-            disabled={isUpgrading}
-            className="px-5 py-2.5 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition-all"
+            onClick={() => {
+              setSelectedPlan('PRO_MONTH');
+              setShowQrModal(true);
+            }}
+            className="px-5 py-2.5 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition-all flex items-center gap-1.5"
           >
-            {isUpgrading ? 'Upgrading...' : t('subscription.upgradeToPro')}
+            <QrCode className="w-4 h-4" />
+            Nâng cấp qua VietQR (SePay)
           </button>
         )}
       </div>
@@ -140,11 +183,21 @@ export const SubscriptionPage: React.FC = () => {
             </ul>
           </div>
           <button
-            onClick={handleUpgrade}
+            onClick={() => {
+              setSelectedPlan('PRO_MONTH');
+              setShowQrModal(true);
+            }}
             disabled={subscriptionTier === 'PRO'}
-            className="w-full py-3 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 transition-all"
+            className="w-full py-3 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 transition-all flex items-center justify-center gap-1.5"
           >
-            {subscriptionTier === 'PRO' ? 'Active Subscription' : 'Upgrade to Pro'}
+            {subscriptionTier === 'PRO' ? (
+              'Bản quyền Pro đang kích hoạt'
+            ) : (
+              <>
+                <QrCode className="w-4 h-4" />
+                Nâng cấp Pro qua VietQR (59.000đ)
+              </>
+            )}
           </button>
         </div>
 
@@ -156,8 +209,8 @@ export const SubscriptionPage: React.FC = () => {
               <p className="text-xs text-slate-400 mt-0.5">For shared household workstations</p>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="font-display text-3xl font-bold text-slate-100">$8.99</span>
-              <span className="text-xs text-slate-400">/ month</span>
+              <span className="font-display text-3xl font-bold text-slate-100">99.000đ</span>
+              <span className="text-xs text-slate-400">/ tháng ($8.99)</span>
             </div>
             <ul className="space-y-2.5 text-xs text-slate-300">
               <li className="flex items-center gap-2">
@@ -178,8 +231,15 @@ export const SubscriptionPage: React.FC = () => {
               </li>
             </ul>
           </div>
-          <button className="w-full py-3 rounded-xl border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition-all">
-            Choose Family Plan
+          <button
+            onClick={() => {
+              setSelectedPlan('FAMILY_MONTH');
+              setShowQrModal(true);
+            }}
+            className="w-full py-3 rounded-xl border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition-all flex items-center justify-center gap-1.5"
+          >
+            <QrCode className="w-4 h-4" />
+            Chọn gói Family qua VietQR (99.000đ)
           </button>
         </div>
       </div>
@@ -216,6 +276,119 @@ export const SubscriptionPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* SePay VietQR Modal */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="glass-card max-w-lg w-full p-6 space-y-5 bg-slate-900/95 border-teal-500/40 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg gradient-teal flex items-center justify-center text-slate-950 font-bold">
+                  <QrCode className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-100">Thanh toán VietQR qua SePay</h3>
+                  <p className="text-[11px] text-teal-400 font-medium">{currentPlanInfo.title}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowQrModal(false)}
+                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* QR & Bank Info Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+              <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                <img
+                  src={qrUrl}
+                  alt="VietQR SePay"
+                  className="w-40 h-40 object-contain rounded-lg bg-white p-1.5 shadow-md"
+                />
+                <span className="text-[10px] text-slate-400 mt-2 flex items-center gap-1 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Cổng thanh toán tự động SePay
+                </span>
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase">Ngân hàng thụ hưởng</span>
+                  <p className="font-semibold text-slate-200">{bankCode} (Ngân hàng TMCP Đầu tư và Phát triển)</p>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase">Chủ tài khoản</span>
+                  <p className="font-semibold text-slate-200 uppercase">{bankAccountName}</p>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase">Số tài khoản</span>
+                  <div className="flex items-center justify-between bg-slate-950/50 px-2 py-1 rounded border border-slate-800 mt-0.5">
+                    <span className="font-mono font-bold text-teal-300">{bankAccount}</span>
+                    <button
+                      onClick={() => copyToClipboard(bankAccount, 'acc')}
+                      className="text-[10px] text-slate-400 hover:text-teal-300"
+                    >
+                      {copiedField === 'acc' ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase">Số tiền</span>
+                  <p className="font-mono font-bold text-emerald-400 text-sm">
+                    {currentPlanInfo.amountVnd.toLocaleString('vi-VN')} VNĐ
+                  </p>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase">Nội dung chuyển khoản</span>
+                  <div className="flex items-center justify-between bg-slate-950/50 px-2 py-1 rounded border border-slate-800 mt-0.5">
+                    <span className="font-mono font-bold text-amber-300">{currentPlanInfo.content}</span>
+                    <button
+                      onClick={() => copyToClipboard(currentPlanInfo.content, 'des')}
+                      className="text-[10px] text-slate-400 hover:text-amber-300"
+                    >
+                      {copiedField === 'des' ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Instruction and Simulation Button */}
+            <div className="p-2.5 rounded-xl bg-teal-950/30 border border-teal-500/20 text-[11px] text-teal-200 space-y-1">
+              <p className="font-semibold flex items-center gap-1.5 text-teal-300">
+                <RefreshCw className="w-3 h-3 animate-spin text-teal-400" />
+                Hệ thống tự động lắng nghe SePay Webhook
+              </p>
+              <p className="text-[10px] text-slate-400">
+                Mở app ngân hàng bất kỳ (Vietcombank, MB, Techcombank, Momo...), quét mã QR trên để chuyển khoản chính xác nội dung. Hệ thống sẽ tự động kích hoạt bản quyền trong 3 giây.
+              </p>
+            </div>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                onClick={() => setShowQrModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition-all"
+              >
+                Đóng
+              </button>
+              <button
+                onClick={handleSimulateWebhookSuccess}
+                disabled={isUpgrading}
+                className="flex-1 py-2.5 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 active:scale-95 transition-all flex items-center justify-center gap-1"
+              >
+                {isUpgrading ? 'Đang kích hoạt...' : 'Xác nhận kích hoạt Pro'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
