@@ -8,6 +8,7 @@ COPY package.json package-lock.json* tsconfig.base.json ./
 COPY packages/ ./packages/
 COPY apps/api/ ./apps/api/
 COPY apps/desktop/package.json ./apps/desktop/package.json
+COPY api/ ./api/
 
 # Install build dependencies
 RUN npm install --ignore-scripts

@@ -7,7 +7,13 @@ import {
   SePayWebhookPayload,
 } from '../types.js';
 import { SubscriptionTier, SubscriptionStatus } from '@eyeposture/shared-types';
-import process from 'node:process';
+
+function getEnv(): Record<string, string | undefined> {
+  if (typeof globalThis !== 'undefined' && (globalThis as any).process?.env) {
+    return (globalThis as any).process.env;
+  }
+  return {};
+}
 
 export class SePayBillingProvider implements IBillingProvider {
   private config: SePayConfig;
@@ -20,28 +26,29 @@ export class SePayBillingProvider implements IBillingProvider {
   };
 
   constructor(config?: Partial<SePayConfig>) {
+    const env = getEnv();
     this.config = {
       apiKey:
         config?.apiKey ||
-        process.env.SEPAY_WEBHOOK_SECRET ||
-        process.env.SECRET_KEY ||
-        process.env.SEPAY_API_KEY ||
+        env.SEPAY_WEBHOOK_SECRET ||
+        env.SECRET_KEY ||
+        env.SEPAY_API_KEY ||
         'sepay_api_key_eyeposture_demo',
       accountNumber:
         config?.accountNumber ||
-        process.env.PAYMENT_BANK_ACCOUNT ||
-        process.env.PAYMENT_BANK_VIRTUAL_ACCOUNT ||
-        process.env.SEPAY_ACCOUNT_NUMBER ||
+        env.PAYMENT_BANK_ACCOUNT ||
+        env.PAYMENT_BANK_VIRTUAL_ACCOUNT ||
+        env.SEPAY_ACCOUNT_NUMBER ||
         '4661398013',
       bankName:
         config?.bankName ||
-        process.env.PAYMENT_BANK_CODE ||
-        process.env.SEPAY_BANK_NAME ||
+        env.PAYMENT_BANK_CODE ||
+        env.SEPAY_BANK_NAME ||
         'BIDV',
       accountHolder:
         config?.accountHolder ||
-        process.env.PAYMENT_BANK_ACCOUNT_NAME ||
-        process.env.SEPAY_ACCOUNT_HOLDER ||
+        env.PAYMENT_BANK_ACCOUNT_NAME ||
+        env.SEPAY_ACCOUNT_HOLDER ||
         'NGUYEN DUY HUNG',
       transferPrefix: config?.transferPrefix || 'EYEPOSTURE',
     };
@@ -167,13 +174,14 @@ export class SePayBillingProvider implements IBillingProvider {
   public verifyApiKey(authHeader?: string): boolean {
     if (!authHeader) return false;
     const cleanHeader = authHeader.trim();
+    const env = getEnv();
     const validKeys = Array.from(
       new Set(
         [
           this.config.apiKey,
-          process.env.SEPAY_WEBHOOK_SECRET,
-          process.env.SECRET_KEY,
-          process.env.SEPAY_API_KEY,
+          env.SEPAY_WEBHOOK_SECRET,
+          env.SECRET_KEY,
+          env.SEPAY_API_KEY,
         ].filter(Boolean) as string[]
       )
     );

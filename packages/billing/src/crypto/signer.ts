@@ -1,5 +1,4 @@
 import { EntitlementPayload } from '@eyeposture/shared-types';
-import { Buffer } from 'node:buffer';
 
 /**
  * Portable, zero-dependency SHA-256 & HMAC implementation
@@ -122,8 +121,10 @@ function toBase64Url(bytes: Uint8Array): string {
   let base64: string;
   if (typeof btoa === 'function') {
     base64 = btoa(binary);
+  } else if (typeof globalThis !== 'undefined' && (globalThis as any).Buffer) {
+    base64 = (globalThis as any).Buffer.from(binary, 'binary').toString('base64');
   } else {
-    base64 = Buffer.from(binary, 'binary').toString('base64');
+    base64 = '';
   }
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -136,8 +137,10 @@ function fromBase64Url(str: string): Uint8Array {
   let binary: string;
   if (typeof atob === 'function') {
     binary = atob(base64);
+  } else if (typeof globalThis !== 'undefined' && (globalThis as any).Buffer) {
+    binary = (globalThis as any).Buffer.from(base64, 'base64').toString('binary');
   } else {
-    binary = Buffer.from(base64, 'base64').toString('binary');
+    binary = '';
   }
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
