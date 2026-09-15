@@ -2,7 +2,7 @@
   "name": "@eyeposture/api",
   "version": "1.0.0",
   "private": true,
-  "main": "./dist/server.js",
+  "main": "index.js",
   "scripts": {
     "build": "npm --prefix ../.. run build -w @eyeposture/shared-types && npm --prefix ../.. run build -w @eyeposture/billing && tsc",
     "build:api": "npm --prefix ../.. run build -w @eyeposture/shared-types && npm --prefix ../.. run build -w @eyeposture/billing && tsc",

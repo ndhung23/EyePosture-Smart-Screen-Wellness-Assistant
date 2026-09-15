@@ -1719,7 +1719,7 @@ function handleServerless(req, res) {
   }
   return serverlessInstance.handleRequest(req, res);
 }
-var http, crypto2, fs, path, import_billing, EyePostureApiServer, serverlessInstance, server_default;
+var http, crypto2, fs, path, import_billing, EyePostureApiServer, serverlessInstance, callableHandler, server_default;
 var init_server = __esm({
   "apps/api/src/server.ts"() {
     "use strict";
@@ -2304,6 +2304,15 @@ var init_server = __esm({
       }
     };
     serverlessInstance = null;
+    callableHandler = function(req, res) {
+      return handleServerless(req, res);
+    };
+    callableHandler.default = callableHandler;
+    callableHandler.handleServerless = handleServerless;
+    callableHandler.EyePostureApiServer = EyePostureApiServer;
+    if (typeof module !== "undefined" && module.exports) {
+      module.exports = callableHandler;
+    }
     server_default = handleServerless;
   }
 });
