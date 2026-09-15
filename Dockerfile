@@ -5,20 +5,12 @@ WORKDIR /app
 
 # Copy root manifests and workspace configs
 COPY package.json package-lock.json* tsconfig.base.json ./
-COPY packages/shared-types/package.json ./packages/shared-types/
-COPY packages/billing/package.json ./packages/billing/
-COPY packages/database/package.json ./packages/database/
-COPY packages/reminder-engine/package.json ./packages/reminder-engine/
-COPY packages/vision/package.json ./packages/vision/
-COPY packages/i18n/package.json ./packages/i18n/
-COPY apps/api/package.json ./apps/api/
-
-# Install build dependencies
-RUN npm install
-
-# Copy source codes
 COPY packages/ ./packages/
 COPY apps/api/ ./apps/api/
+COPY apps/desktop/package.json ./apps/desktop/package.json
+
+# Install build dependencies
+RUN npm install --ignore-scripts
 
 # Compile packages in dependency order
 RUN npm run build:api

@@ -1,6 +1,6 @@
-import { EyePostureApiServer } from '../apps/api/dist/server.js';
+const { EyePostureApiServer } = require('../apps/api/dist/server.js');
 
-let serverInstance;
+let serverInstance = null;
 
 function getServer() {
   if (!serverInstance) {
@@ -9,7 +9,7 @@ function getServer() {
   return serverInstance;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const server = getServer();
   return server.handleRequest(req, res);
-}
+};

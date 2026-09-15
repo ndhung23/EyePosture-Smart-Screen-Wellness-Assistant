@@ -1,6 +1,11 @@
 {
   "version": 2,
   "buildCommand": "npm run build:api",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "apps/api/dist/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",

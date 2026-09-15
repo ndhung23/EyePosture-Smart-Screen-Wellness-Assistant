@@ -5,7 +5,9 @@ npm-debug.log
 .env
 dist
 dist-electron
-apps/desktop
+apps/desktop/src
+apps/desktop/dist
+apps/desktop/dist-electron
 release
 .agents
 .gemini
