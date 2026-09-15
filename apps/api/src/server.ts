@@ -763,3 +763,16 @@ export class EyePostureApiServer {
     });
   }
 }
+
+// Serverless function handler for Vercel / Cloud Functions
+let serverlessInstance: EyePostureApiServer | null = null;
+
+export function handleServerless(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  if (!serverlessInstance) {
+    serverlessInstance = new EyePostureApiServer();
+  }
+  return serverlessInstance.handleRequest(req, res);
+}
+
+export default handleServerless;
+
