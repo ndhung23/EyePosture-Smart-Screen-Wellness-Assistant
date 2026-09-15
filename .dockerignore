@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+dist
+dist-electron
+apps/desktop
+release
+.agents
+.gemini
+coverage
+*.md

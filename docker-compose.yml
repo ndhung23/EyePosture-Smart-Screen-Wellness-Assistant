@@ -1,0 +1,23 @@
+services:
+  eyeposture-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eyeposture-admin-hub
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - SEPAY_BANK_NAME=BIDV
+      - SEPAY_ACCOUNT_NUMBER=4661398013
+      - PAYMENT_BANK_ACCOUNT_NAME=NGUYEN DUY HUNG
+      - SEPAY_WEBHOOK_SECRET=${SEPAY_WEBHOOK_SECRET:-demo_webhook_secret}
+      - SECRET_KEY=${SECRET_KEY:-demo_secret_key}
+      - MERCHANT_ID=${MERCHANT_ID:-demo_merchant_id}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
