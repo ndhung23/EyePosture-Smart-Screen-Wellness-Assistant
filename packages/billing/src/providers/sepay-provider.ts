@@ -7,6 +7,7 @@ import {
   SePayWebhookPayload,
 } from '../types.js';
 import { SubscriptionTier, SubscriptionStatus } from '@eyeposture/shared-types';
+import process from 'node:process';
 
 export class SePayBillingProvider implements IBillingProvider {
   private config: SePayConfig;

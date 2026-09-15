@@ -5,11 +5,16 @@
   "main": "./dist/server.js",
   "scripts": {
     "build": "tsc",
+    "build:api": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
     "@eyeposture/shared-types": "*",
     "@eyeposture/billing": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
   }
 }

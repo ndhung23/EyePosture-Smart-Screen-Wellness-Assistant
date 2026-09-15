@@ -1,4 +1,5 @@
 import { EntitlementPayload } from '@eyeposture/shared-types';
+import { Buffer } from 'node:buffer';
 
 /**
  * Portable, zero-dependency SHA-256 & HMAC implementation
