@@ -1,19 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:api",
-  "outputDirectory": "public",
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "apps/api/dist/**,packages/*/dist/**"
-    }
-  },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.js"
-    },
-    {
-      "source": "/admin(.*)",
+      "source": "/(.*)",
       "destination": "/api/index.js"
     }
   ]

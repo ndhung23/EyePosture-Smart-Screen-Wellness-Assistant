@@ -198,7 +198,7 @@ export class EyePostureApiServer {
     }
 
     // Serve Web Admin Dashboard
-    if ((pathname === '/admin' || pathname === '/admin/dashboard') && method === 'GET') {
+    if ((pathname === '/' || pathname === '/admin' || pathname === '/admin/dashboard') && method === 'GET') {
       res.writeHead(200, {
         'Content-Type': 'text/html; charset=utf-8',
         'Access-Control-Allow-Origin': '*',
