@@ -34,13 +34,45 @@ The modular API backend (`apps/api`) runs under Node.js 22 LTS:
 # Production environment variables
 NODE_ENV=production
 PORT=8080
-JWT_SECRET=strong_random_jwt_secret_64_bytes
-ENTITLEMENT_SECRET=strong_random_entitlement_secret_64_bytes
-STRIPE_SECRET_KEY=sk_live_...
-SEPAY_API_KEY=sepay_live_secret_key
-SEPAY_ACCOUNT_NUMBER=0333222111
-SEPAY_BANK_NAME=MBBank
+SEPAY_BANK_NAME=BIDV
+SEPAY_ACCOUNT_NUMBER=4661398013
+PAYMENT_BANK_ACCOUNT_NAME=NGUYEN DUY HUNG
+SEPAY_WEBHOOK_SECRET=your_sepay_webhook_secret
+SECRET_KEY=your_sepay_secret_key
+MERCHANT_ID=your_merchant_id
 
-# Start API server
-node apps/api/dist/server.js
+# Build & Start API server
+npm run build:api
+npm run start:api
 ```
+
+---
+
+## 4. One-Click Cloud Deployments
+
+### Option A: Deploy on Render.com (Recommended for Background Webhooks)
+Render provides a persistent Node.js Web Service ideal for 24/7 Webhooks and Admin Dashboard.
+
+1. Fork or push this repository to GitHub.
+2. Sign in to [Render.com](https://render.com) and click **New > Blueprint** (or **New > Web Service**).
+3. Connect your repository. Render will automatically detect [`render.yaml`](file:///d:/FPT/SE/Ky_7/EXE101/Project/render.yaml):
+   - **Build Command**: `npm install && npm run build:api`
+   - **Start Command**: `npm run start:api`
+4. In Environment Variables, fill in your SePay credentials (`SEPAY_WEBHOOK_SECRET`, `SECRET_KEY`, `MERCHANT_ID`).
+5. Click **Deploy**. Your API and Admin Hub will be live at `https://eyeposture-api.onrender.com/admin`.
+
+### Option B: Deploy on Vercel (Recommended for Serverless & Instant CDN)
+Vercel hosts the API and Web Admin Dashboard using high-speed serverless functions configured via [`vercel.json`](file:///d:/FPT/SE/Ky_7/EXE101/Project/vercel.json) and [`api/index.js`](file:///d:/FPT/SE/Ky_7/EXE101/Project/api/index.js).
+
+1. Push this repository to GitHub.
+2. Sign in to [Vercel.com](https://vercel.com) and click **Add New > Project**.
+3. Import your repository. Vercel will auto-detect the monorepo configuration:
+   - **Build Command**: `npm run build:api`
+   - **Output Directory**: (Leave blank / default)
+4. Under **Environment Variables**, add:
+   - `SEPAY_BANK_NAME`: `BIDV`
+   - `SEPAY_ACCOUNT_NUMBER`: `4661398013`
+   - `PAYMENT_BANK_ACCOUNT_NAME`: `NGUYEN DUY HUNG`
+   - `SEPAY_WEBHOOK_SECRET`: your secret key
+5. Click **Deploy**. Your Admin Dashboard will be live at `https://your-project.vercel.app/admin`.
+

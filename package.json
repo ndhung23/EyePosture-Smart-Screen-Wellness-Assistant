@@ -12,6 +12,8 @@
     "desktop": "npm run start -w @eyeposture/desktop",
     "admin": "node apps/api/dist/start.js",
     "api": "node apps/api/dist/start.js",
+    "build:api": "npm run build:packages",
+    "start:api": "node apps/api/dist/start.js",
     "package:win": "npm run build -w @eyeposture/desktop && npx electron-packager apps/desktop EyePosture --platform=win32 --arch=x64 --out=release --overwrite --no-prune",
     "build:packages": "npm run build -w @eyeposture/shared-types && npm run build -w @eyeposture/billing && npm run build -w @eyeposture/database && npm run build -w @eyeposture/reminder-engine && npm run build -w @eyeposture/vision && npm run build -w @eyeposture/i18n && npm run build -w @eyeposture/api",
     "build": "npm run build:packages && npm run build -w @eyeposture/desktop",

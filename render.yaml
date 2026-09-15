@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: eyeposture-api
+    env: node
+    plan: free
+    region: singapore
+    buildCommand: npm install && npm run build:api
+    startCommand: npm run start:api
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SEPAY_BANK_NAME
+        value: BIDV
+      - key: SEPAY_ACCOUNT_NUMBER
+        value: "4661398013"
+      - key: PAYMENT_BANK_ACCOUNT_NAME
+        value: "NGUYEN DUY HUNG"
+      - key: SEPAY_WEBHOOK_SECRET
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: MERCHANT_ID
+        sync: false
