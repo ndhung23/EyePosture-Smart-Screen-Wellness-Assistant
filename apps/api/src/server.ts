@@ -214,7 +214,36 @@ export class EyePostureApiServer {
   // --- Request Handler ---
   public async handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-    const pathname = url.pathname;
+    
+    // Resolve real pathname across Vercel serverless rewrites, Docker, and local execution
+    let pathname =
+      url.searchParams.get('__url') ||
+      (req.headers['x-invoke-path'] as string) ||
+      (req.headers['x-matched-path'] as string) ||
+      (req.headers['x-forwarded-uri'] as string) ||
+      (req.headers['x-original-url'] as string) ||
+      url.pathname;
+
+    if (pathname.includes('?')) {
+      pathname = pathname.split('?')[0];
+    }
+
+    if (pathname === '/api/index.js' || pathname === '/api/index' || pathname === '/api/serverless.js') {
+      const alt =
+        url.searchParams.get('__url') ||
+        (req.headers['x-invoke-path'] as string) ||
+        (req.headers['x-matched-path'] as string);
+      if (alt && !alt.includes('/api/index')) {
+        pathname = alt.split('?')[0];
+      } else {
+        pathname = '/';
+      }
+    }
+
+    if (pathname.length > 1 && pathname.endsWith('/')) {
+      pathname = pathname.slice(0, -1);
+    }
+
     const method = req.method;
 
     if (method === 'OPTIONS') {
