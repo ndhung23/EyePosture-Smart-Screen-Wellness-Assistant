@@ -78,6 +78,7 @@ export class EyePostureApiServer {
     string,
     { tier: SubscriptionTier; status: SubscriptionStatus; expiresAt: number }
   > = new Map();
+  private orders: Map<string, any> = new Map();
   private processedWebhookEvents: Set<string> = new Set(); // Idempotency
 
   constructor(config: ApiServerConfig = {}) {
@@ -454,9 +455,10 @@ export class EyePostureApiServer {
       const parts = pathname.split('/');
       const orderCode = parts[parts.length - 2];
 
-      let order = null;
-      if (this.supabase.isAvailable()) {
+      let order = this.orders.get(orderCode) || null;
+      if (!order && this.supabase.isAvailable()) {
         order = await this.supabase.getOrderByCode(orderCode);
+        if (order) this.orders.set(orderCode, order);
       }
 
       if (!order) {
@@ -522,15 +524,29 @@ export class EyePostureApiServer {
       let matchedUserId: string | null = null;
       let targetTier: SubscriptionTier = 'PRO';
 
-      if (extractedOrderCode && this.supabase.isAvailable()) {
-        const order = await this.supabase.getOrderByCode(extractedOrderCode);
+      if (extractedOrderCode) {
+        let order = this.orders.get(extractedOrderCode) || null;
+        if (!order && this.supabase.isAvailable()) {
+          order = await this.supabase.getOrderByCode(extractedOrderCode);
+        }
         if (order) {
-          await this.supabase.markOrderPaid(extractedOrderCode);
+          order.status = 'PAID';
+          this.orders.set(extractedOrderCode, order);
+          if (this.supabase.isAvailable()) {
+            await this.supabase.markOrderPaid(extractedOrderCode);
+          }
           matchedUserId = order.user_id;
           targetTier = order.tier;
           const isYearly = order.interval === 'year' || body.transferAmount >= 490000;
           const durationMs = isYearly ? 365 * 86400 * 1000 : 30 * 86400 * 1000;
-          await this.supabase.upsertSubscription(matchedUserId, targetTier, 'ACTIVE', Date.now() + durationMs);
+          if (this.supabase.isAvailable()) {
+            await this.supabase.upsertSubscription(matchedUserId, targetTier, 'ACTIVE', Date.now() + durationMs);
+          }
+          this.userSubscriptions.set(matchedUserId, {
+            tier: targetTier,
+            status: 'ACTIVE',
+            expiresAt: Date.now() + durationMs,
+          });
         }
       }
 
@@ -794,15 +810,10 @@ export class EyePostureApiServer {
       const orderCode = `EP${Date.now().toString().slice(-6)}${randomSuffix}`;
       const transferContent = `EYEPOSTURE ${authResult.userId} ${orderCode}`;
 
+      const orderRecord = { order_code: orderCode, user_id: authResult.userId, tier, interval, amount, status: 'PENDING' as const };
+      this.orders.set(orderCode, orderRecord);
       if (this.supabase.isAvailable()) {
-        await this.supabase.createOrder({
-          order_code: orderCode,
-          user_id: authResult.userId,
-          tier,
-          interval,
-          amount,
-          status: 'PENDING',
-        });
+        await this.supabase.createOrder(orderRecord);
       }
 
       const qrUrl = this.sepayProvider.generateVietQrUrl({
