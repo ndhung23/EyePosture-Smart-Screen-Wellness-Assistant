@@ -10,8 +10,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@eyeposture/billing": "*",
     "@eyeposture/shared-types": "*",
-    "@eyeposture/billing": "*"
+    "@supabase/supabase-js": "^2.116.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

@@ -18,6 +18,8 @@ import {
   SePayWebhookPayload,
 } from '@eyeposture/billing';
 import { getAdminDashboardHtml } from './admin/dashboard-html.js';
+import { handleAdminRoutes } from './admin/admin-handlers.js';
+import { SupabaseService } from './supabase-client.js';
 
 function loadEnvFile(): void {
   const envCandidates = [
@@ -66,8 +68,9 @@ export class EyePostureApiServer {
   private billingProvider = new MockBillingProvider();
   private sepayProvider: SePayBillingProvider;
   private sepayApiKey: string;
+  private supabase = new SupabaseService();
 
-  // In-memory data store for the modular monolith service
+  // In-memory data store for caching and fallback
   private users: Map<string, User & { passwordHash: string; salt: string }> = new Map();
   private devices: Map<string, Device> = new Map();
   private userSubscriptions: Map<
@@ -258,7 +261,12 @@ export class EyePostureApiServer {
 
     // Health check
     if (pathname === '/api/v1/health') {
-      this.sendJson(res, 200, { status: 'ok', service: 'EyePosture Cloud API', timestamp: Date.now() });
+      this.sendJson(res, 200, {
+        status: 'ok',
+        service: 'EyePosture Cloud API',
+        supabaseConnected: this.supabase.isAvailable(),
+        timestamp: Date.now(),
+      });
       return;
     }
 
@@ -268,47 +276,12 @@ export class EyePostureApiServer {
         path.resolve(process.cwd(), 'EyePosture.ico'),
         path.resolve(process.cwd(), 'public/EyePosture.ico'),
         path.resolve(process.cwd(), 'apps/api/public/EyePosture.ico'),
-        path.resolve(__dirname, 'EyePosture.ico'),
-        path.resolve(__dirname, '../EyePosture.ico'),
-        path.resolve(__dirname, '../../EyePosture.ico'),
-        path.resolve(__dirname, 'public/EyePosture.ico'),
-        path.resolve(__dirname, '../public/EyePosture.ico'),
-        path.resolve(__dirname, '../../public/EyePosture.ico'),
       ];
       for (const p of candidates) {
         if (fs.existsSync(p)) {
           const buf = fs.readFileSync(p);
           res.writeHead(200, {
             'Content-Type': 'image/x-icon',
-            'Cache-Control': 'public, max-age=86400',
-            'Access-Control-Allow-Origin': '*',
-          });
-          res.end(buf);
-          return;
-        }
-      }
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-
-    if ((pathname === '/EyePosture.png' || pathname === '/icon.png') && method === 'GET') {
-      const candidates = [
-        path.resolve(process.cwd(), 'EyePosture.png'),
-        path.resolve(process.cwd(), 'public/EyePosture.png'),
-        path.resolve(process.cwd(), 'apps/api/public/EyePosture.png'),
-        path.resolve(__dirname, 'EyePosture.png'),
-        path.resolve(__dirname, '../EyePosture.png'),
-        path.resolve(__dirname, '../../EyePosture.png'),
-        path.resolve(__dirname, 'public/EyePosture.png'),
-        path.resolve(__dirname, '../public/EyePosture.png'),
-        path.resolve(__dirname, '../../public/EyePosture.png'),
-      ];
-      for (const p of candidates) {
-        if (fs.existsSync(p)) {
-          const buf = fs.readFileSync(p);
-          res.writeHead(200, {
-            'Content-Type': 'image/png',
             'Cache-Control': 'public, max-age=86400',
             'Access-Control-Allow-Origin': '*',
           });
@@ -339,8 +312,11 @@ export class EyePostureApiServer {
         this.sendJson(res, 400, { error: 'Missing email, password, or name' });
         return;
       }
-      for (const u of this.users.values()) {
-        if (u.email.toLowerCase() === email.toLowerCase()) {
+
+      // Check existing in Supabase
+      if (this.supabase.isAvailable()) {
+        const existing = await this.supabase.findUserByEmail(email);
+        if (existing) {
           this.sendJson(res, 409, { error: 'Email already registered' });
           return;
         }
@@ -351,10 +327,21 @@ export class EyePostureApiServer {
       const passwordHash = this.hashPassword(password, salt);
       const now = new Date().toISOString();
 
+      if (this.supabase.isAvailable()) {
+        await this.supabase.createUser({
+          id,
+          email,
+          name,
+          password_hash: passwordHash,
+          salt,
+          role: 'USER',
+          is_blocked: false,
+        });
+        await this.supabase.upsertSubscription(id, 'FREE', 'ACTIVE', Date.now() + 365 * 24 * 3600 * 1000);
+      }
+
       const user = { id, email, name, role: 'USER' as const, createdAt: now, updatedAt: now };
       this.users.set(id, { ...user, passwordHash, salt });
-
-      // Default to FREE subscription
       this.userSubscriptions.set(id, {
         tier: 'FREE',
         status: 'ACTIVE',
@@ -370,12 +357,31 @@ export class EyePostureApiServer {
     if (pathname === '/api/v1/auth/login' && method === 'POST') {
       const body = await this.parseBody(req);
       const { email, password } = body;
-      let matchedUser: (User & { passwordHash: string; salt: string }) | undefined;
 
+      let matchedUser: (User & { passwordHash: string; salt: string }) | undefined;
       for (const u of this.users.values()) {
         if (u.email.toLowerCase() === (email || '').toLowerCase()) {
           matchedUser = u;
           break;
+        }
+      }
+
+      // Fallback query Supabase if not in memory
+      if (!matchedUser && this.supabase.isAvailable()) {
+        const dbUser = await this.supabase.findUserByEmail(email || '');
+        if (dbUser) {
+          matchedUser = {
+            id: dbUser.id,
+            email: dbUser.email,
+            name: dbUser.name,
+            role: dbUser.role as any,
+            passwordHash: dbUser.password_hash,
+            salt: dbUser.salt,
+            isBlocked: dbUser.is_blocked,
+            createdAt: dbUser.created_at || new Date().toISOString(),
+            updatedAt: dbUser.updated_at || new Date().toISOString(),
+          };
+          this.users.set(matchedUser.id, matchedUser);
         }
       }
 
@@ -401,6 +407,113 @@ export class EyePostureApiServer {
       return;
     }
 
+    // 2b. GET /api/v1/orders/:orderCode/status (Realtime Polling for QR Payment)
+    if (pathname.startsWith('/api/v1/orders/') && pathname.endsWith('/status') && method === 'GET') {
+      const parts = pathname.split('/');
+      const orderCode = parts[parts.length - 2];
+
+      let order = null;
+      if (this.supabase.isAvailable()) {
+        order = await this.supabase.getOrderByCode(orderCode);
+      }
+
+      if (!order) {
+        this.sendJson(res, 404, { error: 'Order not found' });
+        return;
+      }
+
+      let entitlementToken = null;
+      if (order.status === 'PAID') {
+        const deviceId = url.searchParams.get('deviceId') || 'default_device';
+        const payload: EntitlementPayload = {
+          sub: order.user_id,
+          tier: order.tier,
+          features: PRO_FEATURES,
+          issuedAt: Date.now(),
+          expiresAt: Date.now() + (order.interval === 'year' ? 365 : 30) * 86400 * 1000,
+          deviceLimit: order.tier === 'FAMILY' ? 5 : 3,
+          deviceId,
+        };
+        entitlementToken = this.entitlementSigner.sign(payload);
+      }
+
+      this.sendJson(res, 200, {
+        orderCode: order.order_code,
+        status: order.status,
+        tier: order.tier,
+        amount: order.amount,
+        paidAt: order.paid_at,
+        entitlementToken,
+      });
+      return;
+    }
+
+    // 8. POST /api/v1/webhooks/sepay (SePay Automated Bank Transfer Webhook)
+    if (pathname === '/api/v1/webhooks/sepay' && method === 'POST') {
+      const authHeader = (req.headers.authorization as string) || (req.headers['apikey'] as string);
+      if (!this.sepayProvider.verifyApiKey(authHeader)) {
+        this.sendJson(res, 401, { error: 'Unauthorized: Invalid SePay API key' });
+        return;
+      }
+
+      const body: SePayWebhookPayload = await this.parseBody(req);
+      const eventId = `sepay_${body.id || body.referenceCode || Date.now()}`;
+
+      if (this.processedWebhookEvents.has(eventId)) {
+        this.sendJson(res, 200, { success: true, idempotent: true });
+        return;
+      }
+      this.processedWebhookEvents.add(eventId);
+
+      if (body.transferType !== 'in') {
+        this.sendJson(res, 200, { success: true, ignored: true, reason: 'transferType is not in' });
+        return;
+      }
+
+      // Parse payment content: e.g. "EP 123456" or "EP123456"
+      const content = body.content || '';
+      const orderMatch = content.match(/EP[\s_-]?([a-zA-Z0-9]+)/i);
+      const extractedOrderCode = orderMatch
+        ? orderMatch[0].replace(/[\s_-]/g, '').toUpperCase()
+        : null;
+
+      let matchedUserId: string | null = null;
+      let targetTier: SubscriptionTier = 'PRO';
+
+      if (extractedOrderCode && this.supabase.isAvailable()) {
+        const order = await this.supabase.getOrderByCode(extractedOrderCode);
+        if (order) {
+          await this.supabase.markOrderPaid(extractedOrderCode);
+          matchedUserId = order.user_id;
+          targetTier = order.tier;
+          const isYearly = order.interval === 'year' || body.transferAmount >= 490000;
+          const durationMs = isYearly ? 365 * 86400 * 1000 : 30 * 86400 * 1000;
+          await this.supabase.upsertSubscription(matchedUserId, targetTier, 'ACTIVE', Date.now() + durationMs);
+        }
+      }
+
+      if (!matchedUserId) {
+        const parsed = this.sepayProvider.parsePaymentContent(content);
+        matchedUserId = parsed.userId || null;
+        if (matchedUserId) {
+          const isYearly = body.transferAmount >= 490000;
+          const durationMs = isYearly ? 365 * 86400 * 1000 : 30 * 86400 * 1000;
+          targetTier = parsed.tier || (body.transferAmount >= 99000 && /family/i.test(content) ? 'FAMILY' : 'PRO');
+          if (this.supabase.isAvailable()) {
+            await this.supabase.upsertSubscription(matchedUserId, targetTier, 'ACTIVE', Date.now() + durationMs);
+          }
+          this.userSubscriptions.set(matchedUserId, {
+            tier: targetTier,
+            status: 'ACTIVE',
+            expiresAt: Date.now() + durationMs,
+          });
+        }
+      }
+
+      this.sendJson(res, 200, { success: true, processed: true, userId: matchedUserId });
+      return;
+    }
+
     // Authenticated endpoints below:
     const bearer = this.extractBearerToken(req);
     const authResult = bearer ? this.verifyJwt(bearer) : { valid: false };
@@ -411,7 +524,24 @@ export class EyePostureApiServer {
         this.sendJson(res, 401, { error: 'Unauthorized' });
         return;
       }
-      const user = this.users.get(authResult.userId);
+      let user = this.users.get(authResult.userId);
+      if (!user && this.supabase.isAvailable()) {
+        const dbUser = await this.supabase.findUserById(authResult.userId);
+        if (dbUser) {
+          user = {
+            id: dbUser.id,
+            email: dbUser.email,
+            name: dbUser.name,
+            role: dbUser.role as any,
+            passwordHash: dbUser.password_hash,
+            salt: dbUser.salt,
+            createdAt: dbUser.created_at || new Date().toISOString(),
+            updatedAt: dbUser.updated_at || new Date().toISOString(),
+          };
+          this.users.set(user.id, user);
+        }
+      }
+
       if (!user) {
         this.sendJson(res, 404, { error: 'User not found' });
         return;
@@ -421,72 +551,60 @@ export class EyePostureApiServer {
       return;
     }
 
-    // 4a. GET /api/v1/devices (List all machines registered to the current user)
+    // 4a. GET /api/v1/devices
     if (pathname === '/api/v1/devices' && method === 'GET') {
       if (!authResult.valid || !authResult.userId) {
         this.sendJson(res, 401, { error: 'Unauthorized' });
         return;
       }
-      const userDevices = Array.from(this.devices.values()).filter(
+      let userDevices = Array.from(this.devices.values()).filter(
         (d) => d.userId === authResult.userId
       );
+      if (userDevices.length === 0 && this.supabase.isAvailable()) {
+        const dbDevices = await this.supabase.getDevicesByUserId(authResult.userId);
+        userDevices = dbDevices.map((d) => ({
+          id: d.id,
+          userId: d.user_id,
+          deviceFingerprint: d.device_fingerprint,
+          deviceName: d.device_name,
+          os: d.os,
+          appVersion: d.app_version,
+          status: d.status as any,
+          isBlocked: d.is_blocked,
+          lastActiveAt: d.last_active_at || new Date().toISOString(),
+          createdAt: d.created_at || new Date().toISOString(),
+        }));
+      }
       this.sendJson(res, 200, { devices: userDevices });
       return;
     }
 
-    // 4a. POST /api/v1/devices/telemetry (Automatic heartbeat & presence reporting from Desktop app)
+    // 4b. POST /api/v1/devices/telemetry
     if ((pathname === '/api/v1/devices/telemetry' || pathname === '/api/v1/devices/heartbeat') && method === 'POST') {
       const body = await this.parseBody(req);
       const fingerprint = body.deviceFingerprint || body.fingerprint || 'win_anon_pc';
       const deviceName = body.deviceName || body.name || 'Desktop PC';
       const deviceOs = body.os || 'Windows 11';
       const appVersion = body.appVersion || '1.0.0';
+      const userId = body.userId || `device_${fingerprint.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8)}`;
 
-      let existing = Array.from(this.devices.values()).find(
-        (d) => d.deviceFingerprint === fingerprint
-      );
-
-      if (existing) {
-        existing.lastActiveAt = new Date().toISOString();
-        if (deviceName) existing.deviceName = deviceName;
-        if (deviceOs) existing.os = deviceOs;
-        if (appVersion) existing.appVersion = appVersion;
-        existing.status = existing.isBlocked ? 'BLOCKED' : 'ACTIVE';
-        this.savePersistedDevices();
-        this.sendJson(res, 200, {
-          success: true,
-          status: existing.status,
-          isBlocked: Boolean(existing.isBlocked),
-          device: existing,
+      if (this.supabase.isAvailable()) {
+        await this.supabase.upsertDevice({
+          user_id: userId,
+          device_fingerprint: fingerprint,
+          device_name: deviceName,
+          os: deviceOs,
+          app_version: appVersion,
+          status: 'ACTIVE',
+          is_blocked: false,
         });
-        return;
       }
 
-      const id = crypto.randomUUID();
-      const newDev: Device = {
-        id,
-        userId: body.userId || `device_${fingerprint.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8)}`,
-        deviceFingerprint: fingerprint,
-        deviceName,
-        os: deviceOs,
-        appVersion,
-        status: 'ACTIVE',
-        isBlocked: false,
-        lastActiveAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      };
-      this.devices.set(id, newDev);
-      this.savePersistedDevices();
-      this.sendJson(res, 201, {
-        success: true,
-        status: 'ACTIVE',
-        isBlocked: false,
-        device: newDev,
-      });
+      this.sendJson(res, 200, { success: true, status: 'ACTIVE', isBlocked: false });
       return;
     }
 
-    // 4b. POST /api/v1/devices (Register machine with seat limit validation)
+    // 4c. POST /api/v1/devices (Register machine with seat limit validation)
     if (pathname === '/api/v1/devices' && method === 'POST') {
       if (!authResult.valid || !authResult.userId) {
         this.sendJson(res, 401, { error: 'Unauthorized' });
@@ -495,7 +613,6 @@ export class EyePostureApiServer {
       const body = await this.parseBody(req);
       const fingerprint = body.deviceFingerprint || body.fingerprint || crypto.randomUUID();
 
-      // Check if machine already registered
       const existing = Array.from(this.devices.values()).find(
         (d) => d.userId === authResult.userId && d.deviceFingerprint === fingerprint
       );
@@ -507,8 +624,14 @@ export class EyePostureApiServer {
         return;
       }
 
-      // Check seat limits according to subscription tier (Free: 1, Pro: 3, Family: 5)
-      const sub = this.userSubscriptions.get(authResult.userId);
+      let sub = this.userSubscriptions.get(authResult.userId);
+      if (!sub && this.supabase.isAvailable()) {
+        const dbSub = await this.supabase.getSubscription(authResult.userId);
+        if (dbSub) {
+          sub = { tier: dbSub.tier, status: dbSub.status, expiresAt: Number(dbSub.expires_at) };
+          this.userSubscriptions.set(authResult.userId, sub);
+        }
+      }
       const tier = sub?.tier || 'FREE';
       const limit = tier === 'FAMILY' ? 5 : tier === 'PRO' ? 3 : 1;
       const currentDevices = Array.from(this.devices.values()).filter(
@@ -538,11 +661,23 @@ export class EyePostureApiServer {
         createdAt: new Date().toISOString(),
       };
       this.devices.set(id, device);
+      if (this.supabase.isAvailable()) {
+        await this.supabase.upsertDevice({
+          id,
+          user_id: authResult.userId,
+          device_fingerprint: fingerprint,
+          device_name: device.deviceName,
+          os: device.os,
+          app_version: device.appVersion,
+          status: 'ACTIVE',
+          is_blocked: false,
+        });
+      }
       this.sendJson(res, 201, { device });
       return;
     }
 
-    // 4c. DELETE /api/v1/devices (Unlink/de-register machine to free up a slot)
+    // 4d. DELETE /api/v1/devices
     if (pathname === '/api/v1/devices' && method === 'DELETE') {
       if (!authResult.valid || !authResult.userId) {
         this.sendJson(res, 401, { error: 'Unauthorized' });
@@ -563,6 +698,9 @@ export class EyePostureApiServer {
 
       if (targetId) {
         this.devices.delete(targetId);
+        if (this.supabase.isAvailable()) {
+          await this.supabase.deleteDevice(targetId, authResult.userId);
+        }
         this.sendJson(res, 200, { success: true, message: 'Device unlinked successfully' });
         return;
       }
@@ -577,12 +715,26 @@ export class EyePostureApiServer {
         this.sendJson(res, 401, { error: 'Unauthorized' });
         return;
       }
-      const sub = this.userSubscriptions.get(authResult.userId) ?? {
+      let sub = this.userSubscriptions.get(authResult.userId);
+      if (this.supabase.isAvailable()) {
+        const dbSub = await this.supabase.getSubscription(authResult.userId);
+        if (dbSub) {
+          const loadedSub = {
+            tier: dbSub.tier,
+            status: dbSub.status,
+            expiresAt: Number(dbSub.expires_at),
+          };
+          sub = loadedSub;
+          this.userSubscriptions.set(authResult.userId, loadedSub);
+        }
+      }
+
+      const activeSub = sub ?? {
         tier: 'FREE' as const,
         status: 'ACTIVE' as const,
         expiresAt: Date.now() + 365 * 24 * 3600 * 1000,
       };
-      this.sendJson(res, 200, { subscription: sub });
+      this.sendJson(res, 200, { subscription: activeSub });
       return;
     }
 
@@ -593,40 +745,68 @@ export class EyePostureApiServer {
         return;
       }
       const body = await this.parseBody(req);
+      const tier = (body.tier || 'PRO') as 'PRO' | 'FAMILY';
+      const interval = (body.interval || 'month') as 'month' | 'year' | 'lifetime';
+      const amount = body.amount || (SePayBillingProvider.PRICES_VND[tier]?.[interval] ?? 30000);
+      const randomSuffix = Math.floor(100 + Math.random() * 900);
+      const orderCode = `EP${Date.now().toString().slice(-6)}${randomSuffix}`;
+      const transferContent = `EYEPOSTURE ${authResult.userId} ${orderCode}`;
 
-      // Support SePay VietQR payment
-      if (body.provider === 'sepay' || body.currency === 'VND') {
-        const qrPayment = this.sepayProvider.createQrPayment({
-          userId: authResult.userId,
-          tier: body.tier || 'PRO',
-          interval: body.interval || 'month',
+      if (this.supabase.isAvailable()) {
+        await this.supabase.createOrder({
+          order_code: orderCode,
+          user_id: authResult.userId,
+          tier,
+          interval,
+          amount,
+          status: 'PENDING',
         });
-        this.sendJson(res, 200, {
-          provider: 'sepay',
-          ...qrPayment,
-          checkoutUrl: qrPayment.qrUrl,
-          sessionId: qrPayment.orderCode,
-        });
-        return;
       }
 
-      const session = await this.billingProvider.createCheckoutSession({
-        userId: authResult.userId,
-        tier: body.tier || 'PRO',
-        interval: body.interval || 'month',
-        successUrl: body.successUrl || 'https://eyeposture.com/success',
-        cancelUrl: body.cancelUrl || 'https://eyeposture.com/cancel',
+      const qrUrl = this.sepayProvider.generateVietQrUrl({
+        amount,
+        content: transferContent,
       });
-      this.sendJson(res, 200, session);
+
+      this.sendJson(res, 200, {
+        provider: 'sepay',
+        orderCode,
+        qrUrl,
+        checkoutUrl: qrUrl,
+        sessionId: orderCode,
+        amount,
+        transferContent,
+        accountNumber: process.env.PAYMENT_BANK_ACCOUNT || '4661398013',
+        bankName: process.env.PAYMENT_BANK_CODE || 'BIDV',
+        accountHolder: process.env.PAYMENT_BANK_ACCOUNT_NAME || 'NGUYEN DUY HUNG',
+      });
       return;
     }
 
-    // 7. GET /api/v1/entitlements (Mint signed token for desktop app)
+    // 7. GET /api/v1/entitlements
     if (pathname === '/api/v1/entitlements' && method === 'GET') {
       if (!authResult.valid || !authResult.userId) {
         this.sendJson(res, 401, { error: 'Unauthorized' });
         return;
       }
+
+      let sub = this.userSubscriptions.get(authResult.userId);
+      if (this.supabase.isAvailable()) {
+        const dbSub = await this.supabase.getSubscription(authResult.userId);
+        if (dbSub) {
+          sub = {
+            tier: dbSub.tier,
+            status: dbSub.status,
+            expiresAt: Number(dbSub.expires_at),
+          };
+        }
+      }
+
+      const currentSub = sub ?? {
+        tier: 'FREE' as const,
+        status: 'ACTIVE' as const,
+        expiresAt: Date.now() + 365 * 24 * 3600 * 1000,
+      };
 
       const user = this.users.get(authResult.userId);
       if (user?.isBlocked) {
@@ -642,20 +822,13 @@ export class EyePostureApiServer {
         this.sendJson(res, 403, { error: 'This device has been blocked by administrator' });
         return;
       }
-
-      const sub = this.userSubscriptions.get(authResult.userId) ?? {
-        tier: 'FREE' as const,
-        status: 'ACTIVE' as const,
-        expiresAt: Date.now() + 365 * 24 * 3600 * 1000,
-      };
-
       const payload: EntitlementPayload = {
         sub: authResult.userId,
-        tier: sub.tier,
-        features: sub.tier === 'FREE' ? ['basic_reminders'] : PRO_FEATURES,
+        tier: currentSub.tier,
+        features: currentSub.tier === 'FREE' ? ['basic_reminders'] : PRO_FEATURES,
         issuedAt: Date.now(),
-        expiresAt: sub.expiresAt,
-        deviceLimit: sub.tier === 'FAMILY' ? 5 : 3,
+        expiresAt: currentSub.expiresAt,
+        deviceLimit: currentSub.tier === 'FAMILY' ? 5 : 3,
         deviceId,
       };
 
@@ -664,57 +837,11 @@ export class EyePostureApiServer {
       return;
     }
 
-    // 8. POST /api/v1/webhooks/sepay (SePay Automated Bank Transfer Webhook)
-    if (pathname === '/api/v1/webhooks/sepay' && method === 'POST') {
-      const authHeader = (req.headers.authorization as string) || (req.headers['apikey'] as string);
-      if (!this.sepayProvider.verifyApiKey(authHeader)) {
-        this.sendJson(res, 401, { error: 'Unauthorized: Invalid SePay API key' });
-        return;
-      }
-
-      const body: SePayWebhookPayload = await this.parseBody(req);
-      const eventId = `sepay_${body.id || body.referenceCode || Date.now()}`;
-
-      // Idempotent processing
-      if (this.processedWebhookEvents.has(eventId)) {
-        this.sendJson(res, 200, { success: true, idempotent: true });
-        return;
-      }
-      this.processedWebhookEvents.add(eventId);
-
-      // Only process incoming money ('in')
-      if (body.transferType !== 'in') {
-        this.sendJson(res, 200, { success: true, ignored: true, reason: 'transferType is not in' });
-        return;
-      }
-
-      // Parse payment content: e.g. "EYEPOSTURE usr_12345"
-      const parsed = this.sepayProvider.parsePaymentContent(body.content);
-      const userId = parsed.userId;
-
-      if (userId && this.users.has(userId)) {
-        const isYearly = body.transferAmount >= 490000;
-        const durationMs = isYearly ? 365 * 86400 * 1000 : 30 * 86400 * 1000;
-        const tier =
-          parsed.tier || (body.transferAmount >= 99000 && /family/i.test(body.content) ? 'FAMILY' : 'PRO');
-
-        this.userSubscriptions.set(userId, {
-          tier,
-          status: 'ACTIVE',
-          expiresAt: Date.now() + durationMs,
-        });
-      }
-
-      this.sendJson(res, 200, { success: true, processed: true, userId });
-      return;
-    }
-
-    // 9. POST /api/v1/webhooks/stripe (Stripe Webhook Fallback)
+    // 8b. POST /api/v1/webhooks/stripe (Stripe Webhook Fallback)
     if (pathname === '/api/v1/webhooks/stripe' && method === 'POST') {
       const body = await this.parseBody(req);
       const eventId = body.id || crypto.randomUUID();
 
-      // Idempotent processing
       if (this.processedWebhookEvents.has(eventId)) {
         this.sendJson(res, 200, { received: true, idempotent: true });
         return;
@@ -723,195 +850,34 @@ export class EyePostureApiServer {
 
       const { userId, tier, status, currentPeriodEnd } = body.data || {};
       if (userId) {
+        const duration = currentPeriodEnd || Date.now() + 30 * 86400 * 1000;
+        const subTier = (tier as SubscriptionTier) || 'PRO';
+        const subStatus = (status as SubscriptionStatus) || 'ACTIVE';
         this.userSubscriptions.set(userId, {
-          tier: tier || 'PRO',
-          status: status || 'ACTIVE',
-          expiresAt: currentPeriodEnd || Date.now() + 30 * 86400 * 1000,
+          tier: subTier,
+          status: subStatus,
+          expiresAt: duration,
         });
+        if (this.supabase.isAvailable()) {
+          await this.supabase.upsertSubscription(userId, subTier, subStatus, duration);
+        }
       }
 
       this.sendJson(res, 200, { received: true, processed: true });
       return;
     }
 
-    // 9. POST /api/v1/sync
-    if (pathname === '/api/v1/sync' && method === 'POST') {
-      if (!authResult.valid || !authResult.userId) {
-        this.sendJson(res, 401, { error: 'Unauthorized' });
-        return;
-      }
-      const body = await this.parseBody(req);
-      // Echo synced status with server timestamp
-      this.sendJson(res, 200, {
-        synced: true,
-        serverTimestamp: Date.now(),
-        acceptedItems: (body.items || []).length,
-      });
-      return;
-    }
+    // Delegate Admin Routes to modular handler
+    const adminHandled = await handleAdminRoutes(req, res, pathname, method, {
+      users: this.users,
+      devices: this.devices,
+      userSubscriptions: this.userSubscriptions,
+      savePersistedDevices: () => this.savePersistedDevices(),
+      sendJson: (sRes, code, data) => this.sendJson(sRes, code, data),
+      parseBody: (sReq) => this.parseBody(sReq),
+    });
 
-    // --- Admin Device & Account Management Endpoints ---
-
-    // 10. GET /api/v1/admin/devices (View all machines using the app)
-    if (pathname === '/api/v1/admin/devices' && method === 'GET') {
-      const allDevices = Array.from(this.devices.values()).map((d) => {
-        const u = this.users.get(d.userId);
-        return {
-          id: d.id,
-          userId: d.userId,
-          userEmail: u?.email || `${d.deviceName || 'Máy Desktop'} (Client)`,
-          userName: u?.name || 'Máy Khách Desktop',
-          deviceName: d.deviceName,
-          deviceFingerprint: d.deviceFingerprint,
-          os: d.os,
-          appVersion: d.appVersion,
-          status: d.status || (d.isBlocked ? 'BLOCKED' : 'ACTIVE'),
-          isBlocked: Boolean(d.isBlocked),
-          lastActiveAt: d.lastActiveAt,
-          createdAt: d.createdAt,
-        };
-      });
-      this.sendJson(res, 200, { total: allDevices.length, devices: allDevices });
-      return;
-    }
-
-    // 10b. GET /api/v1/admin/users (View all accounts with subscription status and device count)
-    if (pathname === '/api/v1/admin/users' && method === 'GET') {
-      const allUsers = Array.from(this.users.values()).map((u) => {
-        const sub = this.userSubscriptions.get(u.id);
-        const userDevs = Array.from(this.devices.values()).filter((d) => d.userId === u.id);
-        return {
-          id: u.id,
-          email: u.email,
-          name: u.name,
-          role: u.role,
-          isBlocked: Boolean(u.isBlocked),
-          status: u.status || (u.isBlocked ? 'BLOCKED' : 'ACTIVE'),
-          subscription: sub || { tier: 'FREE', status: 'ACTIVE', expiresAt: null },
-          deviceCount: userDevs.length,
-          createdAt: u.createdAt,
-        };
-      });
-      this.sendJson(res, 200, { total: allUsers.length, users: allUsers });
-      return;
-    }
-
-    // 11. POST /api/v1/admin/devices/block (Block/ban a specific machine)
-    if (pathname === '/api/v1/admin/devices/block' && method === 'POST') {
-      const body = await this.parseBody(req);
-      const query = body.deviceId || body.deviceFingerprint;
-      const target = Array.from(this.devices.values()).find(
-        (d) => d.id === query || d.deviceFingerprint === query
-      );
-      if (!target) {
-        this.sendJson(res, 404, { error: 'Device not found' });
-        return;
-      }
-      target.isBlocked = true;
-      target.status = 'BLOCKED';
-      this.savePersistedDevices();
-      this.sendJson(res, 200, { success: true, message: 'Device blocked successfully', device: target });
-      return;
-    }
-
-    // 12. POST /api/v1/admin/devices/unblock (Unblock/restore a banned machine)
-    if (pathname === '/api/v1/admin/devices/unblock' && method === 'POST') {
-      const body = await this.parseBody(req);
-      const query = body.deviceId || body.deviceFingerprint;
-      const target = Array.from(this.devices.values()).find(
-        (d) => d.id === query || d.deviceFingerprint === query
-      );
-      if (!target) {
-        this.sendJson(res, 404, { error: 'Device not found' });
-        return;
-      }
-      target.isBlocked = false;
-      target.status = 'ACTIVE';
-      this.savePersistedDevices();
-      this.sendJson(res, 200, { success: true, message: 'Device unblocked successfully', device: target });
-      return;
-    }
-
-    // 13. POST /api/v1/admin/users/block (Suspend/block an account)
-    if (pathname === '/api/v1/admin/users/block' && method === 'POST') {
-      const body = await this.parseBody(req);
-      let targetUser = this.users.get(body.userId);
-      if (!targetUser && body.email) {
-        targetUser = Array.from(this.users.values()).find((u) => u.email.toLowerCase() === body.email.toLowerCase());
-      }
-      if (!targetUser) {
-        this.sendJson(res, 404, { error: 'User not found' });
-        return;
-      }
-      targetUser.isBlocked = true;
-      targetUser.status = 'BLOCKED';
-      this.sendJson(res, 200, { success: true, message: 'User account suspended', userId: targetUser.id });
-      return;
-    }
-
-    // 14. POST /api/v1/admin/users/unblock (Restore/unblock a suspended account)
-    if (pathname === '/api/v1/admin/users/unblock' && method === 'POST') {
-      const body = await this.parseBody(req);
-      let targetUser = this.users.get(body.userId);
-      if (!targetUser && body.email) {
-        targetUser = Array.from(this.users.values()).find((u) => u.email.toLowerCase() === body.email.toLowerCase());
-      }
-      if (!targetUser) {
-        this.sendJson(res, 404, { error: 'User not found' });
-        return;
-      }
-      targetUser.isBlocked = false;
-      targetUser.status = 'ACTIVE';
-      this.sendJson(res, 200, { success: true, message: 'User account restored', userId: targetUser.id });
-      return;
-    }
-
-    // 15. GET /api/v1/admin/stats
-    if (pathname === '/api/v1/admin/stats' && method === 'GET') {
-      const allUsers = Array.from(this.users.values());
-      const allDevices = Array.from(this.devices.values());
-      const proUsers = allUsers.filter((u) => {
-        const sub = this.userSubscriptions.get(u.id);
-        return sub?.tier === 'PRO' || sub?.tier === 'FAMILY';
-      });
-      const totalRevenueVnd = proUsers.length * 59000 + 490000;
-      const stats = {
-        totalUsers: allUsers.length,
-        totalDevices: allDevices.length,
-        activeDevices: allDevices.filter((d) => !d.isBlocked).length,
-        blockedDevices: allDevices.filter((d) => d.isBlocked).length,
-        proUsersCount: proUsers.length,
-        totalRevenueVnd,
-        revenueHistory: [295000, 413000, 354000, 590000, 708000, 885000, Math.max(totalRevenueVnd, 1180000)],
-        userGrowth: [12, 19, 25, 32, 45, 58, Math.max(70, allUsers.length * 10)],
-        activeTrend: [8, 15, 20, 26, 38, 50, Math.max(60, allUsers.length * 8)],
-      };
-      this.sendJson(res, 200, stats);
-      return;
-    }
-
-    // 16. POST /api/v1/admin/users/upgrade
-    if (pathname === '/api/v1/admin/users/upgrade' && method === 'POST') {
-      const body = await this.parseBody(req);
-      const { userId, tier = 'PRO', days = 365 } = body;
-      const user = this.users.get(userId);
-      if (!user) {
-        this.sendJson(res, 404, { error: 'User not found' });
-        return;
-      }
-      this.userSubscriptions.set(userId, {
-        tier: (tier as SubscriptionTier) || 'PRO',
-        status: 'ACTIVE',
-        expiresAt: Date.now() + days * 86400 * 1000,
-      });
-      this.sendJson(res, 200, {
-        success: true,
-        userId,
-        tier,
-        expiresAt: Date.now() + days * 86400 * 1000,
-      });
-      return;
-    }
+    if (adminHandled) return;
 
     this.sendJson(res, 404, { error: 'Endpoint not found' });
   }
@@ -966,4 +932,3 @@ if (modRef && modRef.exports) {
 }
 
 export default handleServerless;
-

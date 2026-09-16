@@ -165,6 +165,49 @@ export const SettingsPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Theme Selection */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-t border-slate-800/80 gap-3">
+                <div>
+                  <span className="text-sm font-medium text-slate-200 block">{t('settings.theme')}</span>
+                  <span className="text-xs text-slate-400">{t('settings.themeDesc')}</span>
+                </div>
+                <div className="flex items-center bg-slate-900 rounded-xl p-1 border border-slate-700/60 self-start sm:self-auto">
+                  <button
+                    onClick={() => switchTheme('dark')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      theme === 'dark'
+                        ? 'bg-teal-500 text-slate-950 shadow-sm'
+                        : 'text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <Moon className="w-3.5 h-3.5" />
+                    <span>{t('settings.themeDark')}</span>
+                  </button>
+                  <button
+                    onClick={() => switchTheme('light')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      theme === 'light'
+                        ? 'bg-teal-500 text-slate-950 shadow-sm'
+                        : 'text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <Sun className="w-3.5 h-3.5" />
+                    <span>{t('settings.themeLight')}</span>
+                  </button>
+                  <button
+                    onClick={() => switchTheme('system')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      theme === 'system'
+                        ? 'bg-teal-500 text-slate-950 shadow-sm'
+                        : 'text-slate-300 hover:text-slate-100'
+                    }`}
+                  >
+                    <Monitor className="w-3.5 h-3.5" />
+                    <span>{t('settings.themeSystem')}</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Startup Toggle */}
               <div className="flex items-center justify-between py-3 border-t border-slate-800/80">
                 <div>

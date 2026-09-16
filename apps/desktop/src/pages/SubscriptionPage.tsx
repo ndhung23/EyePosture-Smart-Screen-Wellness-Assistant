@@ -4,11 +4,22 @@ import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
 
 export const SubscriptionPage: React.FC = () => {
-  const { subscriptionTier, upgradeToPro } = useApp();
+  const { subscriptionTier, upgradeToPro, currentUser, authToken, openAuthModal, syncEntitlements } = useApp();
   const [isUpgrading, setIsUpgrading] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
   const [selectedPlan, setSelectedPlan] = useState<'PRO_MONTH' | 'PRO_YEAR' | 'FAMILY_MONTH'>('PRO_MONTH');
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [activeOrder, setActiveOrder] = useState<{
+    orderCode: string;
+    qrUrl: string;
+    amount: number;
+    transferContent: string;
+    accountNumber: string;
+    bankName: string;
+    accountHolder: string;
+  } | null>(null);
+  const [isLoadingOrder, setIsLoadingOrder] = useState<boolean>(false);
+  const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
 
   const planDetails = {
     PRO_MONTH: {
@@ -36,7 +47,7 @@ export const SubscriptionPage: React.FC = () => {
   const bankAccountName = ((import.meta as any).env?.PAYMENT_BANK_ACCOUNT_NAME as string) || 'NGUYEN DUY HUNG';
 
   const currentPlanInfo = planDetails[selectedPlan];
-  const qrUrl = `https://qr.sepay.vn/img?acc=${bankAccount}&bank=${bankCode}&amount=${currentPlanInfo.amountVnd}&des=${encodeURIComponent(
+  const fallbackQrUrl = `https://qr.sepay.vn/img?acc=${bankAccount}&bank=${bankCode}&amount=${currentPlanInfo.amountVnd}&des=${encodeURIComponent(
     currentPlanInfo.content
   )}`;
 
@@ -45,6 +56,89 @@ export const SubscriptionPage: React.FC = () => {
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   };
+
+  const handleSelectPlan = async (plan: 'PRO_MONTH' | 'PRO_YEAR' | 'FAMILY_MONTH') => {
+    setSelectedPlan(plan);
+    if (!currentUser || !authToken) {
+      openAuthModal('login');
+      return;
+    }
+
+    setShowQrModal(true);
+    setIsLoadingOrder(true);
+    setPaymentSuccess(false);
+
+    try {
+      const tier = plan === 'FAMILY_MONTH' ? 'FAMILY' : 'PRO';
+      const interval = plan === 'PRO_YEAR' ? 'year' : 'month';
+
+      const res = await fetch('http://localhost:8080/api/v1/subscription/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ provider: 'sepay', tier, interval }),
+      }).catch(() =>
+        fetch('https://eyeposture.vercel.app/api/v1/subscription/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ provider: 'sepay', tier, interval }),
+        })
+      );
+
+      if (res && res.ok) {
+        const orderData = await res.json();
+        setActiveOrder(orderData);
+      }
+    } catch (err) {
+      console.warn('Failed to create order:', err);
+    } finally {
+      setIsLoadingOrder(false);
+    }
+  };
+
+  // Realtime Auto-Polling for SePay payment confirmation
+  React.useEffect(() => {
+    if (!showQrModal || !activeOrder?.orderCode || paymentSuccess) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const fingerprint = localStorage.getItem('eyeposture_device_fingerprint') || 'desktop_device';
+        const endpoints = [
+          `http://localhost:8080/api/v1/orders/${activeOrder.orderCode}/status?deviceId=${encodeURIComponent(fingerprint)}`,
+          `https://eyeposture.vercel.app/api/v1/orders/${activeOrder.orderCode}/status?deviceId=${encodeURIComponent(fingerprint)}`,
+        ];
+
+        let pollRes;
+        for (const ep of endpoints) {
+          try {
+            pollRes = await fetch(ep);
+            if (pollRes.ok) break;
+          } catch {}
+        }
+
+        if (pollRes && pollRes.ok) {
+          const pollData = await pollRes.json();
+          if (pollData.status === 'PAID') {
+            setPaymentSuccess(true);
+            await syncEntitlements();
+            setTimeout(() => {
+              setShowQrModal(false);
+              setPaymentSuccess(false);
+            }, 3000);
+          }
+        }
+      } catch (err) {
+        console.warn('Polling check error:', err);
+      }
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [showQrModal, activeOrder?.orderCode, paymentSuccess]);
 
   const handleSimulateWebhookSuccess = async () => {
     setIsUpgrading(true);

@@ -19,10 +19,10 @@ export class SePayBillingProvider implements IBillingProvider {
   private config: SePayConfig;
 
   // Standard plan pricing in VND
-  public static readonly PRICES_VND: Record<SubscriptionTier, { month: number; year: number }> = {
-    FREE: { month: 0, year: 0 },
-    PRO: { month: 59000, year: 499000 },
-    FAMILY: { month: 99000, year: 899000 },
+  public static readonly PRICES_VND: Record<SubscriptionTier, { month: number; year: number; lifetime?: number }> = {
+    FREE: { month: 0, year: 0, lifetime: 0 },
+    PRO: { month: 30000, year: 199000, lifetime: 300000 },
+    FAMILY: { month: 50000, year: 300000, lifetime: 300000 },
   };
 
   constructor(config?: Partial<SePayConfig>) {
@@ -76,11 +76,22 @@ export class SePayBillingProvider implements IBillingProvider {
   public createQrPayment(options: {
     userId: string;
     tier?: SubscriptionTier;
-    interval?: 'month' | 'year';
+    interval?: 'month' | 'year' | 'lifetime';
+    customAmount?: number;
+    deviceCount?: 1 | 3;
   }): SePayQrResult {
     const tier = options.tier || 'PRO';
     const interval = options.interval || 'month';
-    const amount = SePayBillingProvider.PRICES_VND[tier]?.[interval] ?? 59000;
+    let amount = options.customAmount;
+    if (amount === undefined) {
+      if (tier === 'FAMILY' || options.deviceCount === 3) {
+        amount = interval === 'year' ? 300000 : 50000;
+      } else {
+        if (interval === 'lifetime') amount = 300000;
+        else if (interval === 'year') amount = 199000;
+        else amount = 30000;
+      }
+    }
     const orderCode = `ORD${Date.now().toString().slice(-6)}`;
     const transferContent = `${this.config.transferPrefix} ${options.userId} ${orderCode}`;
 

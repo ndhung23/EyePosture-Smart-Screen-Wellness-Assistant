@@ -9,7 +9,7 @@ import {
 export interface CheckoutSessionOptions {
   userId: string;
   tier: SubscriptionTier;
-  interval: 'month' | 'year';
+  interval: 'month' | 'year' | 'lifetime';
   successUrl: string;
   cancelUrl: string;
 }

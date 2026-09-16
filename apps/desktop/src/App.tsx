@@ -4,6 +4,7 @@ import { Sidebar, NavPage } from './components/Sidebar.js';
 import { Header } from './components/Header.js';
 import { BreakModal } from './components/BreakModal.js';
 import { PasswordPromptModal } from './components/PasswordPromptModal.js';
+import { AuthModal } from './components/AuthModal.js';
 import { PerformancePanel } from './components/PerformancePanel.js';
 
 import { DashboardPage } from './pages/DashboardPage.js';
@@ -73,7 +74,7 @@ const MainContent: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 transition-colors duration-200">
       {/* Sidebar Navigation */}
       <Sidebar currentPage={currentPage} onSelectPage={setCurrentPage} />
 
@@ -88,6 +89,7 @@ const MainContent: React.FC = () => {
       {/* Modals & Overlays */}
       <BreakModal />
       <PasswordPromptModal />
+      <AuthModal />
       <PerformancePanel />
     </div>
   );

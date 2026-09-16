@@ -1,5 +1,4 @@
-import React from 'react';
-import { Power, Coffee, Droplets, BatteryCharging, Battery, AlertCircle, X, Sun, Moon } from 'lucide-react';
+import { Power, Coffee, Droplets, BatteryCharging, Battery, AlertCircle, X, Sun, Moon, User as UserIcon, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
 
@@ -16,6 +15,9 @@ export const Header: React.FC = () => {
     theme,
     effectiveTheme,
     switchTheme,
+    currentUser,
+    openAuthModal,
+    logout,
   } = useApp();
 
   return (
@@ -83,6 +85,29 @@ export const Header: React.FC = () => {
               </>
             )}
           </button>
+
+          {/* User Account / Login Button */}
+          {currentUser ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-teal-500/40 text-xs text-slate-200">
+              <UserIcon className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+              <span className="font-semibold max-w-[110px] truncate">{currentUser.name}</span>
+              <button
+                onClick={logout}
+                title="Đăng xuất"
+                className="text-slate-400 hover:text-rose-400 transition-colors ml-1 p-0.5"
+              >
+                <LogOut className="w-3 h-3" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => openAuthModal('login')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/40 text-xs font-semibold text-teal-300 transition-all active:scale-95"
+            >
+              <UserIcon className="w-3.5 h-3.5" />
+              <span>Đăng nhập</span>
+            </button>
+          )}
 
           {/* Monitoring Active / Pause Toggle Button */}
           <button

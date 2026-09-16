@@ -34,6 +34,16 @@ interface AppContextValue {
   theme: AppTheme;
   effectiveTheme: 'dark' | 'light';
   switchTheme: (theme: AppTheme) => void;
+  currentUser: { id: string; email: string; name: string } | null;
+  authToken: string | null;
+  authModalOpen: boolean;
+  authModalMode: 'login' | 'register';
+  openAuthModal: (mode?: 'login' | 'register') => void;
+  closeAuthModal: () => void;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  registerUser: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+  syncEntitlements: (overrideToken?: string) => Promise<void>;
   activeProfile: Profile | null;
   profiles: Profile[];
   switchProfile: (profileId: string) => void;
@@ -103,6 +113,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     action: 'PAUSE_MONITORING' | 'QUIT_APP';
     onSuccess?: () => void;
   } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string } | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
 
   const applyThemeToDOM = (resolvedTheme: 'dark' | 'light') => {
     if (typeof document === 'undefined') return;
@@ -626,6 +640,120 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const openAuthModal = (mode: 'login' | 'register' = 'login') => {
+    setAuthModalMode(mode);
+    setAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setAuthModalOpen(false);
+  };
+
+  const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
+    const bases = ['http://localhost:8080', 'https://eyeposture.vercel.app'];
+    let lastErr;
+    for (const base of bases) {
+      try {
+        const res = await fetch(`${base}${endpoint}`, options);
+        return res;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error('Network error');
+  };
+
+  const syncEntitlements = async (overrideToken?: string) => {
+    const token = overrideToken || authToken;
+    if (!token) return;
+    try {
+      const fingerprint = localStorage.getItem('eyeposture_device_fingerprint') || 'desktop_device';
+      const res = await apiFetch(`/api/v1/entitlements?deviceId=${encodeURIComponent(fingerprint)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const body = await res.json();
+        if (body.payload?.tier) {
+          setSubscriptionTier(body.payload.tier);
+          if (reposRef.current.licenseRepo) {
+            reposRef.current.licenseRepo.saveCachedLicense(
+              body.entitlementToken,
+              'cloud_signature',
+              body.payload.expiresAt,
+              body.payload.tier,
+              body.payload.features || PRO_FEATURES
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Sync entitlements failed:', err);
+    }
+  };
+
+  const login = async (email: string, password: string) => {
+    try {
+      const res = await apiFetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'Đăng nhập không thành công' };
+      }
+      setAuthToken(data.token);
+      setCurrentUser(data.user);
+      localStorage.setItem('eyeposture_auth_token', data.token);
+      localStorage.setItem('eyeposture_auth_user', JSON.stringify(data.user));
+      await syncEntitlements(data.token);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Lỗi kết nối máy chủ' };
+    }
+  };
+
+  const registerUser = async (email: string, password: string, name: string) => {
+    try {
+      const res = await apiFetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'Đăng ký không thành công' };
+      }
+      setAuthToken(data.token);
+      setCurrentUser(data.user);
+      localStorage.setItem('eyeposture_auth_token', data.token);
+      localStorage.setItem('eyeposture_auth_user', JSON.stringify(data.user));
+      await syncEntitlements(data.token);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Lỗi kết nối máy chủ' };
+    }
+  };
+
+  const logout = () => {
+    setAuthToken(null);
+    setCurrentUser(null);
+    localStorage.removeItem('eyeposture_auth_token');
+    localStorage.removeItem('eyeposture_auth_user');
+  };
+
+  useEffect(() => {
+    try {
+      const savedToken = localStorage.getItem('eyeposture_auth_token');
+      const savedUser = localStorage.getItem('eyeposture_auth_user');
+      if (savedToken && savedUser) {
+        setAuthToken(savedToken);
+        setCurrentUser(JSON.parse(savedUser));
+        syncEntitlements(savedToken);
+      }
+    } catch {}
+  }, []);
+
   const upgradeToPro = async () => {
     setSubscriptionTier('PRO');
     if (reposRef.current.licenseRepo) {
@@ -674,6 +802,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         theme,
         effectiveTheme,
         switchTheme,
+        currentUser,
+        authToken,
+        authModalOpen,
+        authModalMode,
+        openAuthModal,
+        closeAuthModal,
+        login,
+        registerUser,
+        logout,
+        syncEntitlements,
         activeProfile,
         profiles,
         switchProfile,

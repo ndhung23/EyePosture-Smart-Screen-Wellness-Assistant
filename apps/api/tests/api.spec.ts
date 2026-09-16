@@ -114,10 +114,11 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
 
   it('should process SePay VietQR checkout and automated bank webhook', async () => {
     // 1. Register a new user
+    const sepayEmail = `sepay_${Date.now()}@example.com`;
     const regRes = await fetch(`${baseUrl}/api/v1/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'sepay_user@example.com', password: 'password123', name: 'SePay User' }),
+      body: JSON.stringify({ email: sepayEmail, password: 'password123', name: 'SePay User' }),
     });
     const { token, user } = await regRes.json();
 
@@ -138,8 +139,16 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
     const checkoutBody = await checkoutRes.json();
     expect(checkoutBody.provider).toBe('sepay');
     expect(checkoutBody.qrUrl).toContain('https://qr.sepay.vn/img?');
-    expect(checkoutBody.amount).toBe(59000);
+    expect(checkoutBody.amount).toBe(30000);
     expect(checkoutBody.transferContent).toContain(user.id);
+
+    // Verify polling status before payment
+    if (checkoutBody.orderCode) {
+      const statusBefore = await fetch(`${baseUrl}/api/v1/orders/${checkoutBody.orderCode}/status`);
+      expect(statusBefore.status).toBe(200);
+      const bodyBefore = await statusBefore.json();
+      expect(bodyBefore.status).toBe('PENDING');
+    }
 
     // 3. Reject SePay webhook without valid API key
     const unauthRes = await fetch(`${baseUrl}/api/v1/webhooks/sepay`, {
@@ -148,7 +157,7 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
         'Content-Type': 'application/json',
         Authorization: 'Apikey invalid_key',
       },
-      body: JSON.stringify({ id: 12345, content: `EYEPOSTURE ${user.id}`, transferType: 'in', transferAmount: 59000 }),
+      body: JSON.stringify({ id: 12345, content: `EYEPOSTURE ${user.id}`, transferType: 'in', transferAmount: 30000 }),
     });
     expect(unauthRes.status).toBe(401);
 
@@ -168,7 +177,7 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
         code: null,
         content: `EYEPOSTURE ${user.id} ORD123`,
         transferType: 'in',
-        transferAmount: 59000,
+        transferAmount: 30000,
         accumulated: 1000000,
         referenceCode: `MB.${txId}`,
         description: 'Chuyen khoan nang cap Pro',
@@ -200,7 +209,7 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
         id: txId,
         content: `EYEPOSTURE ${user.id} ORD123`,
         transferType: 'in',
-        transferAmount: 59000,
+        transferAmount: 30000,
       }),
     });
     expect(dupRes.status).toBe(200);
@@ -210,10 +219,11 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
 
   it('should manage devices, enforce seat limits, and allow admin to block and unblock machines and accounts', async () => {
     // 1. Register a user
+    const devEmail = `dev_mgmt_${Date.now()}@example.com`;
     const regRes = await fetch(`${baseUrl}/api/v1/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'device_mgmt@example.com', password: 'Password123!', name: 'Device Manager' }),
+      body: JSON.stringify({ email: devEmail, password: 'Password123!', name: 'Device Manager' }),
     });
     const { token, user } = await regRes.json();
 
@@ -290,7 +300,7 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
     const blockedLoginRes = await fetch(`${baseUrl}/api/v1/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'device_mgmt@example.com', password: 'Password123!' }),
+      body: JSON.stringify({ email: devEmail, password: 'Password123!' }),
     });
     expect(blockedLoginRes.status).toBe(403);
 
@@ -306,7 +316,7 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
     const unblockedLoginRes = await fetch(`${baseUrl}/api/v1/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'device_mgmt@example.com', password: 'Password123!' }),
+      body: JSON.stringify({ email: devEmail, password: 'Password123!' }),
     });
     expect(unblockedLoginRes.status).toBe(200);
 
