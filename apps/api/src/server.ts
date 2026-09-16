@@ -2,6 +2,7 @@ import * as http from 'http';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import {
   User,
   Device,
@@ -105,6 +106,41 @@ export class EyePostureApiServer {
         process.env.PAYMENT_BANK_ACCOUNT_NAME ??
         process.env.SEPAY_ACCOUNT_HOLDER,
     });
+
+    this.loadPersistedDevices();
+  }
+
+  private loadPersistedDevices(): void {
+    try {
+      const candidates = [
+        path.join(process.cwd(), 'data/devices.json'),
+        '/tmp/eyeposture_devices.json',
+        path.join(os.tmpdir(), 'eyeposture_devices.json'),
+      ];
+      for (const p of candidates) {
+        if (fs.existsSync(p)) {
+          const list = JSON.parse(fs.readFileSync(p, 'utf8'));
+          if (Array.isArray(list)) {
+            for (const d of list) {
+              if (d && d.id) this.devices.set(d.id, d);
+            }
+          }
+          break;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  private savePersistedDevices(): void {
+    try {
+      const list = Array.from(this.devices.values());
+      const target = process.env.VERCEL ? '/tmp/eyeposture_devices.json' : path.join(os.tmpdir(), 'eyeposture_devices.json');
+      fs.writeFileSync(target, JSON.stringify(list, null, 2), 'utf8');
+    } catch {
+      // ignore
+    }
   }
 
   // --- Auth Utilities ---
@@ -366,6 +402,58 @@ export class EyePostureApiServer {
         (d) => d.userId === authResult.userId
       );
       this.sendJson(res, 200, { devices: userDevices });
+      return;
+    }
+
+    // 4a. POST /api/v1/devices/telemetry (Automatic heartbeat & presence reporting from Desktop app)
+    if ((pathname === '/api/v1/devices/telemetry' || pathname === '/api/v1/devices/heartbeat') && method === 'POST') {
+      const body = await this.parseBody(req);
+      const fingerprint = body.deviceFingerprint || body.fingerprint || 'win_anon_pc';
+      const deviceName = body.deviceName || body.name || 'Desktop PC';
+      const deviceOs = body.os || 'Windows 11';
+      const appVersion = body.appVersion || '1.0.0';
+
+      let existing = Array.from(this.devices.values()).find(
+        (d) => d.deviceFingerprint === fingerprint
+      );
+
+      if (existing) {
+        existing.lastActiveAt = new Date().toISOString();
+        if (deviceName) existing.deviceName = deviceName;
+        if (deviceOs) existing.os = deviceOs;
+        if (appVersion) existing.appVersion = appVersion;
+        existing.status = existing.isBlocked ? 'BLOCKED' : 'ACTIVE';
+        this.savePersistedDevices();
+        this.sendJson(res, 200, {
+          success: true,
+          status: existing.status,
+          isBlocked: Boolean(existing.isBlocked),
+          device: existing,
+        });
+        return;
+      }
+
+      const id = crypto.randomUUID();
+      const newDev: Device = {
+        id,
+        userId: body.userId || `device_${fingerprint.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8)}`,
+        deviceFingerprint: fingerprint,
+        deviceName,
+        os: deviceOs,
+        appVersion,
+        status: 'ACTIVE',
+        isBlocked: false,
+        lastActiveAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+      this.devices.set(id, newDev);
+      this.savePersistedDevices();
+      this.sendJson(res, 201, {
+        success: true,
+        status: 'ACTIVE',
+        isBlocked: false,
+        device: newDev,
+      });
       return;
     }
 
@@ -642,8 +730,8 @@ export class EyePostureApiServer {
         return {
           id: d.id,
           userId: d.userId,
-          userEmail: u?.email || 'unknown',
-          userName: u?.name || 'unknown',
+          userEmail: u?.email || `${d.deviceName || 'Máy Desktop'} (Client)`,
+          userName: u?.name || 'Máy Khách Desktop',
           deviceName: d.deviceName,
           deviceFingerprint: d.deviceFingerprint,
           os: d.os,
@@ -692,6 +780,7 @@ export class EyePostureApiServer {
       }
       target.isBlocked = true;
       target.status = 'BLOCKED';
+      this.savePersistedDevices();
       this.sendJson(res, 200, { success: true, message: 'Device blocked successfully', device: target });
       return;
     }
@@ -709,6 +798,7 @@ export class EyePostureApiServer {
       }
       target.isBlocked = false;
       target.status = 'ACTIVE';
+      this.savePersistedDevices();
       this.sendJson(res, 200, { success: true, message: 'Device unblocked successfully', device: target });
       return;
     }

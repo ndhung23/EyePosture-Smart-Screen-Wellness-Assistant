@@ -1,6 +1,10 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, powerMonitor, Notification, session } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
+import https from 'https';
+import http from 'http';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -222,11 +226,104 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   setupPowerMonitoring();
+  setupDeviceTelemetry();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
+
+// Device Telemetry & Cloud Presence Heartbeat
+function getOrCreateDeviceFingerprint(): string {
+  try {
+    const userData = app.getPath('userData');
+    const idFile = path.join(userData, 'device-fingerprint.txt');
+    if (fs.existsSync(idFile)) {
+      const saved = fs.readFileSync(idFile, 'utf8').trim();
+      if (saved) return saved;
+    }
+    const cleanHost = (os.hostname() || 'pc').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const newId = `win_${cleanHost}_${crypto.randomUUID().slice(0, 8)}`;
+    fs.mkdirSync(userData, { recursive: true });
+    fs.writeFileSync(idFile, newId, 'utf8');
+    return newId;
+  } catch {
+    return `win_${(os.hostname() || 'pc').toLowerCase()}`;
+  }
+}
+
+function sendDeviceTelemetry() {
+  try {
+    const fingerprint = getOrCreateDeviceFingerprint();
+    const username = os.userInfo?.()?.username || 'User';
+    const payload = JSON.stringify({
+      deviceFingerprint: fingerprint,
+      deviceName: `${os.hostname()} (${username})`,
+      os: `${process.platform === 'win32' ? 'Windows' : process.platform} ${os.release()}`,
+      appVersion: app.getVersion() || '1.0.0',
+    });
+
+    const targets = [
+      process.env.EYEPOSTURE_API_URL || 'https://eyeposture.vercel.app',
+      'http://localhost:8080',
+    ];
+
+    for (const apiBase of targets) {
+      try {
+        const targetUrl = new URL('/api/v1/devices/telemetry', apiBase);
+        const client = targetUrl.protocol === 'https:' ? https : http;
+
+        const req = client.request(
+          targetUrl,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(payload),
+            },
+            timeout: 6000,
+          },
+          (res) => {
+            let data = '';
+            res.on('data', (chunk) => (data += chunk));
+            res.on('end', () => {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.isBlocked) {
+                  console.warn('[Telemetry] This device is blocked by administrator');
+                  if (Notification.isSupported()) {
+                    new Notification({
+                      title: 'EyePosture - Thông Báo Quản Trị',
+                      body: 'Thiết bị của bạn đang bị khóa bởi quản trị viên hệ thống.',
+                    }).show();
+                  }
+                }
+              } catch {}
+            });
+          }
+        );
+
+        req.on('error', () => {
+          // Ignore offline/unreachable servers
+        });
+        req.write(payload);
+        req.end();
+      } catch {}
+    }
+  } catch {
+    // Silently ignore
+  }
+}
+
+function setupDeviceTelemetry() {
+  setTimeout(() => {
+    sendDeviceTelemetry();
+  }, 3000);
+
+  setInterval(() => {
+    sendDeviceTelemetry();
+  }, 5 * 60 * 1000);
+}
 
 app.on('before-quit', () => {
   isQuitting = true;

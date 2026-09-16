@@ -1716,7 +1716,7 @@ function handleServerless(req, res) {
   }
   return serverlessInstance.handleRequest(req, res);
 }
-var http, crypto2, fs, path, import_billing, EyePostureApiServer, serverlessInstance, modRef, server_default;
+var http, crypto2, fs, path, os, import_billing, EyePostureApiServer, serverlessInstance, modRef, server_default;
 var init_server = __esm({
   "apps/api/src/server.ts"() {
     "use strict";
@@ -1724,6 +1724,7 @@ var init_server = __esm({
     crypto2 = __toESM(require("crypto"));
     fs = __toESM(require("fs"));
     path = __toESM(require("path"));
+    os = __toESM(require("os"));
     import_billing = __toESM(require_dist());
     init_dashboard_html();
     loadEnvFile();
@@ -1752,6 +1753,36 @@ var init_server = __esm({
           bankName: config.sepayBankName ?? process.env.PAYMENT_BANK_CODE ?? process.env.SEPAY_BANK_NAME,
           accountHolder: process.env.PAYMENT_BANK_ACCOUNT_NAME ?? process.env.SEPAY_ACCOUNT_HOLDER
         });
+        this.loadPersistedDevices();
+      }
+      loadPersistedDevices() {
+        try {
+          const candidates = [
+            path.join(process.cwd(), "data/devices.json"),
+            "/tmp/eyeposture_devices.json",
+            path.join(os.tmpdir(), "eyeposture_devices.json")
+          ];
+          for (const p of candidates) {
+            if (fs.existsSync(p)) {
+              const list = JSON.parse(fs.readFileSync(p, "utf8"));
+              if (Array.isArray(list)) {
+                for (const d of list) {
+                  if (d && d.id) this.devices.set(d.id, d);
+                }
+              }
+              break;
+            }
+          }
+        } catch {
+        }
+      }
+      savePersistedDevices() {
+        try {
+          const list = Array.from(this.devices.values());
+          const target = process.env.VERCEL ? "/tmp/eyeposture_devices.json" : path.join(os.tmpdir(), "eyeposture_devices.json");
+          fs.writeFileSync(target, JSON.stringify(list, null, 2), "utf8");
+        } catch {
+        }
       }
       // --- Auth Utilities ---
       hashPassword(password, salt) {
@@ -1970,6 +2001,53 @@ var init_server = __esm({
             (d) => d.userId === authResult.userId
           );
           this.sendJson(res, 200, { devices: userDevices });
+          return;
+        }
+        if ((pathname === "/api/v1/devices/telemetry" || pathname === "/api/v1/devices/heartbeat") && method === "POST") {
+          const body = await this.parseBody(req);
+          const fingerprint = body.deviceFingerprint || body.fingerprint || "win_anon_pc";
+          const deviceName = body.deviceName || body.name || "Desktop PC";
+          const deviceOs = body.os || "Windows 11";
+          const appVersion = body.appVersion || "1.0.0";
+          let existing = Array.from(this.devices.values()).find(
+            (d) => d.deviceFingerprint === fingerprint
+          );
+          if (existing) {
+            existing.lastActiveAt = (/* @__PURE__ */ new Date()).toISOString();
+            if (deviceName) existing.deviceName = deviceName;
+            if (deviceOs) existing.os = deviceOs;
+            if (appVersion) existing.appVersion = appVersion;
+            existing.status = existing.isBlocked ? "BLOCKED" : "ACTIVE";
+            this.savePersistedDevices();
+            this.sendJson(res, 200, {
+              success: true,
+              status: existing.status,
+              isBlocked: Boolean(existing.isBlocked),
+              device: existing
+            });
+            return;
+          }
+          const id = crypto2.randomUUID();
+          const newDev = {
+            id,
+            userId: body.userId || `device_${fingerprint.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8)}`,
+            deviceFingerprint: fingerprint,
+            deviceName,
+            os: deviceOs,
+            appVersion,
+            status: "ACTIVE",
+            isBlocked: false,
+            lastActiveAt: (/* @__PURE__ */ new Date()).toISOString(),
+            createdAt: (/* @__PURE__ */ new Date()).toISOString()
+          };
+          this.devices.set(id, newDev);
+          this.savePersistedDevices();
+          this.sendJson(res, 201, {
+            success: true,
+            status: "ACTIVE",
+            isBlocked: false,
+            device: newDev
+          });
           return;
         }
         if (pathname === "/api/v1/devices" && method === "POST") {
@@ -2193,8 +2271,8 @@ var init_server = __esm({
             return {
               id: d.id,
               userId: d.userId,
-              userEmail: u?.email || "unknown",
-              userName: u?.name || "unknown",
+              userEmail: u?.email || `${d.deviceName || "M\xE1y Desktop"} (Client)`,
+              userName: u?.name || "M\xE1y Kh\xE1ch Desktop",
               deviceName: d.deviceName,
               deviceFingerprint: d.deviceFingerprint,
               os: d.os,
@@ -2239,6 +2317,7 @@ var init_server = __esm({
           }
           target.isBlocked = true;
           target.status = "BLOCKED";
+          this.savePersistedDevices();
           this.sendJson(res, 200, { success: true, message: "Device blocked successfully", device: target });
           return;
         }
@@ -2254,6 +2333,7 @@ var init_server = __esm({
           }
           target.isBlocked = false;
           target.status = "ACTIVE";
+          this.savePersistedDevices();
           this.sendJson(res, 200, { success: true, message: "Device unblocked successfully", device: target });
           return;
         }
