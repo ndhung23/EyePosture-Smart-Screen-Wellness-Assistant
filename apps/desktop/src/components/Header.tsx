@@ -76,7 +76,7 @@ export const Header: React.FC = () => {
                 isMonitoring ? 'bg-teal-400 animate-pulse' : 'bg-rose-400'
               }`}
             />
-            <span>{isMonitoring ? 'Monitoring ON' : 'Monitoring OFF'}</span>
+            <span>{isMonitoring ? t('header.monitoringOn') : t('header.monitoringOff')}</span>
           </button>
         </div>
       </div>

@@ -63,7 +63,7 @@ export const ScreenTimePage: React.FC = () => {
       <div>
         <h2 className="font-display font-bold text-2xl text-slate-100">{t('screenTime.title')}</h2>
         <p className="text-sm text-slate-400 mt-1">
-          Monitor your cumulative daily display exposure and manage healthy boundaries.
+          {t('screenTime.subtitle')}
         </p>
       </div>
 
@@ -75,7 +75,9 @@ export const ScreenTimePage: React.FC = () => {
           </span>
           <div className="font-display text-4xl font-extrabold text-slate-100">
             {hoursUsed}h {minsUsed}m
-            <span className="text-base text-slate-400 font-normal font-sans ml-2">/ {limitHours}h daily limit</span>
+            <span className="text-base text-slate-400 font-normal font-sans ml-2">
+              {t('screenTime.dailyLimitLabel', { hours: limitHours })}
+            </span>
           </div>
 
           <p className="text-xs text-slate-400 leading-relaxed">
@@ -83,11 +85,11 @@ export const ScreenTimePage: React.FC = () => {
               ? t('screenTime.limitReached')
               : percent >= 80
               ? t('screenTime.approachingWarning', { percent })
-              : 'You are well within your daily screen time allocation.'}
+              : t('screenTime.withinLimit')}
           </p>
 
           <div className="pt-2 flex items-center gap-3">
-            <span className="text-xs text-slate-400">Adjust Daily Limit:</span>
+            <span className="text-xs text-slate-400">{t('screenTime.adjustLimit')}</span>
             <div className="flex items-center gap-1">
               {[4, 6, 8, 10].map((h) => (
                 <button
@@ -153,7 +155,7 @@ export const ScreenTimePage: React.FC = () => {
               <div key={app.process} className="space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-200 font-medium">{app.name}</span>
-                  <span className="text-slate-400 font-mono">{app.minutes} min</span>
+                  <span className="text-slate-400 font-mono">{app.minutes} {t('common.minutes')}</span>
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
                   <div
@@ -167,14 +169,14 @@ export const ScreenTimePage: React.FC = () => {
 
           <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-2 text-[11px] text-slate-400 mt-4">
             <ShieldCheck className="w-4 h-4 text-teal-400 shrink-0" />
-            <span>Only foreground window process titles are aggregated. No keystrokes or URLs are collected.</span>
+            <span>{t('screenTime.privacyShield')}</span>
           </div>
         </div>
 
         {/* Excluded Applications */}
         <div className="glass-card p-6 space-y-4">
           <h3 className="text-sm font-semibold text-slate-200">
-            Excluded Applications (Ignored from Limits)
+            {t('screenTime.excludedApps')}
           </h3>
 
           <div className="flex gap-2">
@@ -190,7 +192,7 @@ export const ScreenTimePage: React.FC = () => {
               className="px-3 py-1.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold text-xs flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Add</span>
+              <span>{t('common.add')}</span>
             </button>
           </div>
 

@@ -26,7 +26,7 @@ export const ProfilesPage: React.FC = () => {
         <div>
           <h2 className="font-display font-bold text-2xl text-slate-100">{t('profiles.title')}</h2>
           <p className="text-sm text-slate-400 mt-1">
-            Maintain isolated ergonomic baselines, reminder preferences, and screen limits for each family member.
+            {t('profiles.subtitle')}
           </p>
         </div>
         <button
@@ -63,26 +63,28 @@ export const ProfilesPage: React.FC = () => {
                   <div>
                     <h4 className="font-display font-bold text-base text-slate-100">{profile.name}</h4>
                     <span className="text-[11px] font-medium text-slate-400">
-                      {profile.isChild ? 'Child Profile' : 'Standard Profile'}
+                      {profile.isChild ? t('common.childProfile') : t('common.standardProfile')}
                     </span>
                   </div>
                 </div>
 
                 {isActive && (
                   <span className="flex items-center gap-1 text-[11px] font-bold text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded-full border border-teal-500/20">
-                    <Check className="w-3 h-3" /> Active
+                    <Check className="w-3 h-3" /> {t('common.active')}
                   </span>
                 )}
               </div>
 
               <div className="space-y-2 text-xs text-slate-400 border-t border-slate-800/80 pt-4">
                 <div className="flex justify-between">
-                  <span>Ergonomic Baseline</span>
-                  <span className="text-slate-200">Calibrated</span>
+                  <span>{t('profiles.baselineCalibrated')}</span>
+                  <span className="text-slate-200">{t('profiles.calibrated')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Parental Limits</span>
-                  <span className="text-slate-200">{profile.isChild ? 'Strict 2h' : 'Standard 6h'}</span>
+                  <span>{t('profiles.parentalLimits')}</span>
+                  <span className="text-slate-200">
+                    {profile.isChild ? t('profiles.strictLimit') : t('profiles.standardLimit')}
+                  </span>
                 </div>
               </div>
 
@@ -96,7 +98,7 @@ export const ProfilesPage: React.FC = () => {
                   </button>
                 ) : (
                   <div className="flex-1 py-2 text-center text-xs font-semibold text-teal-400 bg-teal-500/10 rounded-xl">
-                    Currently Selected
+                    {t('profiles.currentlySelected')}
                   </div>
                 )}
 
@@ -104,7 +106,7 @@ export const ProfilesPage: React.FC = () => {
                   <button
                     onClick={() => deleteProfile(profile.id)}
                     className="p-2 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-slate-800/60 transition-colors"
-                    title="Delete Profile"
+                    title={t('profiles.deleteProfileTooltip')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -124,12 +126,12 @@ export const ProfilesPage: React.FC = () => {
           >
             <div>
               <h3 className="font-display font-bold text-xl text-slate-100">{t('profiles.createProfile')}</h3>
-              <p className="text-xs text-slate-400 mt-1">Set up a customized ergonomic profile</p>
+              <p className="text-xs text-slate-400 mt-1">{t('profiles.modalSubtitle')}</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-slate-300 block mb-1.5">Profile Name</label>
+                <label className="text-xs font-medium text-slate-300 block mb-1.5">{t('profiles.profileNameLabel')}</label>
                 <input
                   type="text"
                   required
@@ -148,7 +150,7 @@ export const ProfilesPage: React.FC = () => {
                   className="mt-0.5 rounded bg-slate-700 border-slate-600 text-teal-500 focus:ring-0"
                 />
                 <div>
-                  <span className="text-xs font-semibold text-slate-200 block">Child Profile</span>
+                  <span className="text-xs font-semibold text-slate-200 block">{t('common.childProfile')}</span>
                   <span className="text-[11px] text-slate-400 leading-relaxed block mt-0.5">
                     {t('profiles.childProfile')}
                   </span>
@@ -162,13 +164,13 @@ export const ProfilesPage: React.FC = () => {
                 onClick={() => setIsCreating(false)}
                 className="flex-1 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-300"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 className="flex-1 py-2.5 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25"
               >
-                Create Profile
+                {t('profiles.createProfile')}
               </button>
             </div>
           </form>

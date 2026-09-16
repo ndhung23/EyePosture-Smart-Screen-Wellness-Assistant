@@ -39,7 +39,7 @@ export const PrivacyPage: React.FC = () => {
       <div>
         <h2 className="font-display font-bold text-2xl text-slate-100">{t('privacy.title')}</h2>
         <p className="text-sm text-slate-400 mt-1">
-          Our core architecture is built around local-first processing, ensuring zero biometric surveillance.
+          {t('privacy.subtitle')}
         </p>
       </div>
 
@@ -82,13 +82,13 @@ export const PrivacyPage: React.FC = () => {
           </div>
           <div className="space-y-1">
             <h3 className="font-display font-bold text-base text-slate-100">
-              What Is Strictly Never Collected
+              {t('privacy.neverCollectedTitle')}
             </h3>
             <ul className="text-xs text-slate-300 space-y-1 list-disc pl-4 pt-1">
-              <li>No video recordings or webcam photos</li>
-              <li>No keystrokes, clipboard, or input logging</li>
-              <li>No website URLs or browsing contents</li>
-              <li>No microphone or audio recordings</li>
+              <li>{t('privacy.noVideo')}</li>
+              <li>{t('privacy.noKeystrokes')}</li>
+              <li>{t('privacy.noUrls')}</li>
+              <li>{t('privacy.noMic')}</li>
             </ul>
           </div>
         </div>
@@ -96,9 +96,9 @@ export const PrivacyPage: React.FC = () => {
 
       {/* Data Management Actions */}
       <div className="glass-card p-6 space-y-4 border-slate-800">
-        <h3 className="text-sm font-semibold text-slate-200">Local Data Controls</h3>
+        <h3 className="text-sm font-semibold text-slate-200">{t('privacy.controlsTitle')}</h3>
         <p className="text-xs text-slate-400">
-          You have complete sovereignty over your local database records.
+          {t('privacy.controlsDesc')}
         </p>
 
         <div className="flex flex-wrap items-center gap-4 pt-2">
@@ -122,7 +122,7 @@ export const PrivacyPage: React.FC = () => {
         {clearedMessage && (
           <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
             <ShieldCheck className="w-4 h-4" />
-            <span>All local posture, distance, and daily statistics records have been purged.</span>
+            <span>{t('privacy.clearedNotice')}</span>
           </div>
         )}
       </div>

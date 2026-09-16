@@ -22,7 +22,7 @@ export const StatisticsPage: React.FC = () => {
       <div>
         <h2 className="font-display font-bold text-2xl text-slate-100">{t('nav.statistics')}</h2>
         <p className="text-sm text-slate-400 mt-1">
-          Historical habit patterns and ergonomic consistency trends.
+          {t('statistics.subtitle')}
         </p>
       </div>
 
@@ -30,36 +30,36 @@ export const StatisticsPage: React.FC = () => {
       <div className="p-4 rounded-2xl bg-slate-800/40 border border-slate-700/60 flex items-center gap-3">
         <Info className="w-5 h-5 text-teal-400 shrink-0" />
         <p className="text-xs text-slate-300 leading-relaxed">
-          The <b>Screen Wellness Score</b> is an application-generated habit metric designed to encourage ergonomic posture and regular rest intervals. It is not a medical measurement or diagnosis.
+          {t('statistics.disclaimer')}
         </p>
       </div>
 
       {/* Highlights Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="glass-card p-5 space-y-2">
-          <span className="text-xs text-slate-400 uppercase font-semibold">Weekly Average Score</span>
+          <span className="text-xs text-slate-400 uppercase font-semibold">{t('statistics.weeklyAverage')}</span>
           <p className="font-display text-3xl font-extrabold text-teal-400">89%</p>
           <span className="text-[11px] text-emerald-400 flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5" /> +4% from last week
+            <TrendingUp className="w-3.5 h-3.5" /> {t('statistics.fromLastWeek')}
           </span>
         </div>
 
         <div className="glass-card p-5 space-y-2">
-          <span className="text-xs text-slate-400 uppercase font-semibold">Eye Breaks Completed</span>
+          <span className="text-xs text-slate-400 uppercase font-semibold">{t('statistics.breaksCompletedCount')}</span>
           <p className="font-display text-3xl font-extrabold text-indigo-400">28</p>
-          <span className="text-[11px] text-slate-400">92% compliance rate</span>
+          <span className="text-[11px] text-slate-400">{t('statistics.complianceRate')}</span>
         </div>
 
         <div className="glass-card p-5 space-y-2">
-          <span className="text-xs text-slate-400 uppercase font-semibold">Posture Interventions</span>
+          <span className="text-xs text-slate-400 uppercase font-semibold">{t('statistics.postureInterventions')}</span>
           <p className="font-display text-3xl font-extrabold text-amber-400">12</p>
-          <span className="text-[11px] text-emerald-400">-30% fewer slouch events</span>
+          <span className="text-[11px] text-emerald-400">{t('statistics.fewerSlouch')}</span>
         </div>
 
         <div className="glass-card p-5 space-y-2">
-          <span className="text-xs text-slate-400 uppercase font-semibold">Total Hydration</span>
+          <span className="text-xs text-slate-400 uppercase font-semibold">{t('statistics.totalHydration')}</span>
           <p className="font-display text-3xl font-extrabold text-cyan-400">38</p>
-          <span className="text-[11px] text-slate-400">Glasses logged this week</span>
+          <span className="text-[11px] text-slate-400">{t('statistics.glassesThisWeek')}</span>
         </div>
       </div>
 
@@ -67,11 +67,11 @@ export const StatisticsPage: React.FC = () => {
       <div className="glass-card p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-slate-200">Weekly Screen Wellness Score Trend</h3>
-            <p className="text-xs text-slate-400">Scores reflect break regularity and posture alignment</p>
+            <h3 className="text-sm font-semibold text-slate-200">{t('statistics.weeklyTrendTitle')}</h3>
+            <p className="text-xs text-slate-400">{t('statistics.weeklyTrendSubtitle')}</p>
           </div>
           <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-teal-500/10 text-teal-300 border border-teal-500/30">
-            Last 7 Days
+            {t('statistics.last7Days')}
           </span>
         </div>
 

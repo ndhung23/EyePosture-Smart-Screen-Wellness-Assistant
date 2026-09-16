@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Activity, ChevronDown, ChevronUp, Cpu, HardDrive, Zap, Eye } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
+import { t } from '@eyeposture/i18n';
 
 export const PerformancePanel: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -14,7 +15,7 @@ export const PerformancePanel: React.FC = () => {
       >
         <div className="flex items-center gap-2">
           <Activity className="w-3.5 h-3.5 text-teal-400" />
-          <span className="font-semibold text-slate-300">Dev Diagnostics</span>
+          <span className="font-semibold text-slate-300">{t('diagnostics.title')}</span>
         </div>
         <div className="flex items-center gap-2 text-[11px] text-slate-400">
           <span className="px-1.5 py-0.5 rounded bg-slate-800 text-teal-300 font-mono">
@@ -31,38 +32,38 @@ export const PerformancePanel: React.FC = () => {
         <div className="p-4 border-t border-slate-800 space-y-3 bg-slate-950/60 w-80">
           <div className="flex items-center justify-between text-slate-300">
             <span className="flex items-center gap-1.5 text-slate-400">
-              <Zap className="w-3 h-3 text-amber-400" /> Resource Governor
+              <Zap className="w-3 h-3 text-amber-400" /> {t('diagnostics.resourceGovernor')}
             </span>
             <span className="font-mono font-semibold text-teal-300">{governorStatus.mode}</span>
           </div>
 
           <div className="flex items-center justify-between text-slate-300">
             <span className="flex items-center gap-1.5 text-slate-400">
-              <Cpu className="w-3 h-3 text-indigo-400" /> System Load
+              <Cpu className="w-3 h-3 text-indigo-400" /> {t('diagnostics.systemLoad')}
             </span>
             <span className="font-mono text-slate-200">{governorStatus.cpuLoadPercent}% CPU</span>
           </div>
 
           <div className="flex items-center justify-between text-slate-300">
             <span className="flex items-center gap-1.5 text-slate-400">
-              <Eye className="w-3 h-3 text-cyan-400" /> CV Inference FPS
+              <Eye className="w-3 h-3 text-cyan-400" /> {t('diagnostics.cvFps')}
             </span>
             <span className="font-mono text-teal-400 font-bold">{governorStatus.targetFps} FPS</span>
           </div>
 
           <div className="flex items-center justify-between text-slate-300">
             <span className="flex items-center gap-1.5 text-slate-400">
-              <HardDrive className="w-3 h-3 text-emerald-400" /> In-Memory SQLite
+              <HardDrive className="w-3 h-3 text-emerald-400" /> {t('diagnostics.sqliteState')}
             </span>
             <span className="font-mono text-emerald-400 font-medium">OK (0.8ms avg)</span>
           </div>
 
           <div className="flex items-center justify-between text-slate-300 pt-2 border-t border-slate-800/80">
-            <span className="text-[10px] text-slate-500">Distance Ratio</span>
+            <span className="text-[10px] text-slate-500">{t('diagnostics.distanceRatio')}</span>
             <span className="font-mono text-[11px] text-slate-300">{liveAnalysis.distanceRatio}x</span>
           </div>
           <div className="flex items-center justify-between text-slate-300">
-            <span className="text-[10px] text-slate-500">Posture Score</span>
+            <span className="text-[10px] text-slate-500">{t('diagnostics.postureScore')}</span>
             <span className="font-mono text-[11px] text-slate-300">{liveAnalysis.postureScore}/100</span>
           </div>
         </div>

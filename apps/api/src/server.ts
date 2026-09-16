@@ -636,7 +636,7 @@ export class EyePostureApiServer {
 
       const deviceId = url.searchParams.get('deviceId') || 'default_device';
       const dev = Array.from(this.devices.values()).find(
-        (d) => d.userId === authResult.userId && (d.deviceFingerprint === deviceId || d.id === deviceId)
+        (d) => d.deviceFingerprint === deviceId || d.id === deviceId
       );
       if (dev?.isBlocked) {
         this.sendJson(res, 403, { error: 'This device has been blocked by administrator' });

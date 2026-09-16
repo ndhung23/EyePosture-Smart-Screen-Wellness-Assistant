@@ -46,7 +46,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onCl
           </div>
           <div>
             <h3 className="font-display font-bold text-lg text-slate-100">{t('calibration.wizardTitle')}</h3>
-            <p className="text-xs text-slate-400">Personalize your ergonomic distance & posture baseline</p>
+            <p className="text-xs text-slate-400">{t('calibration.subtitle')}</p>
           </div>
         </div>
 
@@ -68,7 +68,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onCl
             <div className="space-y-3">
               <h4 className="font-semibold text-slate-200">{t('calibration.step1')}</h4>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Adjust your chair and desk height so your back is supported and shoulders are relaxed.
+                {t('calibration.step1Detail')}
               </p>
             </div>
           )}
@@ -77,7 +77,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onCl
             <div className="space-y-3">
               <h4 className="font-semibold text-slate-200">{t('calibration.step2')}</h4>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Position your eyes roughly arm's length (about 50 to 70 centimeters) away from your display.
+                {t('calibration.step2Detail')}
               </p>
             </div>
           )}
@@ -86,7 +86,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onCl
             <div className="space-y-3">
               <h4 className="font-semibold text-slate-200">{t('calibration.step3')}</h4>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Keep your gaze directed comfortably near the upper-third of the screen.
+                {t('calibration.step3Detail')}
               </p>
             </div>
           )}
@@ -109,7 +109,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onCl
               <div>
                 <h4 className="font-bold text-slate-100 text-lg">{t('calibration.step5')}</h4>
                 <p className="text-xs text-slate-400 mt-1">
-                  Your personalized comfort metrics have been saved locally.
+                  {t('calibration.step5Detail')}
                 </p>
               </div>
             </div>
@@ -120,7 +120,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onCl
         <div className="mt-8 pt-6 border-t border-slate-800/80 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
             <Shield className="w-3.5 h-3.5 text-teal-400" />
-            <span>Processed 100% locally</span>
+            <span>{t('common.localProcessing')}</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -129,7 +129,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onCl
                 onClick={() => setStep((s) => s + 1)}
                 className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold text-xs flex items-center gap-1.5 transition-all"
               >
-                <span>Next</span>
+                <span>{t('common.next')}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
@@ -148,7 +148,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onCl
                 onClick={handleFinish}
                 className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all"
               >
-                Done
+                {t('common.done')}
               </button>
             )}
           </div>

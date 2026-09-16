@@ -57,11 +57,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 {dailyStats.wellnessScore}%
               </span>
               <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Optimal
+                <CheckCircle2 className="w-3.5 h-3.5" /> {t('common.optimal')}
               </span>
             </div>
             <p className="text-xs text-slate-400 pt-1">
-              Personalized habit score based on breaks & posture
+              {t('dashboard.habitScoreDesc')}
             </p>
           </div>
           <div className="w-20 h-20 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400">
@@ -84,7 +84,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   liveAnalysis.distanceState === 'TOO_CLOSE' ? 'text-rose-400' : 'text-emerald-400'
                 }`}
               >
-                {liveAnalysis.distanceState === 'TOO_CLOSE' ? 'Too Close' : t('dashboard.statusGood')}
+                {liveAnalysis.distanceState === 'TOO_CLOSE' ? t('dashboard.tooClose') : t('dashboard.statusGood')}
               </span>
               <span className="text-xs text-slate-400 font-mono">
                 ~{liveAnalysis.distanceEstimateCm} cm
@@ -92,8 +92,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             </div>
             <p className="text-xs text-slate-400 pt-1">
               {liveAnalysis.distanceState === 'TOO_CLOSE'
-                ? 'Please lean back slightly'
-                : 'Ergonomic viewing distance'}
+                ? t('dashboard.leanBackHint')
+                : t('dashboard.ergonomicDistance')}
             </p>
           </div>
           <div
@@ -127,15 +127,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 }`}
               >
                 {liveAnalysis.postureState === 'POOR'
-                  ? 'Needs Attention'
+                  ? t('dashboard.statusPoor')
                   : liveAnalysis.postureState === 'ACCEPTABLE'
-                  ? 'Acceptable'
+                  ? t('dashboard.statusAcceptable')
                   : t('dashboard.statusGood')}
               </span>
               <span className="text-xs text-slate-400 font-mono">{liveAnalysis.postureScore}/100</span>
             </div>
             <p className="text-xs text-slate-400 pt-1">
-              {liveAnalysis.slouchDetected ? 'Slouch / head tilt detected' : 'Spine & head aligned'}
+              {liveAnalysis.slouchDetected ? t('dashboard.slouchWarning') : t('dashboard.alignedGood')}
             </p>
           </div>
           <div
@@ -169,7 +169,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <span className="font-display text-2xl font-bold text-slate-100">
               {screenHours}h {screenMins}m
             </span>
-            <span className="text-xs text-slate-400 font-mono">Limit: {limitHours}h</span>
+            <span className="text-xs text-slate-400 font-mono">
+              {t('dashboard.limitHours', { hours: limitHours })}
+            </span>
           </div>
 
           <div className="space-y-1.5">
@@ -185,7 +187,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               />
             </div>
             <div className="flex justify-between text-[11px] text-slate-400">
-              <span>Used Today</span>
+              <span>{t('dashboard.usedToday')}</span>
               <span>
                 {Math.round((screenTimeMinutes / Math.max(1, screenTimeLimitMinutes)) * 100)}%
               </span>
@@ -211,7 +213,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               {String(breakMinsLeft).padStart(2, '0')}:{String(breakSecsLeft).padStart(2, '0')}
             </span>
             <span className="text-xs text-slate-400 font-mono">
-              {dailyStats.eyeBreaksCompleted} completed today
+              {t('dashboard.breaksCompletedToday', { count: dailyStats.eyeBreaksCompleted })}
             </span>
           </div>
 
@@ -223,7 +225,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               />
             </div>
             <div className="flex justify-between text-[11px] text-slate-400">
-              <span>Next rest interval</span>
+              <span>{t('dashboard.nextRestInterval')}</span>
               <span>{breakProgress.percentComplete}%</span>
             </div>
           </div>
@@ -240,7 +242,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               onClick={logWaterGlass}
               className="text-xs font-semibold px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 transition-colors"
             >
-              +1 Glass
+              {t('dashboard.addGlass')}
             </button>
           </div>
 
@@ -248,7 +250,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <span className="font-display text-2xl font-bold text-slate-100">
               {hydrationProgress.glassesToday} / {hydrationProgress.dailyGoalGlasses}
             </span>
-            <span className="text-xs text-slate-400">glasses</span>
+            <span className="text-xs text-slate-400">{t('dashboard.glassesUnit')}</span>
           </div>
 
           <div className="space-y-1.5">
@@ -259,7 +261,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               />
             </div>
             <div className="flex justify-between text-[11px] text-slate-400">
-              <span>Daily target</span>
+              <span>{t('dashboard.dailyTarget')}</span>
               <span>{hydrationProgress.percentComplete}%</span>
             </div>
           </div>
@@ -268,7 +270,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
       {/* Quick Action Dock */}
       <div className="glass-card p-6">
-        <h3 className="text-sm font-semibold text-slate-300 mb-4">Quick Ergonomic Actions</h3>
+        <h3 className="text-sm font-semibold text-slate-300 mb-4">{t('dashboard.quickActionsTitle')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button
             onClick={toggleMonitoring}

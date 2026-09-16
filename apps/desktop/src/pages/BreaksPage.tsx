@@ -52,7 +52,7 @@ export const BreaksPage: React.FC = () => {
             {String(breakMinsLeft).padStart(2, '0')}:{String(breakSecsLeft).padStart(2, '0')}
           </div>
           <p className="text-xs text-slate-400">
-            Relax your ciliary eye muscles by gazing at a distant focal point across the room or out a window.
+            {t('breaks.eyeMusclesTip')}
           </p>
 
           <div className="pt-2 flex items-center gap-3">
@@ -106,18 +106,18 @@ export const BreaksPage: React.FC = () => {
         <div className="glass-card p-6 space-y-4">
           <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-emerald-400" />
-            <span>Today's Break Compliance</span>
+            <span>{t('breaks.complianceTitle')}</span>
           </h3>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
-              <span className="text-xs text-slate-400">Breaks Completed</span>
+              <span className="text-xs text-slate-400">{t('breaks.breaksCompleted')}</span>
               <p className="font-display text-3xl font-bold text-emerald-400 mt-1">
                 {dailyStats.eyeBreaksCompleted}
               </p>
             </div>
             <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
-              <span className="text-xs text-slate-400">Breaks Skipped</span>
+              <span className="text-xs text-slate-400">{t('breaks.breaksSkipped')}</span>
               <p className="font-display text-3xl font-bold text-slate-400 mt-1">
                 {dailyStats.eyeBreaksSkipped}
               </p>
@@ -129,14 +129,14 @@ export const BreaksPage: React.FC = () => {
         <div className="glass-card p-6 space-y-4">
           <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-400" />
-            <span>Custom Interval Settings</span>
+            <span>{t('breaks.customSettings')}</span>
           </h3>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-xs text-slate-300 block">Work Interval</span>
-                <span className="text-[11px] text-slate-500">Minutes between breaks</span>
+                <span className="text-xs text-slate-300 block">{t('breaks.workInterval')}</span>
+                <span className="text-[11px] text-slate-500">{t('breaks.workIntervalDesc')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -145,7 +145,7 @@ export const BreaksPage: React.FC = () => {
                 >
                   -
                 </button>
-                <span className="font-mono text-sm text-slate-200 w-12 text-center">{interval} min</span>
+                <span className="font-mono text-sm text-slate-200 w-12 text-center">{interval} {t('common.minutes')}</span>
                 <button
                   onClick={() => handleIntervalChange(interval + 5)}
                   className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold"
@@ -157,8 +157,8 @@ export const BreaksPage: React.FC = () => {
 
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-xs text-slate-300 block">Break Duration</span>
-                <span className="text-[11px] text-slate-500">Seconds to rest eyes</span>
+                <span className="text-xs text-slate-300 block">{t('breaks.breakDuration')}</span>
+                <span className="text-[11px] text-slate-500">{t('breaks.breakDurationDesc')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -167,7 +167,7 @@ export const BreaksPage: React.FC = () => {
                 >
                   -
                 </button>
-                <span className="font-mono text-sm text-slate-200 w-12 text-center">{duration} sec</span>
+                <span className="font-mono text-sm text-slate-200 w-12 text-center">{duration} {t('common.seconds')}</span>
                 <button
                   onClick={() => handleDurationChange(duration + 5)}
                   className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold"

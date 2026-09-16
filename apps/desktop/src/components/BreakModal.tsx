@@ -84,7 +84,7 @@ export const BreakModal: React.FC = () => {
           </svg>
           <div className="absolute flex flex-col items-center justify-center">
             <span className="font-display text-4xl font-bold text-slate-100">{secondsRemaining}</span>
-            <span className="text-[11px] text-teal-400 uppercase tracking-widest font-semibold">seconds</span>
+            <span className="text-[11px] text-teal-400 uppercase tracking-widest font-semibold">{t('common.seconds')}</span>
           </div>
         </div>
 

@@ -188,6 +188,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setSettings(userSettings);
       setLanguage(userSettings.general.language);
       setLangState(userSettings.general.language);
+      (window as any).electronApi?.setTrayLanguage?.(userSettings.general.language);
 
       // Check cached license
       const cached = licenseRepo.getCachedLicense();
@@ -214,6 +215,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const switchLanguage = (lang: LanguageCode) => {
     setLanguage(lang);
     setLangState(lang);
+    (window as any).electronApi?.setTrayLanguage?.(lang);
     if (settings && activeProfile && reposRef.current.settingsRepo) {
       const updated = { ...settings, general: { ...settings.general, language: lang } };
       setSettings(updated);

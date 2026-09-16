@@ -26,42 +26,42 @@ export const SettingsPage: React.FC = () => {
     {
       id: 'general' as SettingsTab,
       label: t('settings.general'),
-      description: 'Language, startup & system behavior',
+      description: t('settings.generalDesc'),
       icon: SettingsIcon,
       color: 'text-teal-400',
     },
     {
       id: 'posture' as SettingsTab,
       label: t('settings.posture'),
-      description: 'Ergonomic posture thresholds & sensitivity',
+      description: t('settings.postureDesc'),
       icon: ScanFace,
       color: 'text-amber-400',
     },
     {
       id: 'distance' as SettingsTab,
       label: t('settings.distance'),
-      description: 'Screen viewing distance calibration',
+      description: t('settings.distanceDesc'),
       icon: Eye,
       color: 'text-emerald-400',
     },
     {
       id: 'breaks' as SettingsTab,
-      label: '20-20-20 Eye Breaks',
-      description: 'Rest intervals and break duration',
+      label: t('settings.breaks'),
+      description: t('settings.breaksDesc'),
       icon: Coffee,
       color: 'text-indigo-400',
     },
     {
       id: 'hydration' as SettingsTab,
-      label: 'Hydration Tracking',
-      description: 'Water intake reminder frequency',
+      label: t('settings.hydration'),
+      description: t('settings.hydrationDesc'),
       icon: Droplets,
       color: 'text-cyan-400',
     },
     {
       id: 'notifications' as SettingsTab,
       label: t('settings.notifications'),
-      description: 'Quiet hours, chimes & fullscreen mode',
+      description: t('settings.notificationsDesc'),
       icon: Bell,
       color: 'text-rose-400',
     },
@@ -80,7 +80,7 @@ export const SettingsPage: React.FC = () => {
         {/* LEFT COLUMN: Settings Options Navigation */}
         <div className="md:col-span-4 glass-card p-3 space-y-1.5 border border-slate-800/80">
           <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Options & Categories
+            {t('common.options')}
           </div>
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -120,14 +120,14 @@ export const SettingsPage: React.FC = () => {
                   <SettingsIcon className="w-5 h-5 text-teal-400" />
                   <span>{t('settings.general')}</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">Configure language, startup, and system tray integration</p>
+                <p className="text-xs text-slate-400 mt-1">{t('settings.generalDetailDesc')}</p>
               </div>
 
               {/* Language Selection */}
               <div className="flex items-center justify-between py-2">
                 <div>
                   <span className="text-sm font-medium text-slate-200 block">{t('settings.language')}</span>
-                  <span className="text-xs text-slate-400">Select interface display language</span>
+                  <span className="text-xs text-slate-400">{t('settings.languageDesc')}</span>
                 </div>
                 <div className="flex items-center bg-slate-900 rounded-xl p-1 border border-slate-700/60">
                   <button
@@ -157,7 +157,7 @@ export const SettingsPage: React.FC = () => {
               <div className="flex items-center justify-between py-3 border-t border-slate-800/80">
                 <div>
                   <span className="text-sm font-medium text-slate-200 block">{t('settings.launchOnStartup')}</span>
-                  <span className="text-xs text-slate-400">Launch EyePosture automatically when Windows starts</span>
+                  <span className="text-xs text-slate-400">{t('settings.launchOnStartupDesc')}</span>
                 </div>
                 <input
                   type="checkbox"
@@ -176,7 +176,7 @@ export const SettingsPage: React.FC = () => {
               <div className="flex items-center justify-between py-3 border-t border-slate-800/80">
                 <div>
                   <span className="text-sm font-medium text-slate-200 block">{t('settings.minimizeToTray')}</span>
-                  <span className="text-xs text-slate-400">Keep monitoring silently in system tray when closed</span>
+                  <span className="text-xs text-slate-400">{t('settings.minimizeToTrayDesc')}</span>
                 </div>
                 <input
                   type="checkbox"
@@ -201,13 +201,13 @@ export const SettingsPage: React.FC = () => {
                   <ScanFace className="w-5 h-5 text-amber-400" />
                   <span>{t('settings.posture')}</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">Real-time spine angle, head tilt, and slouching detection</p>
+                <p className="text-xs text-slate-400 mt-1">{t('monitor.subtitle')}</p>
               </div>
 
               <div className="flex items-center justify-between py-2">
                 <div>
-                  <span className="text-sm font-medium text-slate-200 block">Enable Posture Monitoring</span>
-                  <span className="text-xs text-slate-400">Track head tilt and forward slouching via camera landmarks</span>
+                  <span className="text-sm font-medium text-slate-200 block">{t('settings.enablePosture')}</span>
+                  <span className="text-xs text-slate-400">{t('settings.enablePostureDesc')}</span>
                 </div>
                 <input
                   type="checkbox"
@@ -224,7 +224,7 @@ export const SettingsPage: React.FC = () => {
 
               <div className="py-3 border-t border-slate-800/80 space-y-2">
                 <div className="flex justify-between text-xs text-slate-200">
-                  <span className="font-medium text-sm">Detection Sensitivity (Level {settings.posture.sensitivity})</span>
+                  <span className="font-medium text-sm">{t('settings.detectionSensitivity')} ({settings.posture.sensitivity})</span>
                   <span className="text-teal-400 font-semibold">{settings.posture.sensitivity === 1 ? 'Lenient' : settings.posture.sensitivity >= 4 ? 'Strict' : 'Balanced'}</span>
                 </div>
                 <input
@@ -241,19 +241,19 @@ export const SettingsPage: React.FC = () => {
                   className="w-full accent-teal-500 bg-slate-800 h-2 rounded-lg cursor-pointer"
                 />
                 <div className="flex justify-between text-[11px] text-slate-500">
-                  <span>1 (Forgiving)</span>
-                  <span>3 (Recommended)</span>
-                  <span>5 (Ergonomic Pro)</span>
+                  <span>1</span>
+                  <span>3</span>
+                  <span>5</span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between py-3 border-t border-slate-800/80">
                 <div>
-                  <span className="text-sm font-medium text-slate-200 block">Warning Delay (Debounce)</span>
-                  <span className="text-xs text-slate-400">Avoid false alerts when temporarily reaching for coffee</span>
+                  <span className="text-sm font-medium text-slate-200 block">{t('settings.warningDelay')}</span>
+                  <span className="text-xs text-slate-400">{t('settings.warningDelayDesc')}</span>
                 </div>
                 <span className="font-mono text-sm px-3 py-1 bg-slate-800 rounded-lg text-teal-300 border border-slate-700">
-                  {settings.posture.warningDelaySeconds} seconds
+                  {settings.posture.warningDelaySeconds} {t('common.seconds')}
                 </span>
               </div>
             </div>
@@ -267,13 +267,13 @@ export const SettingsPage: React.FC = () => {
                   <Eye className="w-5 h-5 text-emerald-400" />
                   <span>{t('settings.distance')}</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">Eye-to-screen distance monitoring to prevent myopia and eye strain</p>
+                <p className="text-xs text-slate-400 mt-1">{t('settings.distanceDesc')}</p>
               </div>
 
               <div className="flex items-center justify-between py-2">
                 <div>
-                  <span className="text-sm font-medium text-slate-200 block">Enable Distance Monitoring</span>
-                  <span className="text-xs text-slate-400">Calculate eye distance using iris proportions and face geometry</span>
+                  <span className="text-sm font-medium text-slate-200 block">{t('settings.enableDistance')}</span>
+                  <span className="text-xs text-slate-400">{t('settings.enableDistanceDesc')}</span>
                 </div>
                 <input
                   type="checkbox"
@@ -290,11 +290,11 @@ export const SettingsPage: React.FC = () => {
 
               <div className="flex items-center justify-between py-3 border-t border-slate-800/80">
                 <div>
-                  <span className="text-sm font-medium text-slate-200 block">Ergonomic Safe Threshold</span>
-                  <span className="text-xs text-slate-400">Distance under which a gentle warning prompts you to lean back</span>
+                  <span className="text-sm font-medium text-slate-200 block">{t('settings.safeDistanceThreshold')}</span>
+                  <span className="text-xs text-slate-400">{t('settings.safeDistanceDesc')}</span>
                 </div>
                 <span className="font-mono text-sm px-3 py-1 bg-slate-800 rounded-lg text-emerald-400 border border-slate-700">
-                  ~{settings.distance.thresholdCm} cm (50-70 cm recommended)
+                  ~{settings.distance.thresholdCm} cm
                 </span>
               </div>
             </div>
@@ -306,21 +306,19 @@ export const SettingsPage: React.FC = () => {
               <div className="border-b border-slate-800 pb-4">
                 <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
                   <Coffee className="w-5 h-5 text-indigo-400" />
-                  <span>20-20-20 Eye Break Schedule</span>
+                  <span>{t('breaks.title')}</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">Every 20 minutes, look 20 feet away for 20 seconds</p>
+                <p className="text-xs text-slate-400 mt-1">{t('breaks.subtitle')}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
-                  <span className="text-xs text-slate-400 block">Work Interval</span>
-                  <span className="text-xl font-bold text-slate-100 mt-1 block">20 Minutes</span>
-                  <span className="text-[11px] text-slate-500 mt-1 block">Optimal focus cycle</span>
+                  <span className="text-xs text-slate-400 block">{t('breaks.workInterval')}</span>
+                  <span className="text-xl font-bold text-slate-100 mt-1 block">20 {t('common.minutes')}</span>
                 </div>
                 <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
-                  <span className="text-xs text-slate-400 block">Break Duration</span>
-                  <span className="text-xl font-bold text-indigo-300 mt-1 block">20 Seconds</span>
-                  <span className="text-[11px] text-slate-500 mt-1 block">Ciliary muscle relaxation</span>
+                  <span className="text-xs text-slate-400 block">{t('breaks.breakDuration')}</span>
+                  <span className="text-xl font-bold text-indigo-300 mt-1 block">20 {t('common.seconds')}</span>
                 </div>
               </div>
             </div>
@@ -332,21 +330,19 @@ export const SettingsPage: React.FC = () => {
               <div className="border-b border-slate-800 pb-4">
                 <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
                   <Droplets className="w-5 h-5 text-cyan-400" />
-                  <span>Hydration Tracking</span>
+                  <span>{t('hydration.title')}</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">Periodic gentle reminder to stay hydrated throughout working sessions</p>
+                <p className="text-xs text-slate-400 mt-1">{t('hydration.subtitle')}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
-                  <span className="text-xs text-slate-400 block">Daily Target</span>
-                  <span className="text-xl font-bold text-cyan-300 mt-1 block">8 Glasses (2000 ml)</span>
-                  <span className="text-[11px] text-slate-500 mt-1 block">Recommended daily water intake</span>
+                  <span className="text-xs text-slate-400 block">{t('hydration.dailyTarget')}</span>
+                  <span className="text-xl font-bold text-cyan-300 mt-1 block">8 {t('hydration.glassesUnit')} (2000 ml)</span>
                 </div>
                 <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
-                  <span className="text-xs text-slate-400 block">Interval</span>
-                  <span className="text-xl font-bold text-slate-100 mt-1 block">Every 45 Minutes</span>
-                  <span className="text-[11px] text-slate-500 mt-1 block">Intelligent backoff policy</span>
+                  <span className="text-xs text-slate-400 block">{t('common.status')}</span>
+                  <span className="text-xl font-bold text-slate-100 mt-1 block">45 {t('common.minutes')}</span>
                 </div>
               </div>
             </div>
@@ -360,13 +356,13 @@ export const SettingsPage: React.FC = () => {
                   <Bell className="w-5 h-5 text-rose-400" />
                   <span>{t('settings.notifications')}</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">Audio alerts, fullscreen auto-suppression, and quiet hours</p>
+                <p className="text-xs text-slate-400 mt-1">{t('settings.notificationsDesc')}</p>
               </div>
 
               <div className="flex items-center justify-between py-2">
                 <div>
-                  <span className="text-sm font-medium text-slate-200 block">Audio Chimes</span>
-                  <span className="text-xs text-slate-400">Play subtle pleasant sound chime when a reminder pops up</span>
+                  <span className="text-sm font-medium text-slate-200 block">{t('settings.audioChimes')}</span>
+                  <span className="text-xs text-slate-400">{t('settings.audioChimesDesc')}</span>
                 </div>
                 <input
                   type="checkbox"
@@ -383,8 +379,8 @@ export const SettingsPage: React.FC = () => {
 
               <div className="flex items-center justify-between py-3 border-t border-slate-800/80">
                 <div>
-                  <span className="text-sm font-medium text-slate-200 block">Suppress in Fullscreen</span>
-                  <span className="text-xs text-slate-400">Never interrupt gaming sessions, movie watching, or presentations</span>
+                  <span className="text-sm font-medium text-slate-200 block">{t('settings.suppressFullscreen')}</span>
+                  <span className="text-xs text-slate-400">{t('settings.suppressFullscreenDesc')}</span>
                 </div>
                 <input
                   type="checkbox"
@@ -404,8 +400,8 @@ export const SettingsPage: React.FC = () => {
 
               <div className="flex items-center justify-between py-3 border-t border-slate-800/80">
                 <div>
-                  <span className="text-sm font-medium text-slate-200 block">Quiet Hours (22:00 - 07:00)</span>
-                  <span className="text-xs text-slate-400">Mute all reminder notifications during nighttime</span>
+                  <span className="text-sm font-medium text-slate-200 block">{t('settings.quietHours')}</span>
+                  <span className="text-xs text-slate-400">{t('settings.quietHoursDesc')}</span>
                 </div>
                 <input
                   type="checkbox"

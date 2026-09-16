@@ -16,4 +16,5 @@ contextBridge.exposeInMainWorld('electronApi', {
   onSystemResume: (callback: () => void) => {
     ipcRenderer.on('system:resume', () => callback());
   },
+  setTrayLanguage: (lang: string) => ipcRenderer.send('tray:set-language', lang),
 });

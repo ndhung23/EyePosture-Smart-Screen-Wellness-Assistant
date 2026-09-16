@@ -71,7 +71,7 @@ export const SubscriptionPage: React.FC = () => {
       <div>
         <h2 className="font-display font-bold text-2xl text-slate-100">{t('subscription.title')}</h2>
         <p className="text-sm text-slate-400 mt-1">
-          Bản quyền phần mềm thanh toán linh hoạt qua cổng **SePay Webhook (VietQR)** và thẻ quốc tế.
+          {t('subscription.subtitle')}
         </p>
       </div>
 
@@ -92,8 +92,8 @@ export const SubscriptionPage: React.FC = () => {
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
               {subscriptionTier === 'PRO'
-                ? 'Bản quyền Pro đã được xác thực mã hóa an toàn với đầy đủ các mô hình góc nghiêng & khoảng cách mắt.'
-                : 'Gói Free miễn phí với bộ đếm 20-20-20 và nhắc nhở uống nước cơ bản.'}
+                ? t('subscription.proLicensedDesc')
+                : t('subscription.freeLicensedDesc')}
             </p>
           </div>
         </div>
@@ -107,7 +107,7 @@ export const SubscriptionPage: React.FC = () => {
             className="px-5 py-2.5 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition-all flex items-center gap-1.5"
           >
             <QrCode className="w-4 h-4" />
-            Nâng cấp qua VietQR (SePay)
+            {t('subscription.upgradeToPro')}
           </button>
         )}
       </div>

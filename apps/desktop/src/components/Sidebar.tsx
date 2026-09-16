@@ -63,7 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onSelectPage }) =
                 </span>
               )}
             </h1>
-            <p className="text-[11px] text-slate-400 font-medium">Screen Wellness Assistant</p>
+            <p className="text-[11px] text-slate-400 font-medium">{t('app.tagline')}</p>
           </div>
         </div>
 
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onSelectPage }) =
         <div className="flex items-center justify-between px-2 text-xs text-slate-400">
           <div className="flex items-center gap-1.5">
             <Globe className="w-3.5 h-3.5 text-slate-500" />
-            <span>Language</span>
+            <span>{t('common.language')}</span>
           </div>
           <div className="flex items-center bg-slate-800/80 rounded-lg p-0.5 border border-slate-700/50">
             <button
@@ -136,7 +136,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onSelectPage }) =
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-slate-200 truncate">{activeProfile?.name ?? 'User'}</p>
             <p className="text-[10px] text-slate-400 truncate">
-              {activeProfile?.isChild ? 'Child Profile' : 'Adult Profile'}
+              {activeProfile?.isChild ? t('common.childProfile') : t('common.adultProfile')}
             </p>
           </div>
         </div>

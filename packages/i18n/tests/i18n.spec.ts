@@ -26,4 +26,32 @@ describe('i18n Module', () => {
   it('should fallback gracefully for non-existent keys', () => {
     expect(t('non.existent.translation_key')).toBe('non.existent.translation_key');
   });
+
+  it('should have 100% key parity between en and vi dictionaries', async () => {
+    const { en } = await import('../src/locales/en.js');
+    const { vi } = await import('../src/locales/vi.js');
+
+    function getAllKeys(obj: any, prefix = ''): string[] {
+      let keys: string[] = [];
+      for (const [k, v] of Object.entries(obj)) {
+        const fullKey = prefix ? `${prefix}.${k}` : k;
+        if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+          keys = keys.concat(getAllKeys(v, fullKey));
+        } else {
+          keys.push(fullKey);
+        }
+      }
+      return keys.sort();
+    }
+
+    const enKeys = getAllKeys(en);
+    const viKeys = getAllKeys(vi);
+
+    const missingInVi = enKeys.filter((k) => !viKeys.includes(k));
+    const missingInEn = viKeys.filter((k) => !enKeys.includes(k));
+
+    expect(missingInVi).toEqual([]);
+    expect(missingInEn).toEqual([]);
+    expect(viKeys.length).toBe(enKeys.length);
+  });
 });
