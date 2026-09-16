@@ -76,13 +76,23 @@ describe('Database Layer & Repositories', () => {
     expect(settings.general.language).toBe('en');
     expect(settings.breaks.intervalMinutes).toBe(20);
     expect(settings.distance.thresholdCm).toBe(50);
+    expect(settings.security.enabled).toBe(false);
+    expect(settings.security.requireOnPause).toBe(true);
 
-    // Update break interval to 25 minutes
+    // Update break interval and security
     settings.breaks.intervalMinutes = 25;
+    settings.security = {
+      enabled: true,
+      passwordHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      requireOnPause: true,
+      requireOnQuit: true,
+    };
     settingsRepo.saveSettings(profile.id, settings);
 
     const updated = settingsRepo.getSettings(profile.id);
     expect(updated.breaks.intervalMinutes).toBe(25);
+    expect(updated.security.enabled).toBe(true);
+    expect(updated.security.passwordHash).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
   });
 
   it('should store and retrieve camera calibration baselines', () => {

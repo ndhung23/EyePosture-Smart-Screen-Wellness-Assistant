@@ -3,6 +3,7 @@ import { AppProvider } from './context/AppContext.js';
 import { Sidebar, NavPage } from './components/Sidebar.js';
 import { Header } from './components/Header.js';
 import { BreakModal } from './components/BreakModal.js';
+import { PasswordPromptModal } from './components/PasswordPromptModal.js';
 import { PerformancePanel } from './components/PerformancePanel.js';
 
 import { DashboardPage } from './pages/DashboardPage.js';
@@ -86,6 +87,7 @@ const MainContent: React.FC = () => {
 
       {/* Modals & Overlays */}
       <BreakModal />
+      <PasswordPromptModal />
       <PerformancePanel />
     </div>
   );

@@ -10,7 +10,14 @@ import {
   ScreenTimeSettings,
   NotificationSettings,
   PrivacySettings,
+  SecuritySettings,
 } from '@eyeposture/shared-types';
+
+export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
+  enabled: false,
+  requireOnPause: true,
+  requireOnQuit: true,
+};
 
 export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   language: 'en',
@@ -127,6 +134,7 @@ export class SettingsRepository {
       screenTime: this.getCategory<ScreenTimeSettings>(profileId, 'screenTime', DEFAULT_SCREEN_TIME_SETTINGS),
       notifications: this.getCategory<NotificationSettings>(profileId, 'notifications', DEFAULT_NOTIFICATION_SETTINGS),
       privacy: this.getCategory<PrivacySettings>(profileId, 'privacy', DEFAULT_PRIVACY_SETTINGS),
+      security: this.getCategory<SecuritySettings>(profileId, 'security', DEFAULT_SECURITY_SETTINGS),
     };
   }
 
@@ -140,5 +148,6 @@ export class SettingsRepository {
     this.saveCategory(profileId, 'screenTime', settings.screenTime);
     this.saveCategory(profileId, 'notifications', settings.notifications);
     this.saveCategory(profileId, 'privacy', settings.privacy);
+    this.saveCategory(profileId, 'security', settings.security);
   }
 }

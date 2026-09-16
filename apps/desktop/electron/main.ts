@@ -169,8 +169,14 @@ function updateTrayMenu(lang: string = 'vi') {
     {
       label: isVi ? 'Thoát EyePosture' : 'Quit EyePosture',
       click: () => {
-        isQuitting = true;
-        app.quit();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send('app:request-quit');
+        } else {
+          isQuitting = true;
+          app.quit();
+        }
       },
     },
   ]);
@@ -217,6 +223,22 @@ ipcMain.handle('sqlite:get-wasm-binary', () => {
 
 ipcMain.on('tray:set-language', (_event, lang) => {
   updateTrayMenu(lang);
+});
+
+ipcMain.on('app:confirm-quit', () => {
+  isQuitting = true;
+  app.quit();
+});
+
+ipcMain.on('app:request-quit', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.webContents.send('app:request-quit');
+  } else {
+    isQuitting = true;
+    app.quit();
+  }
 });
 
 app.whenReady().then(() => {

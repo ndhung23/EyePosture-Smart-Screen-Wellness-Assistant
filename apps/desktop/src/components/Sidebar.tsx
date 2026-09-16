@@ -11,6 +11,8 @@ import {
   ShieldCheck,
   Globe,
   User as UserIcon,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
@@ -32,7 +34,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onSelectPage }) => {
-  const { language, switchLanguage, activeProfile, subscriptionTier } = useApp();
+  const { language, switchLanguage, activeProfile, subscriptionTier, theme, effectiveTheme, switchTheme } = useApp();
 
   const navItems = [
     { id: 'dashboard' as NavPage, labelKey: 'nav.dashboard', icon: LayoutDashboard },
@@ -121,6 +123,38 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onSelectPage }) =
               }`}
             >
               VI
+            </button>
+          </div>
+        </div>
+
+        {/* Theme selector */}
+        <div className="flex items-center justify-between px-2 text-xs text-slate-400">
+          <div className="flex items-center gap-1.5">
+            {effectiveTheme === 'dark' ? (
+              <Moon className="w-3.5 h-3.5 text-indigo-400" />
+            ) : (
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+            )}
+            <span>{t('settings.theme')}</span>
+          </div>
+          <div className="flex items-center bg-slate-800/80 rounded-lg p-0.5 border border-slate-700/50">
+            <button
+              onClick={() => switchTheme('light')}
+              title={t('settings.themeLight')}
+              className={`px-2 py-0.5 rounded text-[11px] font-medium flex items-center gap-1 transition-colors ${
+                effectiveTheme === 'light' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Sun className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => switchTheme('dark')}
+              title={t('settings.themeDark')}
+              className={`px-2 py-0.5 rounded text-[11px] font-medium flex items-center gap-1 transition-colors ${
+                effectiveTheme === 'dark' ? 'bg-indigo-500 text-slate-100 font-bold' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Moon className="w-3 h-3" />
             </button>
           </div>
         </div>

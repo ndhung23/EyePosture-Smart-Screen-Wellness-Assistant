@@ -17,4 +17,13 @@ contextBridge.exposeInMainWorld('electronApi', {
     ipcRenderer.on('system:resume', () => callback());
   },
   setTrayLanguage: (lang: string) => ipcRenderer.send('tray:set-language', lang),
+  onRequestQuit: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('app:request-quit', listener);
+    return () => {
+      ipcRenderer.removeListener('app:request-quit', listener);
+    };
+  },
+  confirmQuit: () => ipcRenderer.send('app:confirm-quit'),
+  requestAppQuit: () => ipcRenderer.send('app:request-quit'),
 });

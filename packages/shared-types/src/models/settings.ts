@@ -83,6 +83,13 @@ export interface PrivacySettings {
   cameraProcessingLocalOnly: boolean; // always true
 }
 
+export interface SecuritySettings {
+  enabled: boolean;
+  passwordHash?: string;
+  requireOnPause: boolean;
+  requireOnQuit: boolean;
+}
+
 export interface UserSettings {
   profileId: string;
   general: GeneralSettings;
@@ -94,5 +101,6 @@ export interface UserSettings {
   screenTime: ScreenTimeSettings;
   notifications: NotificationSettings;
   privacy: PrivacySettings;
+  security: SecuritySettings;
   calibration?: CalibrationData;
 }

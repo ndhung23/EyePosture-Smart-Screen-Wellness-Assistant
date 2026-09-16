@@ -10,14 +10,19 @@ import {
   Shield,
   Laptop,
   CheckCircle2,
+  Lock,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
+import { SecuritySettingsSection } from '../components/SecuritySettingsSection.js';
 import { t } from '@eyeposture/i18n';
 
-type SettingsTab = 'general' | 'posture' | 'distance' | 'breaks' | 'hydration' | 'notifications';
+type SettingsTab = 'general' | 'posture' | 'distance' | 'breaks' | 'hydration' | 'notifications' | 'security';
 
 export const SettingsPage: React.FC = () => {
-  const { settings, updateSettings, language, switchLanguage } = useApp();
+  const { settings, updateSettings, language, switchLanguage, theme, switchTheme } = useApp();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
   if (!settings) return null;
@@ -64,6 +69,13 @@ export const SettingsPage: React.FC = () => {
       description: t('settings.notificationsDesc'),
       icon: Bell,
       color: 'text-rose-400',
+    },
+    {
+      id: 'security' as SettingsTab,
+      label: t('settings.security'),
+      description: t('settings.securityDesc'),
+      icon: Lock,
+      color: 'text-purple-400',
     },
   ];
 
@@ -420,6 +432,9 @@ export const SettingsPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Security & Lock Tab */}
+          {activeTab === 'security' && <SecuritySettingsSection />}
         </div>
       </div>
     </div>

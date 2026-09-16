@@ -8,7 +8,10 @@ import {
   SubscriptionTier,
   GovernorStatus,
   CameraDeviceInfo,
+  SecuritySettings,
+  AppTheme,
 } from '@eyeposture/shared-types';
+import { hashPassword } from '../utils/crypto.js';
 import {
   SqlJsDriver,
   MigrationRunner,
@@ -28,6 +31,9 @@ import { t, setLanguage, getLanguage, LanguageCode } from '@eyeposture/i18n';
 interface AppContextValue {
   language: LanguageCode;
   switchLanguage: (lang: LanguageCode) => void;
+  theme: AppTheme;
+  effectiveTheme: 'dark' | 'light';
+  switchTheme: (theme: AppTheme) => void;
   activeProfile: Profile | null;
   profiles: Profile[];
   switchProfile: (profileId: string) => void;
@@ -37,6 +43,17 @@ interface AppContextValue {
   updateSettings: (newSettings: UserSettings) => void;
   isMonitoring: boolean;
   toggleMonitoring: () => void;
+  requestToggleMonitoring: (forceTarget?: boolean) => void;
+  requestQuitApp: () => void;
+  confirmQuit: () => void;
+  passwordModalConfig: {
+    isOpen: boolean;
+    action: 'PAUSE_MONITORING' | 'QUIT_APP';
+    onSuccess?: () => void;
+  } | null;
+  closePasswordModal: () => void;
+  verifyPassword: (password: string) => Promise<boolean>;
+  updateSecuritySettings: (newSecurity: SecuritySettings) => void;
   liveAnalysis: VisionFrameAnalysis;
   governorStatus: GovernorStatus;
   activeReminders: ReminderEvent[];
@@ -72,6 +89,8 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLangState] = useState<LanguageCode>('en');
+  const [theme, setThemeState] = useState<AppTheme>('dark');
+  const [effectiveTheme, setEffectiveTheme] = useState<'dark' | 'light'>('dark');
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [settings, setSettings] = useState<UserSettings | null>(null);
@@ -79,6 +98,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('FREE');
   const [isBreakActive, setIsBreakActive] = useState<boolean>(false);
   const [activeReminders, setActiveReminders] = useState<ReminderEvent[]>([]);
+  const [passwordModalConfig, setPasswordModalConfig] = useState<{
+    isOpen: boolean;
+    action: 'PAUSE_MONITORING' | 'QUIT_APP';
+    onSuccess?: () => void;
+  } | null>(null);
+
+  const applyThemeToDOM = (resolvedTheme: 'dark' | 'light') => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    if (resolvedTheme === 'light') {
+      root.classList.remove('dark', 'theme-dark');
+      root.classList.add('light', 'theme-light');
+    } else {
+      root.classList.remove('light', 'theme-light');
+      root.classList.add('dark', 'theme-dark');
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const updateSystemTheme = () => {
+        const resolved = mediaQuery.matches ? 'dark' : 'light';
+        setEffectiveTheme(resolved);
+        applyThemeToDOM(resolved);
+      };
+      updateSystemTheme();
+      mediaQuery.addEventListener('change', updateSystemTheme);
+      return () => mediaQuery.removeEventListener('change', updateSystemTheme);
+    } else {
+      setEffectiveTheme(theme);
+      applyThemeToDOM(theme);
+    }
+  }, [theme]);
+
+  const settingsRef = useRef<UserSettings | null>(settings);
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  const isMonitoringRef = useRef<boolean>(isMonitoring);
+  useEffect(() => {
+    isMonitoringRef.current = isMonitoring;
+  }, [isMonitoring]);
 
   // Repositories refs
   const reposRef = useRef<{
@@ -189,6 +253,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setLanguage(userSettings.general.language);
       setLangState(userSettings.general.language);
       (window as any).electronApi?.setTrayLanguage?.(userSettings.general.language);
+      const initialTheme = userSettings.general.theme || 'dark';
+      setThemeState(initialTheme);
 
       // Check cached license
       const cached = licenseRepo.getCachedLicense();
@@ -218,6 +284,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     (window as any).electronApi?.setTrayLanguage?.(lang);
     if (settings && activeProfile && reposRef.current.settingsRepo) {
       const updated = { ...settings, general: { ...settings.general, language: lang } };
+      setSettings(updated);
+      reposRef.current.settingsRepo.saveSettings(activeProfile.id, updated);
+    }
+  };
+
+  // Theme switcher
+  const switchTheme = (newTheme: AppTheme) => {
+    setThemeState(newTheme);
+    if (settingsRef.current && activeProfile && reposRef.current.settingsRepo) {
+      const updated = {
+        ...settingsRef.current,
+        general: { ...settingsRef.current.general, theme: newTheme },
+      };
       setSettings(updated);
       reposRef.current.settingsRepo.saveSettings(activeProfile.id, updated);
     }
@@ -288,6 +367,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return () => {
       stopCamera();
+    };
+  }, []);
+
+  // Listen to system tray actions & Electron quit requests
+  useEffect(() => {
+    const electron = (window as any).electronApi;
+    if (!electron) return;
+
+    const cleanupQuit = electron.onRequestQuit?.(() => {
+      requestQuitApp();
+    });
+
+    electron.onTrayAction?.((action: string) => {
+      if (action === 'pause') {
+        requestToggleMonitoring(false);
+      } else if (action === 'resume') {
+        requestToggleMonitoring(true);
+      } else if (action === 'take-break') {
+        startBreakNow();
+      } else if (action === 'log-water') {
+        logWaterGlass();
+      }
+    });
+
+    return () => {
+      if (typeof cleanupQuit === 'function') {
+        cleanupQuit();
+      }
     };
   }, []);
 
@@ -367,8 +474,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearInterval(cvTimer);
   }, [isMonitoring, governorStatus.targetFps, useSimulatedCamera, simulationMode]);
 
+  const verifyPassword = async (password: string): Promise<boolean> => {
+    const currentHash = settingsRef.current?.security?.passwordHash;
+    if (!currentHash) return true;
+    const inputHash = await hashPassword(password);
+    return inputHash === currentHash;
+  };
+
+  const closePasswordModal = () => {
+    setPasswordModalConfig(null);
+  };
+
+  const confirmQuit = () => {
+    (window as any).electronApi?.confirmQuit?.();
+  };
+
+  const requestQuitApp = () => {
+    const sec = settingsRef.current?.security;
+    if (sec?.enabled && sec?.requireOnQuit && sec?.passwordHash) {
+      setPasswordModalConfig({
+        isOpen: true,
+        action: 'QUIT_APP',
+        onSuccess: () => {
+          confirmQuit();
+        },
+      });
+    } else {
+      confirmQuit();
+    }
+  };
+
+  const requestToggleMonitoring = (forceTarget?: boolean) => {
+    const nextState = forceTarget !== undefined ? forceTarget : !isMonitoringRef.current;
+    if (nextState) {
+      setIsMonitoring(true);
+      return;
+    }
+
+    const sec = settingsRef.current?.security;
+    if (sec?.enabled && sec?.requireOnPause && sec?.passwordHash) {
+      setPasswordModalConfig({
+        isOpen: true,
+        action: 'PAUSE_MONITORING',
+        onSuccess: () => {
+          setIsMonitoring(false);
+        },
+      });
+    } else {
+      setIsMonitoring(false);
+    }
+  };
+
   const toggleMonitoring = () => {
-    setIsMonitoring((prev) => !prev);
+    requestToggleMonitoring();
+  };
+
+  const updateSecuritySettings = (newSecurity: SecuritySettings) => {
+    if (!settings) return;
+    const updated: UserSettings = { ...settings, security: newSecurity };
+    updateSettings(updated);
   };
 
   const dismissReminder = (id: string) => {
@@ -423,6 +587,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setActiveProfile(prof);
       const profSettings = reposRef.current.settingsRepo.getSettings(prof.id);
       setSettings(profSettings);
+      if (profSettings.general?.theme) {
+        setThemeState(profSettings.general.theme);
+      }
       reminderEngineRef.current?.updateSettings(profSettings);
     }
   };
@@ -450,6 +617,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateSettings = (newSettings: UserSettings) => {
     setSettings(newSettings);
+    if (newSettings.general?.theme && newSettings.general.theme !== theme) {
+      setThemeState(newSettings.general.theme);
+    }
     if (activeProfile && reposRef.current.settingsRepo) {
       reposRef.current.settingsRepo.saveSettings(activeProfile.id, newSettings);
       reminderEngineRef.current?.updateSettings(newSettings);
@@ -501,6 +671,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         language,
         switchLanguage,
+        theme,
+        effectiveTheme,
+        switchTheme,
         activeProfile,
         profiles,
         switchProfile,
@@ -510,6 +683,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateSettings,
         isMonitoring,
         toggleMonitoring,
+        requestToggleMonitoring,
+        requestQuitApp,
+        confirmQuit,
+        passwordModalConfig,
+        closePasswordModal,
+        verifyPassword,
+        updateSecuritySettings,
         liveAnalysis,
         governorStatus,
         activeReminders,

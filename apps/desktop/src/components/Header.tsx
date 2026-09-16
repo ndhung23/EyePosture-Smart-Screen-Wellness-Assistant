@@ -1,5 +1,5 @@
 import React from 'react';
-import { Power, Coffee, Droplets, BatteryCharging, Battery, AlertCircle, X } from 'lucide-react';
+import { Power, Coffee, Droplets, BatteryCharging, Battery, AlertCircle, X, Sun, Moon } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
 
@@ -13,6 +13,9 @@ export const Header: React.FC = () => {
     governorStatus,
     activeReminders,
     dismissReminder,
+    theme,
+    effectiveTheme,
+    switchTheme,
   } = useApp();
 
   return (
@@ -60,6 +63,25 @@ export const Header: React.FC = () => {
           >
             <Droplets className="w-3.5 h-3.5 text-cyan-400" />
             <span>{t('hydration.logGlass')}</span>
+          </button>
+
+          {/* Quick Theme Toggle Button */}
+          <button
+            onClick={() => switchTheme(effectiveTheme === 'dark' ? 'light' : 'dark')}
+            title={effectiveTheme === 'dark' ? t('header.lightMode') : t('header.darkMode')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 text-xs font-medium text-slate-200 transition-all active:scale-95"
+          >
+            {effectiveTheme === 'dark' ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">{t('header.lightMode')}</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="hidden sm:inline">{t('header.darkMode')}</span>
+              </>
+            )}
           </button>
 
           {/* Monitoring Active / Pause Toggle Button */}
