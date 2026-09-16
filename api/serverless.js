@@ -9,7 +9,12 @@ function getServer() {
   return serverInstance;
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   const server = getServer();
   return server.handleRequest(req, res);
-};
+}
+
+handler.default = handler;
+module.exports = handler;
+module.exports.default = handler;
+

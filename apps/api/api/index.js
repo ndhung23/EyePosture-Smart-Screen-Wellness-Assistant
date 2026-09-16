@@ -1719,7 +1719,7 @@ function handleServerless(req, res) {
   }
   return serverlessInstance.handleRequest(req, res);
 }
-var http, crypto2, fs, path, import_billing, EyePostureApiServer, serverlessInstance, server_default;
+var http, crypto2, fs, path, import_billing, EyePostureApiServer, serverlessInstance, modRef, server_default;
 var init_server = __esm({
   "apps/api/src/server.ts"() {
     "use strict";
@@ -2304,6 +2304,16 @@ var init_server = __esm({
       }
     };
     serverlessInstance = null;
+    handleServerless.default = handleServerless;
+    handleServerless.handleServerless = handleServerless;
+    handleServerless.EyePostureApiServer = EyePostureApiServer;
+    modRef = typeof globalThis.module !== "undefined" ? globalThis.module : null;
+    if (modRef && modRef.exports) {
+      modRef.exports = handleServerless;
+      modRef.exports.default = handleServerless;
+      modRef.exports.handleServerless = handleServerless;
+      modRef.exports.EyePostureApiServer = EyePostureApiServer;
+    }
     server_default = handleServerless;
   }
 });
@@ -2317,7 +2327,10 @@ function getServer() {
   }
   return serverInstance;
 }
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   const server = getServer();
   return server.handleRequest(req, res);
-};
+}
+handler.default = handler;
+module.exports = handler;
+module.exports.default = handler;

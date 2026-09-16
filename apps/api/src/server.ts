@@ -774,16 +774,17 @@ export function handleServerless(req: http.IncomingMessage, res: http.ServerResp
   return serverlessInstance.handleRequest(req, res);
 }
 
-// Guarantee module.exports is directly callable as a function by Vercel Node runtime
-const callableHandler: any = function (req: http.IncomingMessage, res: http.ServerResponse) {
-  return handleServerless(req, res);
-};
-callableHandler.default = callableHandler;
-callableHandler.handleServerless = handleServerless;
-callableHandler.EyePostureApiServer = EyePostureApiServer;
+// Guarantee both CommonJS and ES Module interop for Vercel / serverless runtimes
+(handleServerless as any).default = handleServerless;
+(handleServerless as any).handleServerless = handleServerless;
+(handleServerless as any).EyePostureApiServer = EyePostureApiServer;
 
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = callableHandler;
+const modRef = typeof (globalThis as any).module !== 'undefined' ? (globalThis as any).module : null;
+if (modRef && modRef.exports) {
+  modRef.exports = handleServerless;
+  modRef.exports.default = handleServerless;
+  modRef.exports.handleServerless = handleServerless;
+  modRef.exports.EyePostureApiServer = EyePostureApiServer;
 }
 
 export default handleServerless;
