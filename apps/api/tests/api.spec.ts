@@ -327,4 +327,30 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
     });
     expect(unlinkRes.status).toBe(200);
   });
+
+  it('should serve Landing Page at / and redirect Windows download at /download/win', async () => {
+    // 1. Landing Page HTML at /
+    const homeRes = await fetch(`${baseUrl}/`);
+    expect(homeRes.status).toBe(200);
+    expect(homeRes.headers.get('content-type')).toContain('text/html');
+    const homeHtml = await homeRes.text();
+    expect(homeHtml).toContain('EyePosture');
+    expect(homeHtml).toContain('Tải Cho Windows');
+    expect(homeHtml).toContain('Bảo Vệ Thị Lực');
+
+    // 2. Admin Hub HTML at /admin
+    const adminRes = await fetch(`${baseUrl}/admin`);
+    expect(adminRes.status).toBe(200);
+    expect(adminRes.headers.get('content-type')).toContain('text/html');
+    const adminHtml = await adminRes.text();
+    expect(adminHtml).toContain('Admin Dashboard');
+
+    // 3. Windows .exe download redirect at /download/win
+    const downloadRes = await fetch(`${baseUrl}/download/win`, {
+      redirect: 'manual',
+    });
+    expect(downloadRes.status).toBe(302);
+    expect(downloadRes.headers.get('location')).toBeDefined();
+    expect(downloadRes.headers.get('location')).toContain('github.com');
+  });
 });

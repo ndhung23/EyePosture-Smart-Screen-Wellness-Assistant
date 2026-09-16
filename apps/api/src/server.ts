@@ -18,6 +18,7 @@ import {
   SePayWebhookPayload,
 } from '@eyeposture/billing';
 import { getAdminDashboardHtml } from './admin/dashboard-html.js';
+import { getLandingPageHtml } from './landing/landing-html.js';
 import { handleAdminRoutes } from './admin/admin-handlers.js';
 import { SupabaseService } from './supabase-client.js';
 
@@ -271,17 +272,29 @@ export class EyePostureApiServer {
     }
 
     // Favicon & System Brand Icons
-    if ((pathname === '/favicon.ico' || pathname === '/EyePosture.ico') && method === 'GET') {
+    // Static Brand Assets (.ico & .png)
+    if (
+      (pathname === '/favicon.ico' ||
+        pathname === '/EyePosture.ico' ||
+        pathname === '/EyePosture.png' ||
+        pathname === '/icon.png') &&
+      method === 'GET'
+    ) {
+      const filename = pathname.endsWith('.ico') ? 'EyePosture.ico' : 'EyePosture.png';
+      const contentType = pathname.endsWith('.ico') ? 'image/x-icon' : 'image/png';
       const candidates = [
-        path.resolve(process.cwd(), 'EyePosture.ico'),
-        path.resolve(process.cwd(), 'public/EyePosture.ico'),
-        path.resolve(process.cwd(), 'apps/api/public/EyePosture.ico'),
+        path.resolve(process.cwd(), filename),
+        path.resolve(process.cwd(), 'public', filename),
+        path.resolve(process.cwd(), 'apps/api/public', filename),
+        path.resolve(__dirname, filename),
+        path.resolve(__dirname, '..', filename),
+        path.resolve(__dirname, '../..', filename),
       ];
       for (const p of candidates) {
         if (fs.existsSync(p)) {
           const buf = fs.readFileSync(p);
           res.writeHead(200, {
-            'Content-Type': 'image/x-icon',
+            'Content-Type': contentType,
             'Cache-Control': 'public, max-age=86400',
             'Access-Control-Allow-Origin': '*',
           });
@@ -294,8 +307,37 @@ export class EyePostureApiServer {
       return;
     }
 
+    // Direct Windows .exe download redirect
+    if (
+      (pathname === '/download' ||
+        pathname === '/download/win' ||
+        pathname === '/download/windows' ||
+        pathname === '/download/EyePosture.exe') &&
+      method === 'GET'
+    ) {
+      const downloadUrl =
+        process.env.WINDOWS_DOWNLOAD_URL ||
+        'https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant/releases';
+      res.writeHead(302, {
+        Location: downloadUrl,
+        'Cache-Control': 'no-cache',
+      });
+      res.end();
+      return;
+    }
+
+    // Serve Landing Page (Homepage)
+    if ((pathname === '/' || pathname === '/home') && method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Access-Control-Allow-Origin': '*',
+      });
+      res.end(getLandingPageHtml());
+      return;
+    }
+
     // Serve Web Admin Dashboard
-    if ((pathname === '/' || pathname === '/admin' || pathname === '/admin/dashboard') && method === 'GET') {
+    if ((pathname === '/admin' || pathname === '/admin/dashboard') && method === 'GET') {
       res.writeHead(200, {
         'Content-Type': 'text/html; charset=utf-8',
         'Access-Control-Allow-Origin': '*',
