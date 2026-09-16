@@ -9,6 +9,8 @@ COPY packages/ ./packages/
 COPY apps/api/ ./apps/api/
 COPY apps/desktop/package.json ./apps/desktop/package.json
 COPY api/ ./api/
+COPY public/ ./public/
+COPY EyePosture.ico EyePosture.png ./
 
 # Install build dependencies
 RUN npm install --ignore-scripts
@@ -29,6 +31,8 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/api ./apps/api
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/EyePosture.* ./
 
 EXPOSE 8080
 

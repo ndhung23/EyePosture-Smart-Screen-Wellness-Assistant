@@ -11,6 +11,8 @@ export function getAdminDashboardHtml(): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EyePosture Admin Dashboard - Thống Kê & Quản Trị Người Dùng</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" href="/EyePosture.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -24,12 +26,7 @@ export function getAdminDashboardHtml(): string {
     <div>
       <!-- Brand Logo & Title -->
       <div class="p-5 border-b border-slate-800/80 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl gradient-teal flex items-center justify-center shadow-lg shadow-teal-500/20 text-slate-950">
-          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-        </div>
+        <img src="/EyePosture.png" alt="EyePosture Icon" class="w-10 h-10 rounded-xl object-contain shadow-lg shadow-teal-500/20 border border-teal-500/30 bg-slate-900" />
         <div>
           <div class="font-extrabold text-base tracking-tight brand-font flex items-center gap-1.5">
             EyePosture <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">HUB</span>

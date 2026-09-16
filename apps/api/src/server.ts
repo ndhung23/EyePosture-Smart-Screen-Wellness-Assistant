@@ -197,6 +197,65 @@ export class EyePostureApiServer {
       return;
     }
 
+    // Favicon & System Brand Icons
+    if ((pathname === '/favicon.ico' || pathname === '/EyePosture.ico') && method === 'GET') {
+      const candidates = [
+        path.resolve(process.cwd(), 'EyePosture.ico'),
+        path.resolve(process.cwd(), 'public/EyePosture.ico'),
+        path.resolve(process.cwd(), 'apps/api/public/EyePosture.ico'),
+        path.resolve(__dirname, 'EyePosture.ico'),
+        path.resolve(__dirname, '../EyePosture.ico'),
+        path.resolve(__dirname, '../../EyePosture.ico'),
+        path.resolve(__dirname, 'public/EyePosture.ico'),
+        path.resolve(__dirname, '../public/EyePosture.ico'),
+        path.resolve(__dirname, '../../public/EyePosture.ico'),
+      ];
+      for (const p of candidates) {
+        if (fs.existsSync(p)) {
+          const buf = fs.readFileSync(p);
+          res.writeHead(200, {
+            'Content-Type': 'image/x-icon',
+            'Cache-Control': 'public, max-age=86400',
+            'Access-Control-Allow-Origin': '*',
+          });
+          res.end(buf);
+          return;
+        }
+      }
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    if ((pathname === '/EyePosture.png' || pathname === '/icon.png') && method === 'GET') {
+      const candidates = [
+        path.resolve(process.cwd(), 'EyePosture.png'),
+        path.resolve(process.cwd(), 'public/EyePosture.png'),
+        path.resolve(process.cwd(), 'apps/api/public/EyePosture.png'),
+        path.resolve(__dirname, 'EyePosture.png'),
+        path.resolve(__dirname, '../EyePosture.png'),
+        path.resolve(__dirname, '../../EyePosture.png'),
+        path.resolve(__dirname, 'public/EyePosture.png'),
+        path.resolve(__dirname, '../public/EyePosture.png'),
+        path.resolve(__dirname, '../../public/EyePosture.png'),
+      ];
+      for (const p of candidates) {
+        if (fs.existsSync(p)) {
+          const buf = fs.readFileSync(p);
+          res.writeHead(200, {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=86400',
+            'Access-Control-Allow-Origin': '*',
+          });
+          res.end(buf);
+          return;
+        }
+      }
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
     // Serve Web Admin Dashboard
     if ((pathname === '/' || pathname === '/admin' || pathname === '/admin/dashboard') && method === 'GET') {
       res.writeHead(200, {

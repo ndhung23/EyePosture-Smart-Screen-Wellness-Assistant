@@ -36,6 +36,21 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 
+function getAppIcon(): string | undefined {
+  const candidates = [
+    path.join(__dirname, 'EyePosture.ico'),
+    path.join(__dirname, 'icon.png'),
+    path.join(__dirname, 'EyePosture.png'),
+    path.join(__dirname, '../public/EyePosture.ico'),
+    path.join(__dirname, '../../public/EyePosture.ico'),
+    path.join(process.cwd(), 'EyePosture.ico'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return undefined;
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -43,6 +58,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 650,
     frame: true,
+    icon: getAppIcon(),
     titleBarStyle: 'default',
     backgroundColor: '#0b0f19',
     show: true,
@@ -82,8 +98,19 @@ function createWindow() {
 
 function createTray() {
   try {
-    const iconPath = path.join(__dirname, 'icon.png');
-    const icon = nativeImage.createFromPath(iconPath);
+    const iconCandidates = [
+      path.join(__dirname, 'icon.png'),
+      path.join(__dirname, 'EyePosture.png'),
+      path.join(__dirname, 'EyePosture.ico'),
+      path.join(__dirname, '../public/icon.png'),
+    ];
+    let icon = nativeImage.createEmpty();
+    for (const c of iconCandidates) {
+      if (fs.existsSync(c)) {
+        icon = nativeImage.createFromPath(c);
+        if (!icon.isEmpty()) break;
+      }
+    }
     tray = new Tray(icon.isEmpty() ? nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAZklEQVQ4T2NkoBAwUqifYdQAYgz4D8TvgHgLEP9nIB38h6rFp5gBqh6bgfxlqHoYGg2YgRroQAzGf4hT/wea8B+o/h9QjQ96eBhGQeNhaDRgBmqQAzEY/yFO/R9o4n+g+n9ANT4AZ/iR/09iSsoAAAAASUVORK5CYII=') : icon);
     tray.setToolTip('EyePosture - Screen Wellness Assistant');
 

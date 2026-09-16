@@ -14,7 +14,7 @@
     "api": "node apps/api/dist/start.js",
     "build:api": "npm run build:packages && npx esbuild api/serverless.js --bundle --platform=node --target=node20 --format=cjs --outfile=api/index.js && node -e \"const fs=require('fs'); fs.copyFileSync('api/index.js', 'apps/api/index.js'); fs.mkdirSync('apps/api/api', {recursive: true}); fs.copyFileSync('api/index.js', 'apps/api/api/index.js');\"",
     "start:api": "node apps/api/dist/start.js",
-    "package:win": "npm run build -w @eyeposture/desktop && npx electron-packager apps/desktop EyePosture --platform=win32 --arch=x64 --out=release --overwrite --no-prune",
+    "package:win": "npm run build -w @eyeposture/desktop && npx electron-packager apps/desktop EyePosture --platform=win32 --arch=x64 --icon=EyePosture.ico --out=release --overwrite --no-prune",
     "build:packages": "npm run build -w @eyeposture/shared-types && npm run build -w @eyeposture/billing && npm run build -w @eyeposture/database && npm run build -w @eyeposture/reminder-engine && npm run build -w @eyeposture/vision && npm run build -w @eyeposture/i18n && npm run build -w @eyeposture/api",
     "build": "npm run build:packages && npm run build -w @eyeposture/desktop",
     "test": "vitest run",
