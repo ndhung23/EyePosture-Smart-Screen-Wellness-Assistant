@@ -1,9 +1,11 @@
 import { getLandingStyles } from './landing-styles.js';
 import { getLandingScripts } from './landing-scripts.js';
+import { getLoginModalHtml } from './landing-login-modal.js';
 
 export function getLandingPageHtml(): string {
   const styles = getLandingStyles();
   const scripts = getLandingScripts();
+  const loginModal = getLoginModalHtml();
 
   return `<!DOCTYPE html>
 <html lang="vi" class="dark scroll-smooth">
@@ -68,6 +70,9 @@ export function getLandingPageHtml(): string {
 
       <!-- Header Action Buttons -->
       <div class="hidden sm:flex items-center gap-3">
+        <!-- Auth Container (Login / Profile) -->
+        <div id="nav-auth-container"></div>
+
         <!-- Admin Hub Link -->
         <a href="/admin" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition flex items-center gap-2">
           <svg class="w-3.5 h-3.5 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
@@ -97,6 +102,7 @@ export function getLandingPageHtml(): string {
       <a href="#pricing" class="block text-slate-300 hover:text-teal-400 py-1">Bảng Giá</a>
       <a href="#faq" class="block text-slate-300 hover:text-teal-400 py-1">Hỏi Đáp FAQ</a>
       <div class="pt-3 border-t border-slate-800 flex flex-col gap-2.5">
+        <div id="mobile-auth-container"></div>
         <a href="/admin" class="text-center py-2 text-xs rounded-lg bg-slate-900 text-slate-300 border border-slate-800">Vào Quản Trị Hub (/admin)</a>
         <button class="trigger-download w-full btn-glow text-slate-950 font-bold py-2.5 rounded-lg text-xs flex items-center justify-center gap-2">
           <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.902-1.799"/></svg>
@@ -111,31 +117,32 @@ export function getLandingPageHtml(): string {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
       
       <!-- Highlight Badge -->
-      <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full glass-card shimmer-badge text-xs font-semibold text-teal-300 border border-teal-500/30 mb-8 shadow-sm">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-card shimmer-badge text-xs font-semibold text-teal-300 border border-teal-500/30 mb-7 shadow-sm">
         <span class="pulse-dot"></span>
-        <span>Bảo Vệ Thị Lực & Cột Sống • 100% On-Device AI Vision Cục Bộ</span>
+        <span>AI Bảo Vệ Thị Lực & Tư Thế Cục Bộ</span>
       </div>
 
-      <!-- Main Headline -->
-      <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-5xl mx-auto leading-[1.15]">
-        Làm Việc Hiệu Quả,<br/>
-        <span class="gradient-text">Giữ Mắt Sáng & Cột Sống Khỏe</span> Mỗi Ngày
+      <!-- Main Headline (Rút gọn) -->
+      <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.15]">
+        Làm Việc Tập Trung,<br/>
+        <span class="gradient-text">Bảo Vệ Mắt & Cột Sống</span>
       </h1>
 
-      <!-- Subtitle Description -->
-      <p class="mt-6 text-base sm:text-lg md:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed font-normal">
-        EyePosture là ứng dụng thông minh chạy nền trên máy tính giúp phát hiện khoảng cách ngồi quá gần, uốn nắn tư thế gù lưng bằng AI, nhắc nhở quy tắc nghỉ mắt 20-20-20 và uống nước định kỳ. <span class="text-teal-300 font-medium">Toàn bộ dữ liệu webcam chỉ xử lý trên RAM máy bạn, cam kết 0% truyền dữ liệu ra Internet.</span>
+      <!-- Subtitle Description (Rút gọn súc tích) -->
+      <p class="mt-5 text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
+        Trợ lý AI phát hiện ngồi gần màn hình, nhắc sửa tư thế gù lưng và quy tắc 20-20-20.
+        <span class="text-teal-300 font-medium">100% xử lý cục bộ trên máy, cam kết 0% gửi dữ liệu.</span>
       </p>
 
       <!-- CTA Buttons & Download Highlight -->
-      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+      <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
         
         <!-- Primary Windows Download CTA -->
-        <button class="trigger-download btn-glow text-slate-950 font-extrabold px-8 py-4 rounded-2xl text-base flex items-center justify-center gap-3.5 w-full sm:w-auto group">
+        <button class="trigger-download btn-glow text-slate-950 font-extrabold px-8 py-3.5 rounded-2xl text-base flex items-center justify-center gap-3 w-full sm:w-auto group">
           <svg class="w-5 h-5 fill-current group-hover:rotate-6 transition duration-200" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.902-1.799"/></svg>
           <div class="text-left leading-tight">
-            <div>Tải Về Cho Windows (.exe)</div>
-            <div class="text-[11px] font-medium text-slate-900/80">Phiên bản v1.0.0 • Windows 10 & 11 (64-bit)</div>
+            <div>Tải Cho Windows (.exe)</div>
+            <div class="text-[11px] font-medium text-slate-900/80">Bản v1.0.0 • Windows 10 & 11</div>
           </div>
           <svg class="w-5 h-5 ml-1 group-hover:translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
         </button>
@@ -907,6 +914,9 @@ export function getLandingPageHtml(): string {
 
     </div>
   </footer>
+
+  <!-- Auth Login Modal -->
+  ${loginModal}
 
   <!-- Client-side Interactive Scripts -->
   <script>

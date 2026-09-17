@@ -2045,6 +2045,177 @@ function getLandingScripts() {
         }
       });
     }
+
+    // ================= AUTH LOGIN MODAL LOGIC =================
+    const loginModal = document.getElementById('login-modal');
+    const closeLoginModalBtn = document.getElementById('close-login-modal');
+    const openLoginBtns = document.querySelectorAll('.trigger-login-modal');
+    const quickFillAdminBtn = document.getElementById('btn-quick-fill-admin');
+    const loginForm = document.getElementById('landing-login-form');
+    const loginEmailInput = document.getElementById('login-email');
+    const loginPasswordInput = document.getElementById('login-password');
+    const loginErrorBox = document.getElementById('login-error-box');
+    const loginErrorText = document.getElementById('login-error-text');
+    const loginSuccessBox = document.getElementById('login-success-box');
+    const loginSuccessText = document.getElementById('login-success-text');
+    const navAuthContainer = document.getElementById('nav-auth-container');
+    const mobileAuthContainer = document.getElementById('mobile-auth-container');
+
+    function openLogin() {
+      if (!loginModal) return;
+      if (loginErrorBox) loginErrorBox.classList.add('hidden');
+      if (loginSuccessBox) loginSuccessBox.classList.add('hidden');
+      loginModal.classList.remove('hidden');
+      loginModal.classList.add('flex');
+    }
+
+    function closeLogin() {
+      if (!loginModal) return;
+      loginModal.classList.add('hidden');
+      loginModal.classList.remove('flex');
+    }
+
+    openLoginBtns.forEach(btn => btn.addEventListener('click', openLogin));
+    if (closeLoginModalBtn) closeLoginModalBtn.addEventListener('click', closeLogin);
+    if (loginModal) {
+      loginModal.addEventListener('click', (e) => {
+        if (e.target === loginModal) closeLogin();
+      });
+    }
+
+    if (quickFillAdminBtn && loginEmailInput && loginPasswordInput) {
+      quickFillAdminBtn.addEventListener('click', () => {
+        loginEmailInput.value = 'admin';
+        loginPasswordInput.value = '1';
+        if (loginErrorBox) loginErrorBox.classList.add('hidden');
+      });
+    }
+
+    function updateNavAuthState() {
+      const storedUser = localStorage.getItem('eyeposture_auth_user');
+      let user = null;
+      try {
+        if (storedUser) user = JSON.parse(storedUser);
+      } catch {}
+
+      if (navAuthContainer) {
+        if (user) {
+          const isAdmin = user.role === 'ADMIN';
+          navAuthContainer.innerHTML = \`
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-teal-500/30 text-xs">
+              <span class="w-2 h-2 rounded-full bg-teal-400"></span>
+              <span class="font-semibold text-slate-200 max-w-[120px] truncate">\${user.name || user.email}</span>
+              \${isAdmin ? '<span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300">ADMIN</span>' : ''}
+              <button id="btn-logout" title="\u0110\u0103ng xu\u1EA5t" class="text-slate-400 hover:text-rose-400 ml-1 p-0.5 transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+              </button>
+            </div>
+          \`;
+          const btnLogout = document.getElementById('btn-logout');
+          if (btnLogout) {
+            btnLogout.addEventListener('click', () => {
+              localStorage.removeItem('eyeposture_auth_token');
+              localStorage.removeItem('eyeposture_auth_user');
+              updateNavAuthState();
+            });
+          }
+        } else {
+          navAuthContainer.innerHTML = \`
+            <button class="trigger-login-modal px-3 py-2 rounded-xl text-xs font-semibold text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 transition flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+              <span>\u0110\u0103ng Nh\u1EADp</span>
+            </button>
+          \`;
+          const triggerBtn = navAuthContainer.querySelector('.trigger-login-modal');
+          if (triggerBtn) triggerBtn.addEventListener('click', openLogin);
+        }
+      }
+
+      if (mobileAuthContainer) {
+        if (user) {
+          mobileAuthContainer.innerHTML = \`
+            <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900 text-xs">
+              <span class="text-teal-300 font-semibold">\${user.name || user.email}</span>
+              <button id="btn-mobile-logout" class="text-rose-400 font-medium text-xs">\u0110\u0103ng xu\u1EA5t</button>
+            </div>
+          \`;
+          const btnMobLogout = document.getElementById('btn-mobile-logout');
+          if (btnMobLogout) {
+            btnMobLogout.addEventListener('click', () => {
+              localStorage.removeItem('eyeposture_auth_token');
+              localStorage.removeItem('eyeposture_auth_user');
+              updateNavAuthState();
+            });
+          }
+        } else {
+          mobileAuthContainer.innerHTML = \`
+            <button class="trigger-login-modal w-full py-2 rounded-lg text-xs font-semibold text-teal-300 bg-teal-500/10 border border-teal-500/30 text-center">
+              \u0110\u0103ng Nh\u1EADp T\xE0i Kho\u1EA3n
+            </button>
+          \`;
+          const triggerMob = mobileAuthContainer.querySelector('.trigger-login-modal');
+          if (triggerMob) triggerMob.addEventListener('click', openLogin);
+        }
+      }
+    }
+
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = loginEmailInput.value.trim();
+        const password = loginPasswordInput.value;
+        const submitBtn = document.getElementById('btn-login-submit');
+
+        if (loginErrorBox) loginErrorBox.classList.add('hidden');
+        if (loginSuccessBox) loginSuccessBox.classList.add('hidden');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span>\u0110ang x\xE1c th\u1EF1c...</span>';
+        }
+
+        try {
+          const res = await fetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || '\u0110\u0103ng nh\u1EADp kh\xF4ng th\xE0nh c\xF4ng');
+          }
+
+          localStorage.setItem('eyeposture_auth_token', data.token);
+          localStorage.setItem('eyeposture_auth_user', JSON.stringify(data.user));
+
+          if (loginSuccessBox && loginSuccessText) {
+            loginSuccessText.textContent = '\u0110\u0103ng nh\u1EADp th\xE0nh c\xF4ng! Xin ch\xE0o ' + (data.user.name || data.user.email);
+            loginSuccessBox.classList.remove('hidden');
+          }
+
+          updateNavAuthState();
+
+          setTimeout(() => {
+            closeLogin();
+            if (data.user && data.user.role === 'ADMIN') {
+              window.location.href = '/admin';
+            }
+          }, 600);
+        } catch (err) {
+          if (loginErrorBox && loginErrorText) {
+            loginErrorText.textContent = err.message || 'L\u1ED7i k\u1EBFt n\u1ED1i m\xE1y ch\u1EE7';
+            loginErrorBox.classList.remove('hidden');
+          }
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>\u0110\u0103ng Nh\u1EADp Ngay</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
+          }
+        }
+      });
+    }
+
+    // Initialize Auth state
+    updateNavAuthState();
   `;
 }
 var init_landing_scripts = __esm({
@@ -2053,10 +2224,112 @@ var init_landing_scripts = __esm({
   }
 });
 
+// apps/api/src/landing/landing-login-modal.ts
+function getLoginModalHtml() {
+  return `
+  <!-- ================= AUTH LOGIN MODAL ================= -->
+  <div id="login-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md transition-all">
+    <div class="relative w-full max-w-md rounded-3xl border border-slate-700/80 bg-slate-900/95 p-6 sm:p-8 shadow-2xl shadow-teal-500/10 animate-fadeIn">
+      
+      <!-- Close Button -->
+      <button id="close-login-modal" class="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg transition" aria-label="\u0110\xF3ng">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="flex items-center gap-3.5 mb-6">
+        <div class="w-12 h-12 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 shadow-md shadow-teal-500/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold text-white tracking-tight">\u0110\u0103ng Nh\u1EADp</h3>
+          <p class="text-xs text-slate-400">\u0110\u0103ng nh\u1EADp t\xE0i kho\u1EA3n qu\u1EA3n tr\u1ECB ho\u1EB7c ng\u01B0\u1EDDi d\xF9ng</p>
+        </div>
+      </div>
+
+      <!-- Quick Fill Helper for Admin/1 -->
+      <div class="flex items-center justify-between p-2.5 mb-5 rounded-xl bg-teal-500/10 border border-teal-500/25 text-xs">
+        <span class="text-slate-300">T\xE0i kho\u1EA3n qu\u1EA3n tr\u1ECB th\u1EED nghi\u1EC7m:</span>
+        <button id="btn-quick-fill-admin" type="button" class="font-bold text-teal-300 hover:text-teal-200 underline flex items-center gap-1 transition">
+          \u26A1 \u0110i\u1EC1n admin/1
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="landing-login-form" class="space-y-4">
+        <!-- Identifier Input -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+            <span>T\xE0i kho\u1EA3n / Email</span>
+          </label>
+          <input 
+            type="text" 
+            id="login-email" 
+            required 
+            placeholder="admin ho\u1EB7c email@example.com"
+            class="w-full px-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-teal-500 transition"
+          />
+        </div>
+
+        <!-- Password Input -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-slate-300">M\u1EADt kh\u1EA9u</label>
+          <input 
+            type="password" 
+            id="login-password" 
+            required 
+            placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+            class="w-full px-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-teal-500 transition"
+          />
+        </div>
+
+        <!-- Error Banner -->
+        <div id="login-error-box" class="hidden p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2">
+          <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span id="login-error-text">Sai t\xE0i kho\u1EA3n ho\u1EB7c m\u1EADt kh\u1EA9u</span>
+        </div>
+
+        <!-- Success Banner -->
+        <div id="login-success-box" class="hidden p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
+          <svg class="w-4 h-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span id="login-success-text">\u0110\u0103ng nh\u1EADp th\xE0nh c\xF4ng!</span>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit" 
+          id="btn-login-submit"
+          class="w-full py-3 rounded-xl btn-glow text-slate-950 font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98]"
+        >
+          <span>\u0110\u0103ng Nh\u1EADp Ngay</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+  `;
+}
+var init_landing_login_modal = __esm({
+  "apps/api/src/landing/landing-login-modal.ts"() {
+    "use strict";
+  }
+});
+
 // apps/api/src/landing/landing-html.ts
 function getLandingPageHtml() {
   const styles = getLandingStyles();
   const scripts = getLandingScripts();
+  const loginModal = getLoginModalHtml();
   return `<!DOCTYPE html>
 <html lang="vi" class="dark scroll-smooth">
 <head>
@@ -2120,6 +2393,9 @@ function getLandingPageHtml() {
 
       <!-- Header Action Buttons -->
       <div class="hidden sm:flex items-center gap-3">
+        <!-- Auth Container (Login / Profile) -->
+        <div id="nav-auth-container"></div>
+
         <!-- Admin Hub Link -->
         <a href="/admin" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition flex items-center gap-2">
           <svg class="w-3.5 h-3.5 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
@@ -2149,6 +2425,7 @@ function getLandingPageHtml() {
       <a href="#pricing" class="block text-slate-300 hover:text-teal-400 py-1">B\u1EA3ng Gi\xE1</a>
       <a href="#faq" class="block text-slate-300 hover:text-teal-400 py-1">H\u1ECFi \u0110\xE1p FAQ</a>
       <div class="pt-3 border-t border-slate-800 flex flex-col gap-2.5">
+        <div id="mobile-auth-container"></div>
         <a href="/admin" class="text-center py-2 text-xs rounded-lg bg-slate-900 text-slate-300 border border-slate-800">V\xE0o Qu\u1EA3n Tr\u1ECB Hub (/admin)</a>
         <button class="trigger-download w-full btn-glow text-slate-950 font-bold py-2.5 rounded-lg text-xs flex items-center justify-center gap-2">
           <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.902-1.799"/></svg>
@@ -2163,31 +2440,32 @@ function getLandingPageHtml() {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
       
       <!-- Highlight Badge -->
-      <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full glass-card shimmer-badge text-xs font-semibold text-teal-300 border border-teal-500/30 mb-8 shadow-sm">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-card shimmer-badge text-xs font-semibold text-teal-300 border border-teal-500/30 mb-7 shadow-sm">
         <span class="pulse-dot"></span>
-        <span>B\u1EA3o V\u1EC7 Th\u1ECB L\u1EF1c & C\u1ED9t S\u1ED1ng \u2022 100% On-Device AI Vision C\u1EE5c B\u1ED9</span>
+        <span>AI B\u1EA3o V\u1EC7 Th\u1ECB L\u1EF1c & T\u01B0 Th\u1EBF C\u1EE5c B\u1ED9</span>
       </div>
 
-      <!-- Main Headline -->
-      <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-5xl mx-auto leading-[1.15]">
-        L\xE0m Vi\u1EC7c Hi\u1EC7u Qu\u1EA3,<br/>
-        <span class="gradient-text">Gi\u1EEF M\u1EAFt S\xE1ng & C\u1ED9t S\u1ED1ng Kh\u1ECFe</span> M\u1ED7i Ng\xE0y
+      <!-- Main Headline (R\xFAt g\u1ECDn) -->
+      <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.15]">
+        L\xE0m Vi\u1EC7c T\u1EADp Trung,<br/>
+        <span class="gradient-text">B\u1EA3o V\u1EC7 M\u1EAFt & C\u1ED9t S\u1ED1ng</span>
       </h1>
 
-      <!-- Subtitle Description -->
-      <p class="mt-6 text-base sm:text-lg md:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed font-normal">
-        EyePosture l\xE0 \u1EE9ng d\u1EE5ng th\xF4ng minh ch\u1EA1y n\u1EC1n tr\xEAn m\xE1y t\xEDnh gi\xFAp ph\xE1t hi\u1EC7n kho\u1EA3ng c\xE1ch ng\u1ED3i qu\xE1 g\u1EA7n, u\u1ED1n n\u1EAFn t\u01B0 th\u1EBF g\xF9 l\u01B0ng b\u1EB1ng AI, nh\u1EAFc nh\u1EDF quy t\u1EAFc ngh\u1EC9 m\u1EAFt 20-20-20 v\xE0 u\u1ED1ng n\u01B0\u1EDBc \u0111\u1ECBnh k\u1EF3. <span class="text-teal-300 font-medium">To\xE0n b\u1ED9 d\u1EEF li\u1EC7u webcam ch\u1EC9 x\u1EED l\xFD tr\xEAn RAM m\xE1y b\u1EA1n, cam k\u1EBFt 0% truy\u1EC1n d\u1EEF li\u1EC7u ra Internet.</span>
+      <!-- Subtitle Description (R\xFAt g\u1ECDn s\xFAc t\xEDch) -->
+      <p class="mt-5 text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
+        Tr\u1EE3 l\xFD AI ph\xE1t hi\u1EC7n ng\u1ED3i g\u1EA7n m\xE0n h\xECnh, nh\u1EAFc s\u1EEDa t\u01B0 th\u1EBF g\xF9 l\u01B0ng v\xE0 quy t\u1EAFc 20-20-20.
+        <span class="text-teal-300 font-medium">100% x\u1EED l\xFD c\u1EE5c b\u1ED9 tr\xEAn m\xE1y, cam k\u1EBFt 0% g\u1EEDi d\u1EEF li\u1EC7u.</span>
       </p>
 
       <!-- CTA Buttons & Download Highlight -->
-      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+      <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
         
         <!-- Primary Windows Download CTA -->
-        <button class="trigger-download btn-glow text-slate-950 font-extrabold px-8 py-4 rounded-2xl text-base flex items-center justify-center gap-3.5 w-full sm:w-auto group">
+        <button class="trigger-download btn-glow text-slate-950 font-extrabold px-8 py-3.5 rounded-2xl text-base flex items-center justify-center gap-3 w-full sm:w-auto group">
           <svg class="w-5 h-5 fill-current group-hover:rotate-6 transition duration-200" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.902-1.799"/></svg>
           <div class="text-left leading-tight">
-            <div>T\u1EA3i V\u1EC1 Cho Windows (.exe)</div>
-            <div class="text-[11px] font-medium text-slate-900/80">Phi\xEAn b\u1EA3n v1.0.0 \u2022 Windows 10 & 11 (64-bit)</div>
+            <div>T\u1EA3i Cho Windows (.exe)</div>
+            <div class="text-[11px] font-medium text-slate-900/80">B\u1EA3n v1.0.0 \u2022 Windows 10 & 11</div>
           </div>
           <svg class="w-5 h-5 ml-1 group-hover:translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
         </button>
@@ -2960,6 +3238,9 @@ function getLandingPageHtml() {
     </div>
   </footer>
 
+  <!-- Auth Login Modal -->
+  ${loginModal}
+
   <!-- Client-side Interactive Scripts -->
   <script>
     ${scripts}
@@ -2973,6 +3254,7 @@ var init_landing_html = __esm({
     "use strict";
     init_landing_styles();
     init_landing_scripts();
+    init_landing_login_modal();
   }
 });
 
