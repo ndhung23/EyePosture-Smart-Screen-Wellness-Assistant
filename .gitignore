@@ -48,4 +48,5 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+data/users.json
 Data/users.json

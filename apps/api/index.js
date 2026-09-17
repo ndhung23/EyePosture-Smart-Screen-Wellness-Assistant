@@ -25367,24 +25367,26 @@ function seedAdminAccount(users, userSubscriptions, supabase) {
     expiresAt: Date.now() + 10 * 365 * 24 * 3600 * 1e3
   });
   if (supabase && supabase.isAvailable()) {
-    Promise.all([
-      supabase.createUser({
-        id: ADMIN_USER_ID,
-        email: "admin",
-        name: ADMIN_NAME,
-        password_hash: adminUser.passwordHash,
-        salt: ADMIN_SALT,
-        role: "ADMIN",
-        is_blocked: false
-      }),
-      supabase.upsertSubscription(
-        ADMIN_USER_ID,
-        "FAMILY",
-        "ACTIVE",
-        Date.now() + 10 * 365 * 24 * 3600 * 1e3
-      )
-    ]).catch((err) => {
-      console.warn("Supabase sync admin error (non-fatal):", err?.message || err);
+    supabase.findUserById(ADMIN_USER_ID).then((existing) => {
+      if (!existing) {
+        return supabase.createUser({
+          id: ADMIN_USER_ID,
+          email: "admin",
+          name: ADMIN_NAME,
+          password_hash: adminUser.passwordHash,
+          salt: ADMIN_SALT,
+          role: "ADMIN",
+          is_blocked: false
+        });
+      }
+    }).catch(() => {
+    });
+    supabase.upsertSubscription(
+      ADMIN_USER_ID,
+      "FAMILY",
+      "ACTIVE",
+      Date.now() + 10 * 365 * 24 * 3600 * 1e3
+    ).catch(() => {
     });
   }
 }
