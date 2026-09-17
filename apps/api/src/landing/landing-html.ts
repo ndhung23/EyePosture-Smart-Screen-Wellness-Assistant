@@ -36,52 +36,33 @@ export function getLandingPageHtml(): string {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
       
       <!-- Brand Logo -->
-      <a href="/" class="flex items-center gap-3 group">
-        <div class="relative">
-          <img src="/EyePosture.png" alt="EyePosture Logo" class="w-11 h-11 rounded-2xl object-contain shadow-lg shadow-teal-500/30 border border-teal-500/40 bg-slate-900 group-hover:scale-105 transition duration-300" />
-          <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-teal-500 border-2 border-slate-950"></span>
+      <a href="/" class="flex items-center gap-2.5 shrink-0 group">
+        <img src="/EyePosture.png" alt="EyePosture Logo" class="w-9 h-9 rounded-xl object-contain shadow-md border border-teal-500/30 bg-slate-900 group-hover:scale-105 transition duration-300" />
+        <div class="flex items-center gap-1.5 whitespace-nowrap">
+          <span class="text-lg font-extrabold tracking-tight text-white">EyePosture</span>
+          <span class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-300 border border-teal-500/30 leading-none">
+            AI
           </span>
-        </div>
-        <div>
-          <span class="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
-            EyePosture
-            <span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 border border-teal-500/30">
-              AI Wellness
-            </span>
-          </span>
-          <span class="text-[11px] text-slate-400 block -mt-0.5">Trợ Lý Sức Khỏe Màn Hình</span>
         </div>
       </a>
 
       <!-- Desktop Navigation Links -->
-      <nav class="hidden md:flex items-center gap-7 text-sm font-medium text-slate-300">
-        <a href="#features" class="hover:text-teal-400 transition">Tính Năng</a>
-        <a href="#privacy" class="hover:text-teal-400 transition flex items-center gap-1.5">
-          <svg class="w-3.5 h-3.5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-          Bảo Mật Local
-        </a>
-        <a href="#demo" class="hover:text-teal-400 transition">Trải Nghiệm Thử</a>
-        <a href="#how-it-works" class="hover:text-teal-400 transition">Cách Hoạt Động</a>
-        <a href="#pricing" class="hover:text-teal-400 transition">Bảng Giá</a>
-        <a href="#faq" class="hover:text-teal-400 transition">Hỏi Đáp</a>
+      <nav class="hidden lg:flex items-center gap-6 text-xs font-medium text-slate-300 shrink-0">
+        <a href="#features" class="whitespace-nowrap hover:text-teal-400 transition">Tính Năng</a>
+        <a href="#privacy" class="whitespace-nowrap hover:text-teal-400 transition">Bảo Mật Local</a>
+        <a href="#demo" class="whitespace-nowrap hover:text-teal-400 transition">Trải Nghiệm Thử</a>
+        <a href="#pricing" class="whitespace-nowrap hover:text-teal-400 transition">Bảng Giá</a>
+        <a href="#faq" class="whitespace-nowrap hover:text-teal-400 transition">Hỏi Đáp</a>
       </nav>
 
       <!-- Header Action Buttons -->
-      <div class="hidden sm:flex items-center gap-3">
-        <!-- Auth Container (Login / Profile) -->
-        <div id="nav-auth-container"></div>
-
-        <!-- Admin Hub Link -->
-        <a href="/admin" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition flex items-center gap-2">
-          <svg class="w-3.5 h-3.5 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-          Quản Trị Hub
-        </a>
+      <div class="hidden sm:flex items-center gap-2.5 shrink-0">
+        <!-- Auth Container (Login / Profile / Admin Hub) -->
+        <div id="nav-auth-container" class="flex items-center gap-2"></div>
 
         <!-- Windows Download Trigger -->
-        <button class="trigger-download btn-glow text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2">
-          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.902-1.799"/></svg>
+        <button class="trigger-download btn-glow text-slate-950 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0">
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.902-1.799"/></svg>
           <span>Tải Cho Windows</span>
         </button>
       </div>

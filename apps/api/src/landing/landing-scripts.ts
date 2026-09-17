@@ -232,11 +232,17 @@ export function getLandingScripts(): string {
         if (user) {
           const isAdmin = user.role === 'ADMIN';
           navAuthContainer.innerHTML = \`
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-teal-500/30 text-xs">
-              <span class="w-2 h-2 rounded-full bg-teal-400"></span>
-              <span class="font-semibold text-slate-200 max-w-[120px] truncate">\${user.name || user.email}</span>
-              \${isAdmin ? '<span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300">ADMIN</span>' : ''}
-              <button id="btn-logout" title="Đăng xuất" class="text-slate-400 hover:text-rose-400 ml-1 p-0.5 transition">
+            <div class="flex items-center gap-1.5 whitespace-nowrap">
+              \${isAdmin ? \`
+                <a href="/admin" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/40 text-xs font-semibold text-teal-300 transition whitespace-nowrap">
+                  <span class="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
+                  <span>Quản Trị Hub</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/30 font-bold text-teal-200">ADMIN</span>
+                </a>
+              \` : \`
+                <span class="text-xs font-semibold text-slate-200 max-w-[100px] truncate">👤 \${user.name || user.email}</span>
+              \`}
+              <button id="btn-logout" title="Đăng xuất" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition" aria-label="Đăng xuất">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
               </button>
             </div>
@@ -251,10 +257,16 @@ export function getLandingScripts(): string {
           }
         } else {
           navAuthContainer.innerHTML = \`
-            <button class="trigger-login-modal px-3 py-2 rounded-xl text-xs font-semibold text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 transition flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
-              <span>Đăng Nhập</span>
-            </button>
+            <div class="flex items-center gap-2 whitespace-nowrap">
+              <a href="/admin" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition flex items-center gap-1.5 whitespace-nowrap">
+                <svg class="w-3.5 h-3.5 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                <span>Quản Trị Hub</span>
+              </a>
+              <button class="trigger-login-modal px-3 py-1.5 rounded-xl text-xs font-semibold text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 transition flex items-center gap-1.5 whitespace-nowrap">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                <span>Đăng Nhập</span>
+              </button>
+            </div>
           \`;
           const triggerBtn = navAuthContainer.querySelector('.trigger-login-modal');
           if (triggerBtn) triggerBtn.addEventListener('click', openLogin);
