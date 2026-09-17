@@ -9,12 +9,113 @@ export function getDashboardScripts(): string {
     let tierChartInstance = null;
 
     document.addEventListener('DOMContentLoaded', () => {
-      initNavigation();
-      loadAllData();
-      setInterval(loadAllData, 30000); // Tự động làm mới mỗi 30s
+      checkAdminAuthentication();
     });
 
+    function checkAdminAuthentication() {
+      const token = localStorage.getItem('eyeposture_auth_token') || localStorage.getItem('eyeposture_admin_token');
+      const storedUser = localStorage.getItem('eyeposture_auth_user');
+      let user = null;
+      try {
+        if (storedUser) user = JSON.parse(storedUser);
+      } catch {}
+
+      const dashboardWrapper = document.getElementById('dashboard-wrapper');
+      const adminGate = document.getElementById('admin-auth-gate');
+      const adminProfileName = document.getElementById('admin-profile-name');
+
+      if (token && user && user.role === 'ADMIN') {
+        if (adminGate) adminGate.classList.add('hidden');
+        if (dashboardWrapper) {
+          dashboardWrapper.classList.remove('hidden');
+          dashboardWrapper.style.display = 'flex';
+        }
+        if (adminProfileName) adminProfileName.innerText = user.name || user.email;
+
+        initNavigation();
+        loadAllData();
+        if (!window.__adminIntervalSet) {
+          window.__adminIntervalSet = true;
+          setInterval(loadAllData, 30000);
+        }
+      } else {
+        if (dashboardWrapper) {
+          dashboardWrapper.classList.add('hidden');
+          dashboardWrapper.style.display = 'none';
+        }
+        if (adminGate) adminGate.classList.remove('hidden');
+        initAdminGateForm();
+      }
+    }
+
+    function initAdminGateForm() {
+      const gateForm = document.getElementById('admin-gate-form');
+      const emailInput = document.getElementById('gate-email');
+      const passInput = document.getElementById('gate-password');
+      const errorBox = document.getElementById('gate-error-box');
+      const errorText = document.getElementById('gate-error-text');
+      const submitBtn = document.getElementById('btn-gate-submit');
+
+      if (!gateForm || gateForm.__initialized) return;
+      gateForm.__initialized = true;
+
+      gateForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = emailInput.value.trim();
+        const password = passInput.value;
+
+        if (errorBox) errorBox.classList.add('hidden');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span>Đang xác thực...</span>';
+        }
+
+        try {
+          const res = await fetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || 'Sai thông tin đăng nhập');
+          }
+
+          if (data.user.role !== 'ADMIN') {
+            throw new Error('Tài khoản này không có quyền Quản trị viên (ADMIN)!');
+          }
+
+          localStorage.setItem('eyeposture_auth_token', data.token);
+          localStorage.setItem('eyeposture_admin_token', data.token);
+          localStorage.setItem('eyeposture_auth_user', JSON.stringify(data.user));
+
+          checkAdminAuthentication();
+        } catch (err) {
+          if (errorBox && errorText) {
+            errorText.textContent = err.message || 'Lỗi xác thực quản trị';
+            errorBox.classList.remove('hidden');
+          }
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Mở Khóa Quản Trị Hub</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
+          }
+        }
+      });
+    }
+
     function initNavigation() {
+      const btnAdminLogout = document.getElementById('btn-admin-logout');
+      if (btnAdminLogout && !btnAdminLogout.__initialized) {
+        btnAdminLogout.__initialized = true;
+        btnAdminLogout.addEventListener('click', () => {
+          localStorage.removeItem('eyeposture_auth_token');
+          localStorage.removeItem('eyeposture_admin_token');
+          localStorage.removeItem('eyeposture_auth_user');
+          location.reload();
+        });
+      }
+
       const navItems = document.querySelectorAll('.nav-item');
       navItems.forEach(item => {
         item.addEventListener('click', (e) => {
@@ -79,10 +180,12 @@ export function getDashboardScripts(): string {
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
 
       try {
+        const token = localStorage.getItem('eyeposture_auth_token') || localStorage.getItem('eyeposture_admin_token');
+        const authHeaders = token ? { 'Authorization': 'Bearer ' + token } : {};
         const [devRes, userRes, statsRes] = await Promise.all([
-          fetch('/api/v1/admin/devices').then(r => r.json()).catch(() => ({ devices: [] })),
-          fetch('/api/v1/admin/users').then(r => r.json()).catch(() => ({ users: [] })),
-          fetch('/api/v1/admin/stats').then(r => r.json()).catch(() => null)
+          fetch('/api/v1/admin/devices', { headers: authHeaders }).then(r => r.json()).catch(() => ({ devices: [] })),
+          fetch('/api/v1/admin/users', { headers: authHeaders }).then(r => r.json()).catch(() => ({ users: [] })),
+          fetch('/api/v1/admin/stats', { headers: authHeaders }).then(r => r.json()).catch(() => null)
         ]);
 
         rawDevices = devRes.devices || [];
@@ -486,9 +589,13 @@ export function getDashboardScripts(): string {
 
       const endpoint = shouldBlock ? '/api/v1/admin/devices/block' : '/api/v1/admin/devices/unblock';
       try {
+        const token = localStorage.getItem('eyeposture_auth_token') || localStorage.getItem('eyeposture_admin_token');
         const res = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+          },
           body: JSON.stringify({ deviceFingerprint: fingerprint })
         });
         const data = await res.json();
@@ -509,9 +616,13 @@ export function getDashboardScripts(): string {
 
       const endpoint = shouldBlock ? '/api/v1/admin/users/block' : '/api/v1/admin/users/unblock';
       try {
+        const token = localStorage.getItem('eyeposture_auth_token') || localStorage.getItem('eyeposture_admin_token');
         const res = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+          },
           body: JSON.stringify({ userId })
         });
         const data = await res.json();
@@ -529,9 +640,13 @@ export function getDashboardScripts(): string {
     async function quickUpgradeUser(userId, tier) {
       if (!confirm('Cấp ngay quyền ' + tier + ' cho tài khoản này?')) return;
       try {
+        const token = localStorage.getItem('eyeposture_auth_token') || localStorage.getItem('eyeposture_admin_token');
         const res = await fetch('/api/v1/admin/users/upgrade', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+          },
           body: JSON.stringify({ userId, tier, days: 365 })
         });
         if (res.ok) {

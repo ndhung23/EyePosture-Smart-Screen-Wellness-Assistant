@@ -1,9 +1,11 @@
 import { getDashboardStyles } from './dashboard-styles.js';
 import { getDashboardScripts } from './dashboard-scripts.js';
+import { getAdminLoginGateHtml } from './admin-login-gate-html.js';
 
 export function getAdminDashboardHtml(): string {
   const styles = getDashboardStyles();
   const scripts = getDashboardScripts();
+  const adminGate = getAdminLoginGateHtml();
 
   return `<!DOCTYPE html>
 <html lang="vi" class="dark">
@@ -19,7 +21,10 @@ export function getAdminDashboardHtml(): string {
     ${styles}
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 flex min-h-screen antialiased selection:bg-teal-500/30">
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-teal-500/30">
+
+  <!-- Dashboard Container (Hidden until admin authenticated) -->
+  <div id="dashboard-wrapper" style="display: none;" class="hidden flex min-h-screen w-full">
 
   <!-- ================= LEFT SIDEBAR ================= -->
   <aside class="w-64 glass-sidebar flex flex-col justify-between shrink-0 fixed top-0 bottom-0 left-0 z-30">
@@ -79,18 +84,23 @@ export function getAdminDashboardHtml(): string {
       </nav>
     </div>
 
-    <!-- Sidebar Footer: Admin Profile -->
+    <!-- Sidebar Footer: Admin Profile & Logout -->
     <div class="p-3 border-t border-slate-800/80 bg-slate-900/50">
-      <div class="flex items-center gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
-        <div class="w-8 h-8 rounded-lg gradient-teal flex items-center justify-center font-bold text-slate-950 text-xs">
-          H
-        </div>
-        <div class="overflow-hidden">
-          <div class="font-bold text-xs text-slate-200 truncate">Nguyen Duy Hung</div>
-          <div class="text-[10px] text-teal-400 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-teal-400"></span> Super Admin
+      <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div class="w-8 h-8 rounded-lg gradient-teal flex items-center justify-center font-bold text-slate-950 text-xs shrink-0">
+            A
+          </div>
+          <div class="overflow-hidden">
+            <div id="admin-profile-name" class="font-bold text-xs text-slate-200 truncate">Administrator</div>
+            <div class="text-[10px] text-teal-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-teal-400"></span> Super Admin
+            </div>
           </div>
         </div>
+        <button id="btn-admin-logout" title="Khóa bảng điều khiển & Đăng xuất" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition shrink-0" aria-label="Đăng xuất">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
       </div>
     </div>
   </aside>
@@ -315,6 +325,10 @@ export function getAdminDashboardHtml(): string {
 
     </div>
   </main>
+  </div> <!-- End #dashboard-wrapper -->
+
+  <!-- Admin Auth Gatekeeper Screen -->
+  ${adminGate}
 
   <!-- Toast Notification Popup -->
   <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">

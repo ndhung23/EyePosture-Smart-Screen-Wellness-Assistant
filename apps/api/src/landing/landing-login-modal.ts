@@ -35,7 +35,7 @@ export function getLoginModalHtml(): string {
             type="text" 
             id="login-email" 
             required 
-            placeholder="admin hoặc email@example.com"
+            placeholder="email@example.com"
             class="w-full px-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-teal-500 transition"
           />
         </div>

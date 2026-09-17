@@ -741,12 +741,113 @@ function getDashboardScripts() {
     let tierChartInstance = null;
 
     document.addEventListener('DOMContentLoaded', () => {
-      initNavigation();
-      loadAllData();
-      setInterval(loadAllData, 30000); // T\u1EF1 \u0111\u1ED9ng l\xE0m m\u1EDBi m\u1ED7i 30s
+      checkAdminAuthentication();
     });
 
+    function checkAdminAuthentication() {
+      const token = localStorage.getItem('eyeposture_auth_token') || localStorage.getItem('eyeposture_admin_token');
+      const storedUser = localStorage.getItem('eyeposture_auth_user');
+      let user = null;
+      try {
+        if (storedUser) user = JSON.parse(storedUser);
+      } catch {}
+
+      const dashboardWrapper = document.getElementById('dashboard-wrapper');
+      const adminGate = document.getElementById('admin-auth-gate');
+      const adminProfileName = document.getElementById('admin-profile-name');
+
+      if (token && user && user.role === 'ADMIN') {
+        if (adminGate) adminGate.classList.add('hidden');
+        if (dashboardWrapper) {
+          dashboardWrapper.classList.remove('hidden');
+          dashboardWrapper.style.display = 'flex';
+        }
+        if (adminProfileName) adminProfileName.innerText = user.name || user.email;
+
+        initNavigation();
+        loadAllData();
+        if (!window.__adminIntervalSet) {
+          window.__adminIntervalSet = true;
+          setInterval(loadAllData, 30000);
+        }
+      } else {
+        if (dashboardWrapper) {
+          dashboardWrapper.classList.add('hidden');
+          dashboardWrapper.style.display = 'none';
+        }
+        if (adminGate) adminGate.classList.remove('hidden');
+        initAdminGateForm();
+      }
+    }
+
+    function initAdminGateForm() {
+      const gateForm = document.getElementById('admin-gate-form');
+      const emailInput = document.getElementById('gate-email');
+      const passInput = document.getElementById('gate-password');
+      const errorBox = document.getElementById('gate-error-box');
+      const errorText = document.getElementById('gate-error-text');
+      const submitBtn = document.getElementById('btn-gate-submit');
+
+      if (!gateForm || gateForm.__initialized) return;
+      gateForm.__initialized = true;
+
+      gateForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = emailInput.value.trim();
+        const password = passInput.value;
+
+        if (errorBox) errorBox.classList.add('hidden');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span>\u0110ang x\xE1c th\u1EF1c...</span>';
+        }
+
+        try {
+          const res = await fetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || 'Sai th\xF4ng tin \u0111\u0103ng nh\u1EADp');
+          }
+
+          if (data.user.role !== 'ADMIN') {
+            throw new Error('T\xE0i kho\u1EA3n n\xE0y kh\xF4ng c\xF3 quy\u1EC1n Qu\u1EA3n tr\u1ECB vi\xEAn (ADMIN)!');
+          }
+
+          localStorage.setItem('eyeposture_auth_token', data.token);
+          localStorage.setItem('eyeposture_admin_token', data.token);
+          localStorage.setItem('eyeposture_auth_user', JSON.stringify(data.user));
+
+          checkAdminAuthentication();
+        } catch (err) {
+          if (errorBox && errorText) {
+            errorText.textContent = err.message || 'L\u1ED7i x\xE1c th\u1EF1c qu\u1EA3n tr\u1ECB';
+            errorBox.classList.remove('hidden');
+          }
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>M\u1EDF Kh\xF3a Qu\u1EA3n Tr\u1ECB Hub</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
+          }
+        }
+      });
+    }
+
     function initNavigation() {
+      const btnAdminLogout = document.getElementById('btn-admin-logout');
+      if (btnAdminLogout && !btnAdminLogout.__initialized) {
+        btnAdminLogout.__initialized = true;
+        btnAdminLogout.addEventListener('click', () => {
+          localStorage.removeItem('eyeposture_auth_token');
+          localStorage.removeItem('eyeposture_admin_token');
+          localStorage.removeItem('eyeposture_auth_user');
+          location.reload();
+        });
+      }
+
       const navItems = document.querySelectorAll('.nav-item');
       navItems.forEach(item => {
         item.addEventListener('click', (e) => {
@@ -811,10 +912,12 @@ function getDashboardScripts() {
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
 
       try {
+        const token = localStorage.getItem('eyeposture_auth_token') || localStorage.getItem('eyeposture_admin_token');
+        const authHeaders = token ? { 'Authorization': 'Bearer ' + token } : {};
         const [devRes, userRes, statsRes] = await Promise.all([
-          fetch('/api/v1/admin/devices').then(r => r.json()).catch(() => ({ devices: [] })),
-          fetch('/api/v1/admin/users').then(r => r.json()).catch(() => ({ users: [] })),
-          fetch('/api/v1/admin/stats').then(r => r.json()).catch(() => null)
+          fetch('/api/v1/admin/devices', { headers: authHeaders }).then(r => r.json()).catch(() => ({ devices: [] })),
+          fetch('/api/v1/admin/users', { headers: authHeaders }).then(r => r.json()).catch(() => ({ users: [] })),
+          fetch('/api/v1/admin/stats', { headers: authHeaders }).then(r => r.json()).catch(() => null)
         ]);
 
         rawDevices = devRes.devices || [];
@@ -1218,9 +1321,13 @@ function getDashboardScripts() {
 
       const endpoint = shouldBlock ? '/api/v1/admin/devices/block' : '/api/v1/admin/devices/unblock';
       try {
+        const token = localStorage.getItem('eyeposture_auth_token') || localStorage.getItem('eyeposture_admin_token');
         const res = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+          },
           body: JSON.stringify({ deviceFingerprint: fingerprint })
         });
         const data = await res.json();
@@ -1241,9 +1348,13 @@ function getDashboardScripts() {
 
       const endpoint = shouldBlock ? '/api/v1/admin/users/block' : '/api/v1/admin/users/unblock';
       try {
+        const token = localStorage.getItem('eyeposture_auth_token') || localStorage.getItem('eyeposture_admin_token');
         const res = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+          },
           body: JSON.stringify({ userId })
         });
         const data = await res.json();
@@ -1261,9 +1372,13 @@ function getDashboardScripts() {
     async function quickUpgradeUser(userId, tier) {
       if (!confirm('C\u1EA5p ngay quy\u1EC1n ' + tier + ' cho t\xE0i kho\u1EA3n n\xE0y?')) return;
       try {
+        const token = localStorage.getItem('eyeposture_auth_token') || localStorage.getItem('eyeposture_admin_token');
         const res = await fetch('/api/v1/admin/users/upgrade', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+          },
           body: JSON.stringify({ userId, tier, days: 365 })
         });
         if (res.ok) {
@@ -1352,10 +1467,98 @@ var init_dashboard_scripts = __esm({
   }
 });
 
+// apps/api/src/admin/admin-login-gate-html.ts
+function getAdminLoginGateHtml() {
+  return `
+  <!-- ================= ADMIN AUTH GATEKEEPER ================= -->
+  <div id="admin-auth-gate" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950 backdrop-blur-xl">
+    <div class="relative w-full max-w-md rounded-3xl border border-teal-500/30 bg-slate-900/95 p-8 shadow-2xl shadow-teal-500/15">
+      
+      <!-- Top Glow Icon -->
+      <div class="flex justify-center mb-6">
+        <div class="w-16 h-16 rounded-2xl bg-teal-500/15 border border-teal-500/40 flex items-center justify-center text-teal-400 shadow-xl shadow-teal-500/20">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Title & Description -->
+      <div class="text-center mb-7">
+        <h2 class="text-2xl font-extrabold text-white tracking-tight">Khu V\u1EF1c Qu\u1EA3n Tr\u1ECB H\u1EC7 Th\u1ED1ng</h2>
+        <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+          Khu v\u1EF1c h\u1EA1n ch\u1EBF. Vui l\xF2ng \u0111\u0103ng nh\u1EADp b\u1EB1ng t\xE0i kho\u1EA3n <strong class="text-teal-300">Qu\u1EA3n tr\u1ECB vi\xEAn (ADMIN)</strong> \u0111\u1EC3 truy c\u1EADp b\u1EA3ng \u0111i\u1EC1u khi\u1EC3n.
+        </p>
+      </div>
+
+      <!-- Login Form -->
+      <form id="admin-gate-form" class="space-y-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-slate-300">T\xE0i kho\u1EA3n / Email Qu\u1EA3n Tr\u1ECB</label>
+          <input 
+            type="text" 
+            id="gate-email" 
+            required 
+            placeholder="admin ho\u1EB7c email qu\u1EA3n tr\u1ECB"
+            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700/80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-teal-500 transition"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-slate-300">M\u1EADt kh\u1EA9u</label>
+          <input 
+            type="password" 
+            id="gate-password" 
+            required 
+            placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700/80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-teal-500 transition"
+          />
+        </div>
+
+        <!-- Error Message Banner -->
+        <div id="gate-error-box" class="hidden p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2">
+          <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span id="gate-error-text">Sai th\xF4ng tin \u0111\u0103ng nh\u1EADp qu\u1EA3n tr\u1ECB</span>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit" 
+          id="btn-gate-submit"
+          class="w-full py-3 rounded-xl gradient-teal text-slate-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-teal-500/20 active:scale-[0.98] transition mt-2"
+        >
+          <span>M\u1EDF Kh\xF3a Qu\u1EA3n Tr\u1ECB Hub</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+          </svg>
+        </button>
+      </form>
+
+      <!-- Return to Homepage Link -->
+      <div class="mt-6 text-center">
+        <a href="/" class="text-xs text-slate-400 hover:text-teal-400 transition flex items-center justify-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          <span>Quay l\u1EA1i Trang Ch\u1EE7 EyePosture</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+  `;
+}
+var init_admin_login_gate_html = __esm({
+  "apps/api/src/admin/admin-login-gate-html.ts"() {
+    "use strict";
+  }
+});
+
 // apps/api/src/admin/dashboard-html.ts
 function getAdminDashboardHtml() {
   const styles = getDashboardStyles();
   const scripts = getDashboardScripts();
+  const adminGate = getAdminLoginGateHtml();
   return `<!DOCTYPE html>
 <html lang="vi" class="dark">
 <head>
@@ -1370,7 +1573,10 @@ function getAdminDashboardHtml() {
     ${styles}
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 flex min-h-screen antialiased selection:bg-teal-500/30">
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-teal-500/30">
+
+  <!-- Dashboard Container (Hidden until admin authenticated) -->
+  <div id="dashboard-wrapper" style="display: none;" class="hidden flex min-h-screen w-full">
 
   <!-- ================= LEFT SIDEBAR ================= -->
   <aside class="w-64 glass-sidebar flex flex-col justify-between shrink-0 fixed top-0 bottom-0 left-0 z-30">
@@ -1430,18 +1636,23 @@ function getAdminDashboardHtml() {
       </nav>
     </div>
 
-    <!-- Sidebar Footer: Admin Profile -->
+    <!-- Sidebar Footer: Admin Profile & Logout -->
     <div class="p-3 border-t border-slate-800/80 bg-slate-900/50">
-      <div class="flex items-center gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
-        <div class="w-8 h-8 rounded-lg gradient-teal flex items-center justify-center font-bold text-slate-950 text-xs">
-          H
-        </div>
-        <div class="overflow-hidden">
-          <div class="font-bold text-xs text-slate-200 truncate">Nguyen Duy Hung</div>
-          <div class="text-[10px] text-teal-400 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-teal-400"></span> Super Admin
+      <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div class="w-8 h-8 rounded-lg gradient-teal flex items-center justify-center font-bold text-slate-950 text-xs shrink-0">
+            A
+          </div>
+          <div class="overflow-hidden">
+            <div id="admin-profile-name" class="font-bold text-xs text-slate-200 truncate">Administrator</div>
+            <div class="text-[10px] text-teal-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-teal-400"></span> Super Admin
+            </div>
           </div>
         </div>
+        <button id="btn-admin-logout" title="Kh\xF3a b\u1EA3ng \u0111i\u1EC1u khi\u1EC3n & \u0110\u0103ng xu\u1EA5t" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition shrink-0" aria-label="\u0110\u0103ng xu\u1EA5t">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
       </div>
     </div>
   </aside>
@@ -1666,6 +1877,10 @@ function getAdminDashboardHtml() {
 
     </div>
   </main>
+  </div> <!-- End #dashboard-wrapper -->
+
+  <!-- Admin Auth Gatekeeper Screen -->
+  ${adminGate}
 
   <!-- Toast Notification Popup -->
   <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
@@ -1686,6 +1901,7 @@ var init_dashboard_html = __esm({
     "use strict";
     init_dashboard_styles();
     init_dashboard_scripts();
+    init_admin_login_gate_html();
   }
 });
 
@@ -2245,7 +2461,7 @@ function getLoginModalHtml() {
             type="text" 
             id="login-email" 
             required 
-            placeholder="admin ho\u1EB7c email@example.com"
+            placeholder="email@example.com"
             class="w-full px-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700/80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-teal-500 transition"
           />
         </div>
