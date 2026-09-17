@@ -21,35 +21,15 @@ import { getAdminDashboardHtml } from './admin/dashboard-html.js';
 import { getLandingPageHtml } from './landing/landing-html.js';
 import { handleAdminRoutes } from './admin/admin-handlers.js';
 import { SupabaseService } from './supabase-client.js';
+import {
+  seedAdminAccount,
+  isAdminIdentifier,
+  ADMIN_USER_ID,
+  loadPersistedUsers,
+  savePersistedUsers,
+} from './admin/admin-seed.js';
 
-function loadEnvFile(): void {
-  const envCandidates = [
-    path.resolve(process.cwd(), '.env'),
-    path.resolve(process.cwd(), '../../.env'),
-  ];
-  for (const p of envCandidates) {
-    if (fs.existsSync(p)) {
-      try {
-        const text = fs.readFileSync(p, 'utf-8');
-        for (const line of text.split('\n')) {
-          const trimmed = line.trim();
-          if (!trimmed || trimmed.startsWith('#')) continue;
-          const eqIdx = trimmed.indexOf('=');
-          if (eqIdx > 0) {
-            const key = trimmed.slice(0, eqIdx).trim();
-            const val = trimmed.slice(eqIdx + 1).trim();
-            if (!process.env[key]) {
-              process.env[key] = val;
-            }
-          }
-        }
-      } catch {
-        // ignore
-      }
-      break;
-    }
-  }
-}
+import { loadEnvFile } from './env-loader.js';
 
 loadEnvFile();
 
@@ -113,6 +93,8 @@ export class EyePostureApiServer {
     });
 
     this.loadPersistedDevices();
+    loadPersistedUsers(this.users, this.userSubscriptions);
+    seedAdminAccount(this.users, this.userSubscriptions, this.supabase);
   }
 
   private loadPersistedDevices(): void {
@@ -355,6 +337,10 @@ export class EyePostureApiServer {
         this.sendJson(res, 400, { error: 'Missing email, password, or name' });
         return;
       }
+      if (isAdminIdentifier(email)) {
+        this.sendJson(res, 409, { error: 'Tên người dùng admin đã được bảo lưu' });
+        return;
+      }
 
       // Check existing in Supabase
       if (this.supabase.isAvailable()) {
@@ -392,6 +378,7 @@ export class EyePostureApiServer {
       });
 
       const token = this.createJwt({ userId: id, email });
+      savePersistedUsers(this.users, this.userSubscriptions);
       this.sendJson(res, 201, { user, token });
       return;
     }
@@ -402,10 +389,19 @@ export class EyePostureApiServer {
       const { email, password } = body;
 
       let matchedUser: (User & { passwordHash: string; salt: string }) | undefined;
-      for (const u of this.users.values()) {
-        if (u.email.toLowerCase() === (email || '').toLowerCase()) {
-          matchedUser = u;
-          break;
+      const cleanEmail = (email || '').trim().toLowerCase();
+      if (isAdminIdentifier(cleanEmail)) {
+        matchedUser = this.users.get(ADMIN_USER_ID);
+        if (!matchedUser) {
+          seedAdminAccount(this.users, this.userSubscriptions, this.supabase);
+          matchedUser = this.users.get(ADMIN_USER_ID);
+        }
+      } else {
+        for (const u of this.users.values()) {
+          if (u.email.toLowerCase() === cleanEmail) {
+            matchedUser = u;
+            break;
+          }
         }
       }
 
@@ -539,14 +535,16 @@ export class EyePostureApiServer {
           targetTier = order.tier;
           const isYearly = order.interval === 'year' || body.transferAmount >= 490000;
           const durationMs = isYearly ? 365 * 86400 * 1000 : 30 * 86400 * 1000;
-          if (this.supabase.isAvailable()) {
-            await this.supabase.upsertSubscription(matchedUserId, targetTier, 'ACTIVE', Date.now() + durationMs);
+          if (matchedUserId) {
+            if (this.supabase.isAvailable()) {
+              await this.supabase.upsertSubscription(matchedUserId, targetTier, 'ACTIVE', Date.now() + durationMs);
+            }
+            this.userSubscriptions.set(matchedUserId, {
+              tier: targetTier,
+              status: 'ACTIVE',
+              expiresAt: Date.now() + durationMs,
+            });
           }
-          this.userSubscriptions.set(matchedUserId, {
-            tier: targetTier,
-            status: 'ACTIVE',
-            expiresAt: Date.now() + durationMs,
-          });
         }
       }
 

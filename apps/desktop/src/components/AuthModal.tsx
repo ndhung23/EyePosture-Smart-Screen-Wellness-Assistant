@@ -139,16 +139,31 @@ export const AuthModal: React.FC = () => {
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-teal-400" />
-              <span>Email</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-teal-400" />
+                <span>{mode === 'login' ? 'Tài khoản / Email' : 'Email'}</span>
+              </label>
+              {mode === 'login' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('admin');
+                    setPassword('1');
+                    setError(null);
+                  }}
+                  className="text-[11px] text-teal-400 hover:text-teal-300 transition-colors underline font-medium"
+                >
+                  ⚡ Điền nhanh admin/1
+                </button>
+              )}
+            </div>
             <input
-              type="email"
+              type={mode === 'login' ? 'text' : 'email'}
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@example.com"
+              placeholder={mode === 'login' ? 'admin hoặc user@example.com' : 'user@example.com'}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-teal-500/60"
             />
           </div>
@@ -161,10 +176,10 @@ export const AuthModal: React.FC = () => {
             <input
               type="password"
               required
-              minLength={6}
+              minLength={mode === 'register' ? 6 : 1}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder={mode === 'register' ? 'Tối thiểu 6 ký tự' : '••••••••'}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-teal-500/60"
             />
           </div>

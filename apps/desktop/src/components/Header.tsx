@@ -91,6 +91,11 @@ export const Header: React.FC = () => {
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-teal-500/40 text-xs text-slate-200">
               <UserIcon className="w-3.5 h-3.5 text-teal-400 shrink-0" />
               <span className="font-semibold max-w-[110px] truncate">{currentUser.name}</span>
+              {currentUser.role === 'ADMIN' && (
+                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                  ADMIN
+                </span>
+              )}
               <button
                 onClick={logout}
                 title="Đăng xuất"

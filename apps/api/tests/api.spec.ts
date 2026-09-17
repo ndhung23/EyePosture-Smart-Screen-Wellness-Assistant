@@ -61,6 +61,35 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
     expect(badLogin.status).toBe(401);
   });
 
+  it('should authenticate admin account with admin / 1', async () => {
+    // 1. Login with username admin and password 1
+    const adminLogin = await fetch(`${baseUrl}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin', password: '1' }),
+    });
+    expect(adminLogin.status).toBe(200);
+    const adminData = await adminLogin.json();
+    expect(adminData.user.role).toBe('ADMIN');
+    expect(adminData.token).toBeTruthy();
+
+    // 2. Login with alias admin@eyeposture.com
+    const aliasLogin = await fetch(`${baseUrl}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin@eyeposture.com', password: '1' }),
+    });
+    expect(aliasLogin.status).toBe(200);
+
+    // 3. Login with wrong password for admin
+    const wrongPass = await fetch(`${baseUrl}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin', password: 'wrong' }),
+    });
+    expect(wrongPass.status).toBe(401);
+  });
+
   it('should complete billing upgrade flow and mint cryptographically verifiable license', async () => {
     const email = `pro_${Date.now()}@eyeposture.com`;
     const regRes = await fetch(`${baseUrl}/api/v1/auth/register`, {

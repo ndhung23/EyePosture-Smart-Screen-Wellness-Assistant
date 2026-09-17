@@ -3262,11 +3262,11 @@ function __metadata(metadataKey, metadataValue) {
 }
 function __awaiter(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve2) {
-      resolve2(value);
+    return value instanceof P ? value : new P(function(resolve3) {
+      resolve3(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve2, reject) {
+  return new (P || (P = Promise))(function(resolve3, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -3282,7 +3282,7 @@ function __awaiter(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -3473,14 +3473,14 @@ function __asyncValues(o) {
   }, i);
   function verb(n) {
     i[n] = o[n] && function(v) {
-      return new Promise(function(resolve2, reject) {
-        v = o[n](v), settle(resolve2, reject, v.done, v.value);
+      return new Promise(function(resolve3, reject) {
+        v = o[n](v), settle(resolve3, reject, v.done, v.value);
       });
     };
   }
-  function settle(resolve2, reject, d, v) {
+  function settle(resolve3, reject, d, v) {
     Promise.resolve(v).then(function(v2) {
-      resolve2({ value: v2, done: d });
+      resolve3({ value: v2, done: d });
     }, reject);
   }
 }
@@ -3572,13 +3572,13 @@ function __disposeResources(env) {
   }
   return next();
 }
-function __rewriteRelativeImportExtension(path2, preserveJsx) {
-  if (typeof path2 === "string" && /^\.\.?\//.test(path2)) {
-    return path2.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m, tsx, d, ext, cm) {
+function __rewriteRelativeImportExtension(path4, preserveJsx) {
+  if (typeof path4 === "string" && /^\.\.?\//.test(path4)) {
+    return path4.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m, tsx, d, ext, cm) {
       return tsx ? preserveJsx ? ".jsx" : ".js" : d && (!ext || !cm) ? m : d + ext + "." + cm.toLowerCase() + "js";
     });
   }
-  return path2;
+  return path4;
 }
 var extendStatics, __assign, __createBinding, __setModuleDefault, ownKeys, _SuppressedError, tslib_es6_default;
 var init_tslib_es6 = __esm({
@@ -4112,18 +4112,18 @@ function _objectSpread2(e) {
   return e;
 }
 function sleep(ms, signal) {
-  return new Promise((resolve2) => {
+  return new Promise((resolve3) => {
     if (signal === null || signal === void 0 ? void 0 : signal.aborted) {
-      resolve2();
+      resolve3();
       return;
     }
     const id = setTimeout(() => {
       signal === null || signal === void 0 || signal.removeEventListener("abort", onAbort);
-      resolve2();
+      resolve3();
     }, ms);
     function onAbort() {
       clearTimeout(id);
-      resolve2();
+      resolve3();
     }
     signal === null || signal === void 0 || signal.addEventListener("abort", onAbort);
   });
@@ -11266,15 +11266,15 @@ var require_RealtimeChannel = __commonJS({
             }
           }
         } else {
-          return new Promise((resolve2) => {
+          return new Promise((resolve3) => {
             var _a2, _b2, _c;
             const push = this.channelAdapter.push(args.type, args, opts.timeout || this.timeout);
             if (args.type === "broadcast" && !((_c = (_b2 = (_a2 = this.params) === null || _a2 === void 0 ? void 0 : _a2.config) === null || _b2 === void 0 ? void 0 : _b2.broadcast) === null || _c === void 0 ? void 0 : _c.ack)) {
-              resolve2("ok");
+              resolve3("ok");
             }
-            push.receive("ok", () => resolve2("ok"));
-            push.receive("error", () => resolve2("error"));
-            push.receive("timeout", () => resolve2("timed out"));
+            push.receive("ok", () => resolve3("ok"));
+            push.receive("error", () => resolve3("error"));
+            push.receive("timeout", () => resolve3("timed out"));
           });
         }
       }
@@ -11299,8 +11299,8 @@ var require_RealtimeChannel = __commonJS({
        * @category Realtime
        */
       async unsubscribe(timeout = this.timeout) {
-        return new Promise((resolve2) => {
-          this.channelAdapter.unsubscribe(timeout).receive("ok", () => resolve2("ok")).receive("timeout", () => resolve2("timed out")).receive("error", () => resolve2("error"));
+        return new Promise((resolve3) => {
+          this.channelAdapter.unsubscribe(timeout).receive("ok", () => resolve3("ok")).receive("timeout", () => resolve3("timed out")).receive("error", () => resolve3("error"));
         });
       }
       /**
@@ -11393,8 +11393,8 @@ var require_RealtimeChannel = __commonJS({
       }
       /** @internal */
       _notThisChannelEvent(event, ref) {
-        const { close, error, leave, join: join2 } = constants_1.CHANNEL_EVENTS;
-        const events = [close, error, leave, join2];
+        const { close, error, leave, join: join3 } = constants_1.CHANNEL_EVENTS;
+        const events = [close, error, leave, join3];
         return ref && events.includes(event) && ref !== this.joinPush.ref;
       }
       /** @internal */
@@ -11527,11 +11527,11 @@ var require_socketAdapter = __commonJS({
         this.socket.connect();
       }
       disconnect(callback, code, reason, timeout = 1e4) {
-        return new Promise((resolve2) => {
-          setTimeout(() => resolve2("timeout"), timeout);
+        return new Promise((resolve3) => {
+          setTimeout(() => resolve3("timeout"), timeout);
           this.socket.disconnect(() => {
             callback();
-            resolve2("ok");
+            resolve3("ok");
           }, code, reason);
         });
       }
@@ -12304,8 +12304,8 @@ var require_main2 = __commonJS({
 });
 
 // node_modules/iceberg-js/dist/index.mjs
-function buildUrl(baseUrl, path2, query) {
-  const url = new URL(path2, baseUrl);
+function buildUrl(baseUrl, path4, query) {
+  const url = new URL(path4, baseUrl);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
       if (value !== void 0) {
@@ -12335,12 +12335,12 @@ function createFetchClient(options) {
   return {
     async request({
       method,
-      path: path2,
+      path: path4,
       query,
       body,
       headers
     }) {
-      const url = buildUrl(options.baseUrl, path2, query);
+      const url = buildUrl(options.baseUrl, path4, query);
       const authHeaders = await buildAuthHeaders(options.auth);
       const res = await fetchFn(url, {
         method,
@@ -12909,7 +12909,7 @@ function normalizeHeaders(headers) {
   return result;
 }
 async function _handleRequest(fetcher, method, url, options, parameters, body, namespace) {
-  return new Promise((resolve2, reject) => {
+  return new Promise((resolve3, reject) => {
     fetcher(url, _getRequestParams(method, options, parameters, body)).then((result) => {
       if (!result.ok) throw result;
       if (options === null || options === void 0 ? void 0 : options.noResolveJson) return result;
@@ -12919,7 +12919,7 @@ async function _handleRequest(fetcher, method, url, options, parameters, body, n
         if (!contentType || !contentType.includes("application/json")) return {};
       }
       return result.json();
-    }).then((data) => resolve2(data)).catch((error) => handleError(error, reject, options, namespace));
+    }).then((data) => resolve3(data)).catch((error) => handleError(error, reject, options, namespace));
   });
 }
 function createFetchApi(namespace = "storage") {
@@ -13008,7 +13008,7 @@ var init_dist3 = __esm({
       if (bucketName.includes("/") || bucketName.includes("\\")) return false;
       return /^[\w!.\*'() &$@=;:+,?-]+$/.test(bucketName);
     };
-    encodeStoragePath = (path2) => path2.split("/").map(encodeURIComponent).join("/");
+    encodeStoragePath = (path4) => path4.split("/").map(encodeURIComponent).join("/");
     _getErrorMessage = (err) => {
       if (typeof err === "object" && err !== null) {
         const e = err;
@@ -13240,7 +13240,7 @@ var init_dist3 = __esm({
       * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
       * @param fileBody The body of the file to be stored in the bucket.
       */
-      async uploadOrUpdate(method, path2, fileBody, fileOptions) {
+      async uploadOrUpdate(method, path4, fileBody, fileOptions) {
         var _this = this;
         return _this.handleOperation(async () => {
           let body;
@@ -13264,7 +13264,7 @@ var init_dist3 = __esm({
             if ((typeof ReadableStream !== "undefined" && body instanceof ReadableStream || body && typeof body === "object" && "pipe" in body && typeof body.pipe === "function") && !options.duplex) options.duplex = "half";
           }
           if (fileOptions === null || fileOptions === void 0 ? void 0 : fileOptions.headers) for (const [key, value] of Object.entries(fileOptions.headers)) headers = setHeader(headers, key, value);
-          const cleanPath = _this._removeEmptyFolders(path2);
+          const cleanPath = _this._removeEmptyFolders(path4);
           const _path = _this._getFinalPath(cleanPath);
           const data = await (method == "PUT" ? put : post)(_this.fetch, `${_this.url}/object/${_path}`, body, _objectSpread22({ headers }, (options === null || options === void 0 ? void 0 : options.duplex) ? { duplex: options.duplex } : {}));
           return {
@@ -13341,8 +13341,8 @@ var init_dist3 = __esm({
       * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
       * - For React Native, using either `Blob`, `File` or `FormData` does not work as intended. Upload file using `ArrayBuffer` from base64 file data instead, see example below.
       */
-      async upload(path2, fileBody, fileOptions) {
-        return this.uploadOrUpdate("POST", path2, fileBody, fileOptions);
+      async upload(path4, fileBody, fileOptions) {
+        return this.uploadOrUpdate("POST", path4, fileBody, fileOptions);
       }
       /**
       * Upload a file with a token generated from `createSignedUploadUrl`.
@@ -13382,9 +13382,9 @@ var init_dist3 = __esm({
       *   - `objects` table permissions: none
       * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
       */
-      async uploadToSignedUrl(path2, token, fileBody, fileOptions) {
+      async uploadToSignedUrl(path4, token, fileBody, fileOptions) {
         var _this3 = this;
-        const cleanPath = _this3._removeEmptyFolders(path2);
+        const cleanPath = _this3._removeEmptyFolders(path4);
         const _path = _this3._getFinalPath(cleanPath);
         const url = new URL(_this3.url + `/object/upload/sign/${_path}`);
         url.searchParams.set("token", token);
@@ -13453,10 +13453,10 @@ var init_dist3 = __esm({
       *   - `objects` table permissions: `insert`
       * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
       */
-      async createSignedUploadUrl(path2, options) {
+      async createSignedUploadUrl(path4, options) {
         var _this4 = this;
         return _this4.handleOperation(async () => {
-          let _path = _this4._getFinalPath(path2);
+          let _path = _this4._getFinalPath(path4);
           const headers = _objectSpread22({}, _this4.headers);
           if (options === null || options === void 0 ? void 0 : options.upsert) headers["x-upsert"] = "true";
           const data = await post(_this4.fetch, `${_this4.url}/object/upload/sign/${_path}`, {}, { headers });
@@ -13465,7 +13465,7 @@ var init_dist3 = __esm({
           if (!token) throw new StorageError("No token returned by API");
           return {
             signedUrl: url.toString(),
-            path: path2,
+            path: path4,
             token
           };
         });
@@ -13525,8 +13525,8 @@ var init_dist3 = __esm({
       * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
       * - For React Native, using either `Blob`, `File` or `FormData` does not work as intended. Update file using `ArrayBuffer` from base64 file data instead, see example below.
       */
-      async update(path2, fileBody, fileOptions) {
-        return this.uploadOrUpdate("PUT", path2, fileBody, fileOptions);
+      async update(path4, fileBody, fileOptions) {
+        return this.uploadOrUpdate("PUT", path4, fileBody, fileOptions);
       }
       /**
       * Moves an existing file to a new path in the same bucket.
@@ -13682,10 +13682,10 @@ var init_dist3 = __esm({
       *   - `objects` table permissions: `select`
       * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
       */
-      async createSignedUrl(path2, expiresIn, options) {
+      async createSignedUrl(path4, expiresIn, options) {
         var _this8 = this;
         return _this8.handleOperation(async () => {
-          let _path = _this8._getFinalPath(path2);
+          let _path = _this8._getFinalPath(path4);
           const hasTransform = typeof (options === null || options === void 0 ? void 0 : options.transform) === "object" && options.transform !== null && Object.keys(options.transform).length > 0;
           let data = await post(_this8.fetch, `${_this8.url}/object/sign/${_path}`, _objectSpread22(_objectSpread22({ expiresIn }, hasTransform ? { transform: options.transform } : {}), (options === null || options === void 0 ? void 0 : options.versionId) != null ? { versionId: options.versionId } : {}), { headers: _this8.headers });
           const query = new URLSearchParams();
@@ -13820,14 +13820,14 @@ var init_dist3 = __esm({
       *   - `objects` table permissions: `select`
       * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
       */
-      download(path2, options, parameters) {
+      download(path4, options, parameters) {
         const renderPath = typeof (options === null || options === void 0 ? void 0 : options.transform) === "object" && options.transform !== null && Object.keys(options.transform).length > 0 ? "render/image/authenticated" : "object";
         const query = new URLSearchParams();
         if (options === null || options === void 0 ? void 0 : options.transform) this.applyTransformOptsToQuery(query, options.transform);
         if ((options === null || options === void 0 ? void 0 : options.cacheNonce) != null) query.set("cacheNonce", String(options.cacheNonce));
         if ((options === null || options === void 0 ? void 0 : options.versionId) != null) query.set("versionId", String(options.versionId));
         const queryString = query.toString();
-        const _path = this._getFinalPath(path2);
+        const _path = this._getFinalPath(path4);
         const downloadFn = () => get(this.fetch, `${this.url}/${renderPath}/${_path}${queryString ? `?${queryString}` : ""}`, {
           headers: this.headers,
           noResolveJson: true
@@ -13859,9 +13859,9 @@ var init_dist3 = __esm({
       * }
       * ```
       */
-      async info(path2, options) {
+      async info(path4, options) {
         var _this10 = this;
-        const _path = _this10._getFinalPath(path2);
+        const _path = _this10._getFinalPath(path4);
         const query = new URLSearchParams();
         if ((options === null || options === void 0 ? void 0 : options.versionId) != null) query.set("versionId", String(options.versionId));
         const queryString = query.toString();
@@ -13885,9 +13885,9 @@ var init_dist3 = __esm({
       *   .exists('folder/avatar1.png')
       * ```
       */
-      async exists(path2) {
+      async exists(path4) {
         var _this11 = this;
-        const _path = _this11._getFinalPath(path2);
+        const _path = _this11._getFinalPath(path4);
         try {
           await head(_this11.fetch, `${_this11.url}/object/${_path}`, { headers: _this11.headers });
           return {
@@ -13967,8 +13967,8 @@ var init_dist3 = __esm({
       *   - `objects` table permissions: none
       * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
       */
-      getPublicUrl(path2, options) {
-        const _path = this._getFinalPath(path2);
+      getPublicUrl(path4, options) {
+        const _path = this._getFinalPath(path4);
         const query = new URLSearchParams();
         if (options === null || options === void 0 ? void 0 : options.download) query.set("download", options.download === true ? "" : options.download);
         if (options === null || options === void 0 ? void 0 : options.transform) this.applyTransformOptsToQuery(query, options.transform);
@@ -14068,10 +14068,10 @@ var init_dist3 = __esm({
       *   .purgeCache('folder/avatar1.png', { transformations: true })
       * ```
       */
-      async purgeCache(path2, options, parameters) {
+      async purgeCache(path4, options, parameters) {
         var _this13 = this;
         return _this13.handleOperation(async () => {
-          const _path = encodeStoragePath(_this13._getFinalPath(path2));
+          const _path = encodeStoragePath(_this13._getFinalPath(path4));
           const query = new URLSearchParams();
           if (options === null || options === void 0 ? void 0 : options.transformations) query.set("transformations", "true");
           const queryString = query.toString();
@@ -14169,13 +14169,13 @@ var init_dist3 = __esm({
       *   - `objects` table permissions: `select`
       * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
       */
-      async list(path2, options, parameters) {
+      async list(path4, options, parameters) {
         var _this14 = this;
         return _this14.handleOperation(async () => {
           const sortBy = (options === null || options === void 0 ? void 0 : options.sortBy) ? _objectSpread22(_objectSpread22({}, DEFAULT_SEARCH_OPTIONS.sortBy), options.sortBy) : DEFAULT_SEARCH_OPTIONS.sortBy;
           const body = _objectSpread22(_objectSpread22(_objectSpread22({}, DEFAULT_SEARCH_OPTIONS), options), {}, {
             sortBy,
-            prefix: path2 || ""
+            prefix: path4 || ""
           });
           return await post(_this14.fetch, `${_this14.url}/object/list/${_this14.bucketId}`, body, { headers: _this14.headers }, parameters);
         });
@@ -14241,11 +14241,11 @@ var init_dist3 = __esm({
         if (typeof Buffer !== "undefined") return Buffer.from(data).toString("base64");
         return btoa(data);
       }
-      _getFinalPath(path2) {
-        return `${this.bucketId}/${path2.replace(/^\/+/, "")}`;
+      _getFinalPath(path4) {
+        return `${this.bucketId}/${path4.replace(/^\/+/, "")}`;
       }
-      _removeEmptyFolders(path2) {
-        return path2.replace(/^\/|\/$/g, "").replace(/\/+/g, "/");
+      _removeEmptyFolders(path4) {
+        return path4.replace(/^\/|\/$/g, "").replace(/\/+/g, "/");
       }
       /** Modifies the `query`, appending values the from `transform` */
       applyTransformOptsToQuery(query, transform) {
@@ -16504,9 +16504,9 @@ var require_helpers = __commonJS({
       const fragment = hashIndex === -1 ? "" : redirectTo.slice(hashIndex);
       const queryIndex = base.indexOf("?");
       if (queryIndex !== -1) {
-        const path2 = base.slice(0, queryIndex);
+        const path4 = base.slice(0, queryIndex);
         const remaining = base.slice(queryIndex + 1).split("&").filter((pair) => pair !== "" && pair !== constants_1.PKCE_FLOW_ID_PARAM && !pair.startsWith(`${constants_1.PKCE_FLOW_ID_PARAM}=`));
-        base = remaining.length > 0 ? `${path2}?${remaining.join("&")}` : path2;
+        base = remaining.length > 0 ? `${path4}?${remaining.join("&")}` : path4;
       }
       const separator = base.includes("?") ? "&" : "?";
       return `${base}${separator}${constants_1.PKCE_FLOW_ID_PARAM}=${encodeURIComponent(flowId)}${fragment}`;
@@ -25334,22 +25334,129 @@ var init_supabase_client = __esm({
   }
 });
 
-// apps/api/src/server.ts
-var server_exports = {};
-__export(server_exports, {
-  EyePostureApiServer: () => EyePostureApiServer,
-  default: () => server_default,
-  handleServerless: () => handleServerless
+// apps/api/src/admin/admin-seed.ts
+function hashAdminPassword(password, salt) {
+  return crypto2.pbkdf2Sync(password, salt, 1e3, 64, "sha512").toString("hex");
+}
+function getAdminUserData() {
+  const passwordHash = hashAdminPassword("1", ADMIN_SALT);
+  const now = "2026-01-01T00:00:00.000Z";
+  return {
+    id: ADMIN_USER_ID,
+    email: "admin",
+    name: ADMIN_NAME,
+    role: ADMIN_ROLE,
+    status: "ACTIVE",
+    isBlocked: false,
+    createdAt: now,
+    updatedAt: now,
+    passwordHash,
+    salt: ADMIN_SALT
+  };
+}
+function isAdminIdentifier(email) {
+  const clean = (email || "").trim().toLowerCase();
+  return clean === "admin" || clean === "admin@eyeposture.com" || clean === "admin@gmail.com" || clean === "administrator";
+}
+function seedAdminAccount(users, userSubscriptions, supabase) {
+  const adminUser = getAdminUserData();
+  users.set(ADMIN_USER_ID, adminUser);
+  userSubscriptions.set(ADMIN_USER_ID, {
+    tier: "FAMILY",
+    status: "ACTIVE",
+    expiresAt: Date.now() + 10 * 365 * 24 * 3600 * 1e3
+  });
+  if (supabase && supabase.isAvailable()) {
+    Promise.all([
+      supabase.createUser({
+        id: ADMIN_USER_ID,
+        email: "admin",
+        name: ADMIN_NAME,
+        password_hash: adminUser.passwordHash,
+        salt: ADMIN_SALT,
+        role: "ADMIN",
+        is_blocked: false
+      }),
+      supabase.upsertSubscription(
+        ADMIN_USER_ID,
+        "FAMILY",
+        "ACTIVE",
+        Date.now() + 10 * 365 * 24 * 3600 * 1e3
+      )
+    ]).catch((err) => {
+      console.warn("Supabase sync admin error (non-fatal):", err?.message || err);
+    });
+  }
+}
+function loadPersistedUsers(users, userSubscriptions) {
+  try {
+    const candidates = [
+      path.join(process.cwd(), "data/users.json"),
+      "/tmp/eyeposture_users.json",
+      path.join(os.tmpdir(), "eyeposture_users.json")
+    ];
+    for (const p of candidates) {
+      if (fs.existsSync(p)) {
+        const list = JSON.parse(fs.readFileSync(p, "utf8"));
+        if (Array.isArray(list)) {
+          for (const u of list) {
+            if (u && u.id) {
+              users.set(u.id, u);
+              if (u.subscription) {
+                userSubscriptions.set(u.id, u.subscription);
+              }
+            }
+          }
+        }
+        break;
+      }
+    }
+  } catch {
+  }
+}
+function savePersistedUsers(users, userSubscriptions) {
+  try {
+    const list = Array.from(users.values()).map((u) => ({
+      ...u,
+      subscription: userSubscriptions.get(u.id) || { tier: "FREE", status: "ACTIVE", expiresAt: null }
+    }));
+    const dir = path.join(process.cwd(), "data");
+    if (!fs.existsSync(dir)) {
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+      } catch {
+      }
+    }
+    const target = fs.existsSync(dir) ? path.join(dir, "users.json") : process.env.VERCEL ? "/tmp/eyeposture_users.json" : path.join(os.tmpdir(), "eyeposture_users.json");
+    fs.writeFileSync(target, JSON.stringify(list, null, 2), "utf8");
+  } catch {
+  }
+}
+var crypto2, fs, path, os, ADMIN_USER_ID, ADMIN_SALT, ADMIN_NAME, ADMIN_ROLE;
+var init_admin_seed = __esm({
+  "apps/api/src/admin/admin-seed.ts"() {
+    "use strict";
+    crypto2 = __toESM(require("crypto"));
+    fs = __toESM(require("fs"));
+    path = __toESM(require("path"));
+    os = __toESM(require("os"));
+    ADMIN_USER_ID = "00000000-0000-4000-8000-000000000001";
+    ADMIN_SALT = "eyeposture_admin_salt_2026";
+    ADMIN_NAME = "Qu\u1EA3n Tr\u1ECB Vi\xEAn (Admin)";
+    ADMIN_ROLE = "ADMIN";
+  }
 });
+
+// apps/api/src/env-loader.ts
 function loadEnvFile() {
   const envCandidates = [
-    path.resolve(process.cwd(), ".env"),
-    path.resolve(process.cwd(), "../../.env")
+    path2.resolve(process.cwd(), ".env"),
+    path2.resolve(process.cwd(), "../../.env")
   ];
   for (const p of envCandidates) {
-    if (fs.existsSync(p)) {
+    if (fs2.existsSync(p)) {
       try {
-        const text = fs.readFileSync(p, "utf-8");
+        const text = fs2.readFileSync(p, "utf-8");
         for (const line of text.split("\n")) {
           const trimmed = line.trim();
           if (!trimmed || trimmed.startsWith("#")) continue;
@@ -25368,26 +25475,44 @@ function loadEnvFile() {
     }
   }
 }
+var fs2, path2;
+var init_env_loader = __esm({
+  "apps/api/src/env-loader.ts"() {
+    "use strict";
+    fs2 = __toESM(require("fs"));
+    path2 = __toESM(require("path"));
+  }
+});
+
+// apps/api/src/server.ts
+var server_exports = {};
+__export(server_exports, {
+  EyePostureApiServer: () => EyePostureApiServer,
+  default: () => server_default,
+  handleServerless: () => handleServerless
+});
 function handleServerless(req, res) {
   if (!serverlessInstance) {
     serverlessInstance = new EyePostureApiServer();
   }
   return serverlessInstance.handleRequest(req, res);
 }
-var http, crypto2, fs, path, os, import_billing, EyePostureApiServer, serverlessInstance, modRef, server_default;
+var http, crypto3, fs3, path3, os2, import_billing, EyePostureApiServer, serverlessInstance, modRef, server_default;
 var init_server = __esm({
   "apps/api/src/server.ts"() {
     "use strict";
     http = __toESM(require("http"));
-    crypto2 = __toESM(require("crypto"));
-    fs = __toESM(require("fs"));
-    path = __toESM(require("path"));
-    os = __toESM(require("os"));
+    crypto3 = __toESM(require("crypto"));
+    fs3 = __toESM(require("fs"));
+    path3 = __toESM(require("path"));
+    os2 = __toESM(require("os"));
     import_billing = __toESM(require_dist());
     init_dashboard_html();
     init_landing_html();
     init_admin_handlers();
     init_supabase_client();
+    init_admin_seed();
+    init_env_loader();
     loadEnvFile();
     EyePostureApiServer = class {
       server = null;
@@ -25401,6 +25526,7 @@ var init_server = __esm({
       users = /* @__PURE__ */ new Map();
       devices = /* @__PURE__ */ new Map();
       userSubscriptions = /* @__PURE__ */ new Map();
+      orders = /* @__PURE__ */ new Map();
       processedWebhookEvents = /* @__PURE__ */ new Set();
       // Idempotency
       constructor(config = {}) {
@@ -25416,17 +25542,19 @@ var init_server = __esm({
           accountHolder: process.env.PAYMENT_BANK_ACCOUNT_NAME ?? process.env.SEPAY_ACCOUNT_HOLDER
         });
         this.loadPersistedDevices();
+        loadPersistedUsers(this.users, this.userSubscriptions);
+        seedAdminAccount(this.users, this.userSubscriptions, this.supabase);
       }
       loadPersistedDevices() {
         try {
           const candidates = [
-            path.join(process.cwd(), "data/devices.json"),
+            path3.join(process.cwd(), "data/devices.json"),
             "/tmp/eyeposture_devices.json",
-            path.join(os.tmpdir(), "eyeposture_devices.json")
+            path3.join(os2.tmpdir(), "eyeposture_devices.json")
           ];
           for (const p of candidates) {
-            if (fs.existsSync(p)) {
-              const list = JSON.parse(fs.readFileSync(p, "utf8"));
+            if (fs3.existsSync(p)) {
+              const list = JSON.parse(fs3.readFileSync(p, "utf8"));
               if (Array.isArray(list)) {
                 for (const d of list) {
                   if (d && d.id) this.devices.set(d.id, d);
@@ -25441,26 +25569,26 @@ var init_server = __esm({
       savePersistedDevices() {
         try {
           const list = Array.from(this.devices.values());
-          const target = process.env.VERCEL ? "/tmp/eyeposture_devices.json" : path.join(os.tmpdir(), "eyeposture_devices.json");
-          fs.writeFileSync(target, JSON.stringify(list, null, 2), "utf8");
+          const target = process.env.VERCEL ? "/tmp/eyeposture_devices.json" : path3.join(os2.tmpdir(), "eyeposture_devices.json");
+          fs3.writeFileSync(target, JSON.stringify(list, null, 2), "utf8");
         } catch {
         }
       }
       // --- Auth Utilities ---
       hashPassword(password, salt) {
-        return crypto2.pbkdf2Sync(password, salt, 1e3, 64, "sha512").toString("hex");
+        return crypto3.pbkdf2Sync(password, salt, 1e3, 64, "sha512").toString("hex");
       }
       createJwt(payload) {
         const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
         const expPayload = { ...payload, exp: Math.floor(Date.now() / 1e3) + 7 * 86400 };
         const encodedPayload = Buffer.from(JSON.stringify(expPayload)).toString("base64url");
-        const signature = crypto2.createHmac("sha256", this.jwtSecret).update(`${header}.${encodedPayload}`).digest("base64url");
+        const signature = crypto3.createHmac("sha256", this.jwtSecret).update(`${header}.${encodedPayload}`).digest("base64url");
         return `${header}.${encodedPayload}.${signature}`;
       }
       verifyJwt(token) {
         try {
           const [header, payload, signature] = token.split(".");
-          const expected = crypto2.createHmac("sha256", this.jwtSecret).update(`${header}.${payload}`).digest("base64url");
+          const expected = crypto3.createHmac("sha256", this.jwtSecret).update(`${header}.${payload}`).digest("base64url");
           if (signature !== expected) return { valid: false };
           const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
           if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1e3)) return { valid: false };
@@ -25477,16 +25605,16 @@ var init_server = __esm({
         return null;
       }
       parseBody(req) {
-        return new Promise((resolve2) => {
+        return new Promise((resolve3) => {
           let body = "";
           req.on("data", (chunk) => {
             body += chunk;
           });
           req.on("end", () => {
             try {
-              resolve2(body ? JSON.parse(body) : {});
+              resolve3(body ? JSON.parse(body) : {});
             } catch {
-              resolve2({});
+              resolve3({});
             }
           });
         });
@@ -25541,16 +25669,16 @@ var init_server = __esm({
           const filename = pathname.endsWith(".ico") ? "EyePosture.ico" : "EyePosture.png";
           const contentType = pathname.endsWith(".ico") ? "image/x-icon" : "image/png";
           const candidates = [
-            path.resolve(process.cwd(), filename),
-            path.resolve(process.cwd(), "public", filename),
-            path.resolve(process.cwd(), "apps/api/public", filename),
-            path.resolve(__dirname, filename),
-            path.resolve(__dirname, "..", filename),
-            path.resolve(__dirname, "../..", filename)
+            path3.resolve(process.cwd(), filename),
+            path3.resolve(process.cwd(), "public", filename),
+            path3.resolve(process.cwd(), "apps/api/public", filename),
+            path3.resolve(__dirname, filename),
+            path3.resolve(__dirname, "..", filename),
+            path3.resolve(__dirname, "../..", filename)
           ];
           for (const p of candidates) {
-            if (fs.existsSync(p)) {
-              const buf = fs.readFileSync(p);
+            if (fs3.existsSync(p)) {
+              const buf = fs3.readFileSync(p);
               res.writeHead(200, {
                 "Content-Type": contentType,
                 "Cache-Control": "public, max-age=86400",
@@ -25596,6 +25724,10 @@ var init_server = __esm({
             this.sendJson(res, 400, { error: "Missing email, password, or name" });
             return;
           }
+          if (isAdminIdentifier(email)) {
+            this.sendJson(res, 409, { error: "T\xEAn ng\u01B0\u1EDDi d\xF9ng admin \u0111\xE3 \u0111\u01B0\u1EE3c b\u1EA3o l\u01B0u" });
+            return;
+          }
           if (this.supabase.isAvailable()) {
             const existing = await this.supabase.findUserByEmail(email);
             if (existing) {
@@ -25603,8 +25735,8 @@ var init_server = __esm({
               return;
             }
           }
-          const id = crypto2.randomUUID();
-          const salt = crypto2.randomBytes(16).toString("hex");
+          const id = crypto3.randomUUID();
+          const salt = crypto3.randomBytes(16).toString("hex");
           const passwordHash = this.hashPassword(password, salt);
           const now = (/* @__PURE__ */ new Date()).toISOString();
           if (this.supabase.isAvailable()) {
@@ -25627,6 +25759,7 @@ var init_server = __esm({
             expiresAt: Date.now() + 365 * 24 * 3600 * 1e3
           });
           const token = this.createJwt({ userId: id, email });
+          savePersistedUsers(this.users, this.userSubscriptions);
           this.sendJson(res, 201, { user, token });
           return;
         }
@@ -25634,10 +25767,19 @@ var init_server = __esm({
           const body = await this.parseBody(req);
           const { email, password } = body;
           let matchedUser;
-          for (const u of this.users.values()) {
-            if (u.email.toLowerCase() === (email || "").toLowerCase()) {
-              matchedUser = u;
-              break;
+          const cleanEmail = (email || "").trim().toLowerCase();
+          if (isAdminIdentifier(cleanEmail)) {
+            matchedUser = this.users.get(ADMIN_USER_ID);
+            if (!matchedUser) {
+              seedAdminAccount(this.users, this.userSubscriptions, this.supabase);
+              matchedUser = this.users.get(ADMIN_USER_ID);
+            }
+          } else {
+            for (const u of this.users.values()) {
+              if (u.email.toLowerCase() === cleanEmail) {
+                matchedUser = u;
+                break;
+              }
             }
           }
           if (!matchedUser && this.supabase.isAvailable()) {
@@ -25678,9 +25820,10 @@ var init_server = __esm({
         if (pathname.startsWith("/api/v1/orders/") && pathname.endsWith("/status") && method === "GET") {
           const parts = pathname.split("/");
           const orderCode = parts[parts.length - 2];
-          let order = null;
-          if (this.supabase.isAvailable()) {
+          let order = this.orders.get(orderCode) || null;
+          if (!order && this.supabase.isAvailable()) {
             order = await this.supabase.getOrderByCode(orderCode);
+            if (order) this.orders.set(orderCode, order);
           }
           if (!order) {
             this.sendJson(res, 404, { error: "Order not found" });
@@ -25732,15 +25875,31 @@ var init_server = __esm({
           const extractedOrderCode = orderMatch ? orderMatch[0].replace(/[\s_-]/g, "").toUpperCase() : null;
           let matchedUserId = null;
           let targetTier = "PRO";
-          if (extractedOrderCode && this.supabase.isAvailable()) {
-            const order = await this.supabase.getOrderByCode(extractedOrderCode);
+          if (extractedOrderCode) {
+            let order = this.orders.get(extractedOrderCode) || null;
+            if (!order && this.supabase.isAvailable()) {
+              order = await this.supabase.getOrderByCode(extractedOrderCode);
+            }
             if (order) {
-              await this.supabase.markOrderPaid(extractedOrderCode);
+              order.status = "PAID";
+              this.orders.set(extractedOrderCode, order);
+              if (this.supabase.isAvailable()) {
+                await this.supabase.markOrderPaid(extractedOrderCode);
+              }
               matchedUserId = order.user_id;
               targetTier = order.tier;
               const isYearly = order.interval === "year" || body.transferAmount >= 49e4;
               const durationMs = isYearly ? 365 * 86400 * 1e3 : 30 * 86400 * 1e3;
-              await this.supabase.upsertSubscription(matchedUserId, targetTier, "ACTIVE", Date.now() + durationMs);
+              if (matchedUserId) {
+                if (this.supabase.isAvailable()) {
+                  await this.supabase.upsertSubscription(matchedUserId, targetTier, "ACTIVE", Date.now() + durationMs);
+                }
+                this.userSubscriptions.set(matchedUserId, {
+                  tier: targetTier,
+                  status: "ACTIVE",
+                  expiresAt: Date.now() + durationMs
+                });
+              }
             }
           }
           if (!matchedUserId) {
@@ -25848,7 +26007,7 @@ var init_server = __esm({
             return;
           }
           const body = await this.parseBody(req);
-          const fingerprint = body.deviceFingerprint || body.fingerprint || crypto2.randomUUID();
+          const fingerprint = body.deviceFingerprint || body.fingerprint || crypto3.randomUUID();
           const existing = Array.from(this.devices.values()).find(
             (d) => d.userId === authResult.userId && d.deviceFingerprint === fingerprint
           );
@@ -25880,7 +26039,7 @@ var init_server = __esm({
             });
             return;
           }
-          const id = crypto2.randomUUID();
+          const id = crypto3.randomUUID();
           const device = {
             id,
             userId: authResult.userId,
@@ -25974,15 +26133,10 @@ var init_server = __esm({
           const randomSuffix = Math.floor(100 + Math.random() * 900);
           const orderCode = `EP${Date.now().toString().slice(-6)}${randomSuffix}`;
           const transferContent = `EYEPOSTURE ${authResult.userId} ${orderCode}`;
+          const orderRecord = { order_code: orderCode, user_id: authResult.userId, tier, interval, amount, status: "PENDING" };
+          this.orders.set(orderCode, orderRecord);
           if (this.supabase.isAvailable()) {
-            await this.supabase.createOrder({
-              order_code: orderCode,
-              user_id: authResult.userId,
-              tier,
-              interval,
-              amount,
-              status: "PENDING"
-            });
+            await this.supabase.createOrder(orderRecord);
           }
           const qrUrl = this.sepayProvider.generateVietQrUrl({
             amount,
@@ -26051,7 +26205,7 @@ var init_server = __esm({
         }
         if (pathname === "/api/v1/webhooks/stripe" && method === "POST") {
           const body = await this.parseBody(req);
-          const eventId = body.id || crypto2.randomUUID();
+          const eventId = body.id || crypto3.randomUUID();
           if (this.processedWebhookEvents.has(eventId)) {
             this.sendJson(res, 200, { received: true, idempotent: true });
             return;
@@ -26086,7 +26240,7 @@ var init_server = __esm({
         this.sendJson(res, 404, { error: "Endpoint not found" });
       }
       listen(port = 0) {
-        return new Promise((resolve2) => {
+        return new Promise((resolve3) => {
           this.server = http.createServer((req, res) => {
             this.handleRequest(req, res).catch((err) => {
               this.sendJson(res, 500, { error: "Internal Server Error", message: String(err) });
@@ -26095,16 +26249,16 @@ var init_server = __esm({
           this.server.listen(port, () => {
             const address = this.server?.address();
             const assignedPort = typeof address === "object" && address ? address.port : port;
-            resolve2(assignedPort);
+            resolve3(assignedPort);
           });
         });
       }
       close() {
-        return new Promise((resolve2) => {
+        return new Promise((resolve3) => {
           if (this.server) {
-            this.server.close(() => resolve2());
+            this.server.close(() => resolve3());
           } else {
-            resolve2();
+            resolve3();
           }
         });
       }

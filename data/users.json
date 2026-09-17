@@ -1,0 +1,139 @@
+[
+  {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "email": "admin",
+    "name": "Quản Trị Viên (Admin)",
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "isBlocked": false,
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z",
+    "passwordHash": "71e40c0ff92114f375a49e916bcc7195837e786728fd506ab1d41514f60348775445e0fb4d565e91c0b4b89d8e2196306bee07df8be9db9f56b477e86af19471",
+    "salt": "eyeposture_admin_salt_2026",
+    "subscription": {
+      "tier": "FAMILY",
+      "status": "ACTIVE",
+      "expiresAt": 2104966015313
+    }
+  },
+  {
+    "id": "10986b28-7c44-4793-8708-d0c7ac9488c0",
+    "email": "test_1789605968512@eyeposture.com",
+    "name": "Test User",
+    "role": "USER",
+    "createdAt": "2026-09-17T00:46:09.563Z",
+    "updatedAt": "2026-09-17T00:46:09.563Z",
+    "passwordHash": "fb58316f3759abba2a1bf9ca977dcbacdb23df41e35db83c014acc1666a85bfde78a11ca76762787e1060fb2edf436c73dcfe3ee09121a4e7015bbb325e67b57",
+    "salt": "9ebbaaee14888cc63ce073e175360776",
+    "subscription": {
+      "tier": "FREE",
+      "status": "ACTIVE",
+      "expiresAt": 1821141969923
+    }
+  },
+  {
+    "id": "94df96ab-efb1-4cdf-ac4b-b0b4600c7fbc",
+    "email": "pro_1789605969930@eyeposture.com",
+    "name": "Pro Buyer",
+    "role": "USER",
+    "createdAt": "2026-09-17T00:46:10.012Z",
+    "updatedAt": "2026-09-17T00:46:10.012Z",
+    "passwordHash": "6d45b97bb1be396864084bc2ecbb690d25fc3a4f2580de34d1acab66cb2f4bbd601f5975f6532b54aa93483f547cbeadfb242ce48856a33cd830a68c3bfdccd9",
+    "salt": "1c2b689071ba519294be65f1af7853ca",
+    "subscription": {
+      "tier": "PRO",
+      "status": "ACTIVE",
+      "expiresAt": 1792197970334
+    }
+  },
+  {
+    "id": "d8074d1d-ec99-4ee6-88d9-8e6aaa44e30d",
+    "email": "sepay_1789605970516@example.com",
+    "name": "SePay User",
+    "role": "USER",
+    "createdAt": "2026-09-17T00:46:10.600Z",
+    "updatedAt": "2026-09-17T00:46:10.600Z",
+    "passwordHash": "a5116c7748ae196085767468e62b1ac82c3913f5431471f7c962df2af8737d63000813da5c3e401c9c456824bc52f021a7c5fb43b1e1a15a1bc0105482382680",
+    "salt": "a2dc7122b6542931beabe7129875e8c1",
+    "subscription": {
+      "tier": "PRO",
+      "status": "ACTIVE",
+      "expiresAt": 1792197971039
+    }
+  },
+  {
+    "id": "b54e3542-c8a6-4053-8632-2832db9e410d",
+    "email": "dev_mgmt_1789605971197@example.com",
+    "name": "Device Manager",
+    "role": "USER",
+    "createdAt": "2026-09-17T00:46:11.283Z",
+    "updatedAt": "2026-09-17T00:46:11.283Z",
+    "passwordHash": "9cab67d36928722b2c629f3d0ba59efbbe5241a19173588b02207d90eb956b272d1a24bb5faff44646f283a82da8c2363a046a8040541ee993ac6e26c71c3011",
+    "salt": "804d42b44246728d5132d77fcf848351",
+    "subscription": {
+      "tier": "FREE",
+      "status": "ACTIVE",
+      "expiresAt": 1821141971438
+    }
+  },
+  {
+    "id": "87794669-553e-4d0b-853b-d18c162853bf",
+    "email": "test_1789606015384@eyeposture.com",
+    "name": "Test User",
+    "role": "USER",
+    "createdAt": "2026-09-17T00:46:55.639Z",
+    "updatedAt": "2026-09-17T00:46:55.639Z",
+    "passwordHash": "453d36bd167a5191c0dfe090425bb899d8f0de83fe1a4a86e40ad574c234bd914aafbf174cc0c3f85fc251849789589c4787a9a07c484149873eb62cb1736387",
+    "salt": "fe07ae2808e098ca05a607e3661b7a56",
+    "subscription": {
+      "tier": "FREE",
+      "status": "ACTIVE",
+      "expiresAt": 1821142015811
+    }
+  },
+  {
+    "id": "0b63a581-5c8d-40ae-b3f3-65b04c32c8c6",
+    "email": "pro_1789606015823@eyeposture.com",
+    "name": "Pro Buyer",
+    "role": "USER",
+    "createdAt": "2026-09-17T00:46:55.897Z",
+    "updatedAt": "2026-09-17T00:46:55.897Z",
+    "passwordHash": "43f65b13d6862ad5a1c47426f577e2a83f51b20b057c1c8ccb622e760c99f97ce10f0bb906f47611d8cca84b599d09fcb4e5971980057c309375e87f9c579467",
+    "salt": "b28b4f61c447ffdde354cedaa560e1f9",
+    "subscription": {
+      "tier": "PRO",
+      "status": "ACTIVE",
+      "expiresAt": 1792198016168
+    }
+  },
+  {
+    "id": "14ee81a2-a1bb-4cee-8443-a540289b7294",
+    "email": "sepay_1789606016348@example.com",
+    "name": "SePay User",
+    "role": "USER",
+    "createdAt": "2026-09-17T00:46:56.420Z",
+    "updatedAt": "2026-09-17T00:46:56.420Z",
+    "passwordHash": "ec80729c07698468e9018c88587ebe9924d1267acacdcb9649596fb602dbca18e9dcc2cf9d21498b17cb3a7179bc78d79f747420e9c9ba0047d92e64772d1e8c",
+    "salt": "35f0e3cddaaf8247ca1acf192244f48a",
+    "subscription": {
+      "tier": "PRO",
+      "status": "ACTIVE",
+      "expiresAt": 1792198016825
+    }
+  },
+  {
+    "id": "c2edf4af-3598-46bd-800c-0f9e20afb830",
+    "email": "dev_mgmt_1789606016905@example.com",
+    "name": "Device Manager",
+    "role": "USER",
+    "createdAt": "2026-09-17T00:46:56.977Z",
+    "updatedAt": "2026-09-17T00:46:56.977Z",
+    "passwordHash": "e1018f3a959d5595d4a9bfa3f9b47ceccc6084076843879fe0fce7c0812f023f73afee691567ed0b580f5d3408436ac4cb41c2bafc7dd4832bfcb4ca81cf13a9",
+    "salt": "3d95292636f63da6f526f5e0f498c73f",
+    "subscription": {
+      "tier": "FREE",
+      "status": "ACTIVE",
+      "expiresAt": 1821142017139
+    }
+  }
+]

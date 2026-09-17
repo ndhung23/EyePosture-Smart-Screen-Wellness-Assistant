@@ -34,7 +34,7 @@ interface AppContextValue {
   theme: AppTheme;
   effectiveTheme: 'dark' | 'light';
   switchTheme: (theme: AppTheme) => void;
-  currentUser: { id: string; email: string; name: string } | null;
+  currentUser: { id: string; email: string; name: string; role?: string } | null;
   authToken: string | null;
   authModalOpen: boolean;
   authModalMode: 'login' | 'register';
@@ -113,7 +113,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     action: 'PAUSE_MONITORING' | 'QUIT_APP';
     onSuccess?: () => void;
   } | null>(null);
-  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string; role?: string } | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
