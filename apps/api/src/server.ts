@@ -300,7 +300,7 @@ export class EyePostureApiServer {
     ) {
       const downloadUrl =
         process.env.WINDOWS_DOWNLOAD_URL ||
-        'https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant/releases';
+        'https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant/releases/download/v1.0.0/EyePosture.exe';
       res.writeHead(302, {
         Location: downloadUrl,
         'Cache-Control': 'no-cache',

@@ -101,43 +101,14 @@ export function getLandingScripts(): string {
     if (distanceSlider) distanceSlider.addEventListener('input', updateSimulation);
     if (postureSelect) postureSelect.addEventListener('change', updateSimulation);
 
-    // Download Modal Logic
-    const downloadModal = document.getElementById('download-modal');
+    // Direct Download Logic
     const downloadButtons = document.querySelectorAll('.trigger-download');
-    const closeModalBtn = document.getElementById('close-modal-btn');
-
-    function openDownloadModal() {
-      if (downloadModal) {
-        downloadModal.classList.remove('hidden');
-        downloadModal.classList.add('flex');
-        
-        // Trigger download directly via iframe or location
-        setTimeout(() => {
-          window.location.href = '/download/win';
-        }, 800);
-      }
-    }
-
-    function closeDownloadModal() {
-      if (downloadModal) {
-        downloadModal.classList.add('hidden');
-        downloadModal.classList.remove('flex');
-      }
-    }
-
     downloadButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        openDownloadModal();
+        window.location.href = '/download/win';
       });
     });
-
-    if (closeModalBtn) closeModalBtn.addEventListener('click', closeDownloadModal);
-    if (downloadModal) {
-      downloadModal.addEventListener('click', (e) => {
-        if (e.target === downloadModal) closeDownloadModal();
-      });
-    }
 
     // Interactive 20-20-20 Mini Timer
     let timerSeconds = 20 * 60;

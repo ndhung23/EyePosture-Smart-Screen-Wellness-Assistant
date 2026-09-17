@@ -809,66 +809,6 @@ export function getLandingPageHtml(): string {
     </div>
   </section>
 
-  <!-- ================= DOWNLOAD MODAL POPUP ================= -->
-  <div id="download-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-    <div class="glass-card rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-teal-500/40 relative modal-enter shadow-2xl bg-slate-900/95">
-      
-      <!-- Close Button -->
-      <button id="close-modal-btn" class="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition" aria-label="Đóng">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-
-      <!-- Modal Header -->
-      <div class="flex items-center gap-3 mb-5">
-        <img src="/EyePosture.png" alt="EyePosture Logo" class="w-12 h-12 rounded-2xl object-contain shadow-md border border-teal-500/30 bg-slate-950 p-1" />
-        <div>
-          <h3 class="text-lg font-extrabold text-white">Đang Tải EyePosture Cho Windows</h3>
-          <p class="text-xs text-teal-400">Phiên bản v1.0.0 (Windows 64-bit)</p>
-        </div>
-      </div>
-
-      <!-- Loading / Instruction Notice -->
-      <div class="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 mb-5">
-        <div class="flex items-center gap-2.5 text-xs text-slate-200 mb-2 font-semibold">
-          <span class="pulse-dot"></span>
-          <span>Tệp cài đặt .exe sẽ tự động tải xuống trong giây lát...</span>
-        </div>
-        <p class="text-[11px] text-slate-400 leading-relaxed">
-          Nếu trình duyệt không tự động tải, hãy bấm nút tải trực tiếp bên dưới hoặc tải qua GitHub Releases chính thức.
-        </p>
-      </div>
-
-      <!-- Quick Setup Instructions -->
-      <div class="space-y-3 mb-6 text-xs text-slate-300">
-        <div class="font-bold text-white uppercase text-[11px] tracking-wider text-slate-400">3 Bước Cài Đặt Nhanh:</div>
-        <div class="flex items-start gap-2.5">
-          <span class="w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center shrink-0 text-[10px] font-bold">1</span>
-          <span>Mở file <strong>EyePosture.exe</strong> trong thư mục Downloads của bạn.</span>
-        </div>
-        <div class="flex items-start gap-2.5">
-          <span class="w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center shrink-0 text-[10px] font-bold">2</span>
-          <span>Cho phép quyền camera (xử lý 100% On-Device, không gửi ảnh đi bất cứ đâu).</span>
-        </div>
-        <div class="flex items-start gap-2.5">
-          <span class="w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center shrink-0 text-[10px] font-bold">3</span>
-          <span>Ứng dụng chạy ngầm dưới góc phải màn hình (System Tray), sẵn sàng bảo vệ mắt!</span>
-        </div>
-      </div>
-
-      <!-- Direct Link Buttons -->
-      <div class="flex flex-col sm:flex-row gap-3">
-        <a href="/download/win" class="btn-glow text-slate-950 font-bold py-3 px-4 rounded-xl text-xs text-center flex-1 flex items-center justify-center gap-2">
-          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.902-1.799"/></svg>
-          Tải Trực Tiếp (.exe)
-        </a>
-        <a href="https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant/releases" target="_blank" rel="noopener" class="glass-card hover:bg-slate-800 text-slate-300 hover:text-white font-semibold py-3 px-4 rounded-xl text-xs text-center flex-1 border border-slate-700 transition flex items-center justify-center gap-1.5">
-          <span>GitHub Releases</span>
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-        </a>
-      </div>
-
-    </div>
-  </div>
 
   <!-- ================= FOOTER ================= -->
   <footer class="border-t border-slate-900 bg-slate-950 text-slate-400 text-xs py-12">

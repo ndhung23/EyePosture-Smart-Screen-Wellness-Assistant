@@ -24,14 +24,6 @@ export function getLoginModalHtml(): string {
         </div>
       </div>
 
-      <!-- Quick Fill Helper for Admin/1 -->
-      <div class="flex items-center justify-between p-2.5 mb-5 rounded-xl bg-teal-500/10 border border-teal-500/25 text-xs">
-        <span class="text-slate-300">Tài khoản quản trị thử nghiệm:</span>
-        <button id="btn-quick-fill-admin" type="button" class="font-bold text-teal-300 hover:text-teal-200 underline flex items-center gap-1 transition">
-          ⚡ Điền admin/1
-        </button>
-      </div>
-
       <!-- Login Form -->
       <form id="landing-login-form" class="space-y-4">
         <!-- Identifier Input -->

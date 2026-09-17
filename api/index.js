@@ -1971,43 +1971,14 @@ function getLandingScripts() {
     if (distanceSlider) distanceSlider.addEventListener('input', updateSimulation);
     if (postureSelect) postureSelect.addEventListener('change', updateSimulation);
 
-    // Download Modal Logic
-    const downloadModal = document.getElementById('download-modal');
+    // Direct Download Logic
     const downloadButtons = document.querySelectorAll('.trigger-download');
-    const closeModalBtn = document.getElementById('close-modal-btn');
-
-    function openDownloadModal() {
-      if (downloadModal) {
-        downloadModal.classList.remove('hidden');
-        downloadModal.classList.add('flex');
-        
-        // Trigger download directly via iframe or location
-        setTimeout(() => {
-          window.location.href = '/download/win';
-        }, 800);
-      }
-    }
-
-    function closeDownloadModal() {
-      if (downloadModal) {
-        downloadModal.classList.add('hidden');
-        downloadModal.classList.remove('flex');
-      }
-    }
-
     downloadButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        openDownloadModal();
+        window.location.href = '/download/win';
       });
     });
-
-    if (closeModalBtn) closeModalBtn.addEventListener('click', closeDownloadModal);
-    if (downloadModal) {
-      downloadModal.addEventListener('click', (e) => {
-        if (e.target === downloadModal) closeDownloadModal();
-      });
-    }
 
     // Interactive 20-20-20 Mini Timer
     let timerSeconds = 20 * 60;
@@ -2261,14 +2232,6 @@ function getLoginModalHtml() {
           <h3 class="text-xl font-bold text-white tracking-tight">\u0110\u0103ng Nh\u1EADp</h3>
           <p class="text-xs text-slate-400">\u0110\u0103ng nh\u1EADp t\xE0i kho\u1EA3n qu\u1EA3n tr\u1ECB ho\u1EB7c ng\u01B0\u1EDDi d\xF9ng</p>
         </div>
-      </div>
-
-      <!-- Quick Fill Helper for Admin/1 -->
-      <div class="flex items-center justify-between p-2.5 mb-5 rounded-xl bg-teal-500/10 border border-teal-500/25 text-xs">
-        <span class="text-slate-300">T\xE0i kho\u1EA3n qu\u1EA3n tr\u1ECB th\u1EED nghi\u1EC7m:</span>
-        <button id="btn-quick-fill-admin" type="button" class="font-bold text-teal-300 hover:text-teal-200 underline flex items-center gap-1 transition">
-          \u26A1 \u0110i\u1EC1n admin/1
-        </button>
       </div>
 
       <!-- Login Form -->
@@ -3144,66 +3107,6 @@ function getLandingPageHtml() {
     </div>
   </section>
 
-  <!-- ================= DOWNLOAD MODAL POPUP ================= -->
-  <div id="download-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-    <div class="glass-card rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-teal-500/40 relative modal-enter shadow-2xl bg-slate-900/95">
-      
-      <!-- Close Button -->
-      <button id="close-modal-btn" class="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition" aria-label="\u0110\xF3ng">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-
-      <!-- Modal Header -->
-      <div class="flex items-center gap-3 mb-5">
-        <img src="/EyePosture.png" alt="EyePosture Logo" class="w-12 h-12 rounded-2xl object-contain shadow-md border border-teal-500/30 bg-slate-950 p-1" />
-        <div>
-          <h3 class="text-lg font-extrabold text-white">\u0110ang T\u1EA3i EyePosture Cho Windows</h3>
-          <p class="text-xs text-teal-400">Phi\xEAn b\u1EA3n v1.0.0 (Windows 64-bit)</p>
-        </div>
-      </div>
-
-      <!-- Loading / Instruction Notice -->
-      <div class="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 mb-5">
-        <div class="flex items-center gap-2.5 text-xs text-slate-200 mb-2 font-semibold">
-          <span class="pulse-dot"></span>
-          <span>T\u1EC7p c\xE0i \u0111\u1EB7t .exe s\u1EBD t\u1EF1 \u0111\u1ED9ng t\u1EA3i xu\u1ED1ng trong gi\xE2y l\xE1t...</span>
-        </div>
-        <p class="text-[11px] text-slate-400 leading-relaxed">
-          N\u1EBFu tr\xECnh duy\u1EC7t kh\xF4ng t\u1EF1 \u0111\u1ED9ng t\u1EA3i, h\xE3y b\u1EA5m n\xFAt t\u1EA3i tr\u1EF1c ti\u1EBFp b\xEAn d\u01B0\u1EDBi ho\u1EB7c t\u1EA3i qua GitHub Releases ch\xEDnh th\u1EE9c.
-        </p>
-      </div>
-
-      <!-- Quick Setup Instructions -->
-      <div class="space-y-3 mb-6 text-xs text-slate-300">
-        <div class="font-bold text-white uppercase text-[11px] tracking-wider text-slate-400">3 B\u01B0\u1EDBc C\xE0i \u0110\u1EB7t Nhanh:</div>
-        <div class="flex items-start gap-2.5">
-          <span class="w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center shrink-0 text-[10px] font-bold">1</span>
-          <span>M\u1EDF file <strong>EyePosture.exe</strong> trong th\u01B0 m\u1EE5c Downloads c\u1EE7a b\u1EA1n.</span>
-        </div>
-        <div class="flex items-start gap-2.5">
-          <span class="w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center shrink-0 text-[10px] font-bold">2</span>
-          <span>Cho ph\xE9p quy\u1EC1n camera (x\u1EED l\xFD 100% On-Device, kh\xF4ng g\u1EEDi \u1EA3nh \u0111i b\u1EA5t c\u1EE9 \u0111\xE2u).</span>
-        </div>
-        <div class="flex items-start gap-2.5">
-          <span class="w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center shrink-0 text-[10px] font-bold">3</span>
-          <span>\u1EE8ng d\u1EE5ng ch\u1EA1y ng\u1EA7m d\u01B0\u1EDBi g\xF3c ph\u1EA3i m\xE0n h\xECnh (System Tray), s\u1EB5n s\xE0ng b\u1EA3o v\u1EC7 m\u1EAFt!</span>
-        </div>
-      </div>
-
-      <!-- Direct Link Buttons -->
-      <div class="flex flex-col sm:flex-row gap-3">
-        <a href="/download/win" class="btn-glow text-slate-950 font-bold py-3 px-4 rounded-xl text-xs text-center flex-1 flex items-center justify-center gap-2">
-          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.902-1.799"/></svg>
-          T\u1EA3i Tr\u1EF1c Ti\u1EBFp (.exe)
-        </a>
-        <a href="https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant/releases" target="_blank" rel="noopener" class="glass-card hover:bg-slate-800 text-slate-300 hover:text-white font-semibold py-3 px-4 rounded-xl text-xs text-center flex-1 border border-slate-700 transition flex items-center justify-center gap-1.5">
-          <span>GitHub Releases</span>
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-        </a>
-      </div>
-
-    </div>
-  </div>
 
   <!-- ================= FOOTER ================= -->
   <footer class="border-t border-slate-900 bg-slate-950 text-slate-400 text-xs py-12">
@@ -25970,7 +25873,7 @@ var init_server = __esm({
           return;
         }
         if ((pathname === "/download" || pathname === "/download/win" || pathname === "/download/windows" || pathname === "/download/EyePosture.exe") && method === "GET") {
-          const downloadUrl = process.env.WINDOWS_DOWNLOAD_URL || "https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant/releases";
+          const downloadUrl = process.env.WINDOWS_DOWNLOAD_URL || "https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant/releases/download/v1.0.0/EyePosture.exe";
           res.writeHead(302, {
             Location: downloadUrl,
             "Cache-Control": "no-cache"
