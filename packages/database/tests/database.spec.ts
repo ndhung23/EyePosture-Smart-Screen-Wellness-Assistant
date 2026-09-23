@@ -78,6 +78,7 @@ describe('Database Layer & Repositories', () => {
     expect(settings.distance.thresholdCm).toBe(50);
     expect(settings.security.enabled).toBe(false);
     expect(settings.security.requireOnPause).toBe(true);
+    expect(settings.blink?.enabled).toBe(false);
 
     // Update break interval and security
     settings.breaks.intervalMinutes = 25;

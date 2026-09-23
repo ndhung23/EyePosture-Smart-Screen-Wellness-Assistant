@@ -178,7 +178,7 @@ describe('Billing & Entitlement Security Layer', () => {
     expect(qrResult.qrUrl).toContain('https://qr.sepay.vn/img?');
     expect(qrResult.qrUrl).toContain('acc=0333222111');
     expect(qrResult.qrUrl).toContain('bank=MBBank');
-    expect(qrResult.amount).toBe(30000);
+    expect(qrResult.amount).toBe(19000);
     expect(qrResult.transferContent).toContain('EYEPOSTURE usr_abc123');
 
     // Test 1 device year & lifetime
@@ -186,14 +186,14 @@ describe('Billing & Entitlement Security Layer', () => {
     expect(qrYear.amount).toBe(199000);
 
     const qrLifetime = sepay.createQrPayment({ userId: 'usr_abc', tier: 'PRO', interval: 'lifetime' });
-    expect(qrLifetime.amount).toBe(300000);
+    expect(qrLifetime.amount).toBe(299000);
 
-    // Test 3 devices month & year
+    // Test Family 4 devices month & year
     const qrFamilyMonth = sepay.createQrPayment({ userId: 'usr_abc', tier: 'FAMILY', interval: 'month' });
-    expect(qrFamilyMonth.amount).toBe(50000);
+    expect(qrFamilyMonth.amount).toBe(49000);
 
     const qrFamilyYear = sepay.createQrPayment({ userId: 'usr_abc', tier: 'FAMILY', interval: 'year' });
-    expect(qrFamilyYear.amount).toBe(300000);
+    expect(qrFamilyYear.amount).toBe(299000);
 
     // Test content parsing
     const parsed = sepay.parsePaymentContent('chuyen khoan EYEPOSTURE usr_abc123 ORD999999');

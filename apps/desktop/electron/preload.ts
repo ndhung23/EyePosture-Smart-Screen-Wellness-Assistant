@@ -26,4 +26,13 @@ contextBridge.exposeInMainWorld('electronApi', {
   },
   confirmQuit: () => ipcRenderer.send('app:confirm-quit'),
   requestAppQuit: () => ipcRenderer.send('app:request-quit'),
+  showOverlayAlert: (data: { type: string; title: string; message: string; durationMs?: number }) =>
+    ipcRenderer.send('overlay:show', data),
+  dismissOverlayAlert: () => ipcRenderer.send('overlay:dismiss'),
+  onAlertShow: (callback: (data: any) => void) => {
+    ipcRenderer.on('alert:show', (_event, data) => callback(data));
+  },
+  onAlertHide: (callback: () => void) => {
+    ipcRenderer.on('alert:hide', () => callback());
+  },
 });

@@ -63,7 +63,7 @@ export class NotificationPolicyEngine {
     // 2. Fullscreen suppression (e.g. movies, games, presentations)
     if (this.settings.suppressInFullscreen && activeApp?.isFullScreen) {
       // Urgent alerts (like daily screen time exceeded) can downgrade, but posture/distance are suppressed
-      if (type === 'POSTURE' || type === 'DISTANCE') {
+      if (type === 'POSTURE' || type === 'DISTANCE' || type === 'BLINK_REMINDER') {
         return { allowed: false, reason: 'Fullscreen application active' };
       }
     }

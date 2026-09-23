@@ -34,7 +34,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onSelectPage }) => {
-  const { language, switchLanguage, activeProfile, subscriptionTier, theme, effectiveTheme, switchTheme } = useApp();
+  const { language, switchLanguage, activeProfile, subscriptionTier, theme, effectiveTheme, switchTheme, requestAccessSettings } = useApp();
 
   const navItems = [
     { id: 'dashboard' as NavPage, labelKey: 'nav.dashboard', icon: LayoutDashboard },
@@ -77,7 +77,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onSelectPage }) =
             return (
               <button
                 key={item.id}
-                onClick={() => onSelectPage(item.id)}
+                onClick={() => {
+                  if (item.id === 'settings') {
+                    requestAccessSettings(() => onSelectPage('settings'));
+                  } else {
+                    onSelectPage(item.id);
+                  }
+                }}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                   isActive
                     ? 'bg-teal-500/15 text-teal-300 border border-teal-500/25 shadow-sm'

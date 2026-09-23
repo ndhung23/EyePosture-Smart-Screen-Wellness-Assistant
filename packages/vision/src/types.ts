@@ -8,6 +8,10 @@ export interface KeyFacialLandmarks {
   leftEyeInner: Point3D;
   rightEyeOuter: Point3D;
   rightEyeInner: Point3D;
+  leftEyeTop?: Point3D;
+  leftEyeBottom?: Point3D;
+  rightEyeTop?: Point3D;
+  rightEyeBottom?: Point3D;
   leftEar?: Point3D;
   rightEar?: Point3D;
 }

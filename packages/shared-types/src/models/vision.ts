@@ -13,6 +13,17 @@ export interface HeadAngles {
   yaw: number;   // degrees: turning face left/right
 }
 
+export interface BlinkMetrics {
+  leftEar: number;
+  rightEar: number;
+  averageEar: number;
+  blinkCount: number;
+  blinksPerMinute: number;
+  secondsSinceLastBlink: number;
+  prolongedStareDetected: boolean;
+  eyeStrainScore: number; // 0 (healthy) - 100 (fatigued)
+}
+
 export interface VisionFrameAnalysis {
   timestamp: number;
   faceDetected: boolean;
@@ -25,6 +36,7 @@ export interface VisionFrameAnalysis {
   headAngles: HeadAngles;
   slouchDetected: boolean;
   eyeAspectRatios?: { left: number; right: number };
+  blinkMetrics?: BlinkMetrics;
   faceBoundingBox?: { xMin: number; yMin: number; width: number; height: number };
 }
 

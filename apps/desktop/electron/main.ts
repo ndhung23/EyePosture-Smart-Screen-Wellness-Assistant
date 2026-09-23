@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, powerMonitor, Notification, session } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, powerMonitor, Notification, session, screen } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -37,8 +37,104 @@ function loadWasmBinary(): Uint8Array | null {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let overlayWindow: BrowserWindow | null = null;
+let overlayHideTimer: NodeJS.Timeout | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+
+function getOverlayHtmlPath(): string {
+  const candidates = [
+    path.join(__dirname, 'overlay.html'),
+    path.join(__dirname, '../electron/overlay.html'),
+    path.join(__dirname, '../../electron/overlay.html'),
+    path.join(process.cwd(), 'apps/desktop/electron/overlay.html'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return path.join(__dirname, 'overlay.html');
+}
+
+function createOverlayWindow() {
+  overlayWindow = new BrowserWindow({
+    width: 460,
+    height: 110,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    show: false,
+    hasShadow: false,
+    focusable: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      webSecurity: false,
+    },
+  });
+
+  overlayWindow.setAlwaysOnTop(true, 'screen-saver');
+  overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+
+  const overlayHtml = getOverlayHtmlPath();
+  overlayWindow.loadFile(overlayHtml);
+
+  overlayWindow.on('closed', () => {
+    overlayWindow = null;
+  });
+}
+
+function showOverlayAlert(data: { type: string; title: string; message: string; durationMs?: number }) {
+  if (!overlayWindow || overlayWindow.isDestroyed()) {
+    createOverlayWindow();
+  }
+
+  if (overlayHideTimer) {
+    clearTimeout(overlayHideTimer);
+    overlayHideTimer = null;
+  }
+
+  try {
+    const cursor = screen.getCursorScreenPoint();
+    const display = screen.getDisplayNearestPoint(cursor) || screen.getPrimaryDisplay();
+    const { width, height, x, y } = display.bounds;
+    const overlayW = 460;
+    const overlayH = 110;
+    overlayWindow?.setBounds({
+      x: Math.round(x + (width - overlayW) / 2),
+      y: Math.round(y + 36), // Căn giữa phía trên đỉnh màn hình (cách mép trên 36px)
+      width: overlayW,
+      height: overlayH,
+    });
+  } catch (err) {
+    console.warn('Failed to calculate overlay bounds:', err);
+  }
+
+  overlayWindow?.webContents.send('alert:show', data);
+  overlayWindow?.showInactive();
+
+  const duration = data.durationMs || 4500;
+  overlayHideTimer = setTimeout(() => {
+    hideOverlayAlert();
+  }, duration);
+}
+
+function hideOverlayAlert() {
+  if (overlayHideTimer) {
+    clearTimeout(overlayHideTimer);
+    overlayHideTimer = null;
+  }
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.webContents.send('alert:hide');
+    setTimeout(() => {
+      if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.hide();
+      }
+    }, 300);
+  }
+}
 
 function getAppIcon(): string | undefined {
   const candidates = [
@@ -169,14 +265,7 @@ function updateTrayMenu(lang: string = 'vi') {
     {
       label: isVi ? 'Thoát EyePosture' : 'Quit EyePosture',
       click: () => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.show();
-          mainWindow.focus();
-          mainWindow.webContents.send('app:request-quit');
-        } else {
-          isQuitting = true;
-          app.quit();
-        }
+        requestQuitFromElectron();
       },
     },
   ]);
@@ -230,15 +319,16 @@ ipcMain.on('app:confirm-quit', () => {
   app.quit();
 });
 
+ipcMain.on('overlay:show', (_event, data) => {
+  showOverlayAlert(data);
+});
+
+ipcMain.on('overlay:dismiss', () => {
+  hideOverlayAlert();
+});
+
 ipcMain.on('app:request-quit', () => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.show();
-    mainWindow.focus();
-    mainWindow.webContents.send('app:request-quit');
-  } else {
-    isQuitting = true;
-    app.quit();
-  }
+  requestQuitFromElectron();
 });
 
 app.whenReady().then(() => {
@@ -254,7 +344,9 @@ app.whenReady().then(() => {
     return permission === 'media';
   });
 
+  setupAppMenu();
   createWindow();
+  createOverlayWindow();
   createTray();
   setupPowerMonitoring();
   setupDeviceTelemetry();
@@ -263,6 +355,93 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
+
+function requestQuitFromElectron() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.webContents.send('app:request-quit');
+  } else {
+    isQuitting = true;
+    app.quit();
+  }
+}
+
+function setupAppMenu() {
+  const isMac = process.platform === 'darwin';
+  const template: any[] = [
+    ...(isMac
+      ? [
+          {
+            label: app.name,
+            submenu: [
+              { role: 'about' },
+              { type: 'separator' },
+              {
+                label: 'Quit ' + app.name,
+                accelerator: 'Command+Q',
+                click: () => {
+                  requestQuitFromElectron();
+                },
+              },
+            ],
+          },
+        ]
+      : []),
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Exit',
+          accelerator: 'CmdOrCtrl+Q',
+          click: () => {
+            requestQuitFromElectron();
+          },
+        },
+      ],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+      ],
+    },
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        {
+          label: 'Close',
+          accelerator: 'CmdOrCtrl+W',
+          click: () => {
+            mainWindow?.hide();
+          },
+        },
+      ],
+    },
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
 
 // Device Telemetry & Cloud Presence Heartbeat
 function getOrCreateDeviceFingerprint(): string {
@@ -356,8 +535,11 @@ function setupDeviceTelemetry() {
   }, 5 * 60 * 1000);
 }
 
-app.on('before-quit', () => {
-  isQuitting = true;
+app.on('before-quit', (event) => {
+  if (!isQuitting) {
+    event.preventDefault();
+    requestQuitFromElectron();
+  }
 });
 
 app.on('window-all-closed', () => {

@@ -21,6 +21,7 @@ interface DashboardPageProps {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const {
+    settings,
     dailyStats,
     liveAnalysis,
     isMonitoring,
@@ -45,7 +46,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   return (
     <div className="p-8 space-y-8 max-w-6xl mx-auto pb-16">
       {/* Top Status Overview Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Screen Wellness Score Card */}
         <div className="glass-card p-6 flex items-center justify-between relative overflow-hidden">
           <div className="space-y-1">
@@ -87,7 +88,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 {liveAnalysis.distanceState === 'TOO_CLOSE' ? t('dashboard.tooClose') : t('dashboard.statusGood')}
               </span>
               <span className="text-xs text-slate-400 font-mono">
-                ~{liveAnalysis.distanceEstimateCm} cm
+                {liveAnalysis.faceDetected ? `~${liveAnalysis.distanceEstimateCm} cm` : '-- cm'}
               </span>
             </div>
             <p className="text-xs text-slate-400 pt-1">
@@ -146,6 +147,50 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             }`}
           >
             <ScanFace className="w-7 h-7" />
+          </div>
+        </div>
+
+        {/* Eye Blink & Strain Card (ErgoBlink Integration) */}
+        <div
+          onClick={() => onNavigate('monitor')}
+          className="glass-card glass-card-interactive p-6 flex items-center justify-between"
+        >
+          <div className="space-y-1">
+            <span className="text-xs uppercase font-bold tracking-wider text-slate-400">
+              {t('blink.blinkRate')}
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span
+                className={`font-display text-2xl font-bold ${
+                  (liveAnalysis.blinkMetrics?.eyeStrainScore ?? 0) >= 70
+                    ? 'text-rose-400'
+                    : (liveAnalysis.blinkMetrics?.eyeStrainScore ?? 0) >= 35
+                    ? 'text-amber-400'
+                    : 'text-emerald-400'
+                }`}
+              >
+                {liveAnalysis.blinkMetrics?.blinksPerMinute ?? 16} BPM
+              </span>
+              <span className="text-xs text-slate-400 font-mono">
+                {Math.max(0, 100 - (liveAnalysis.blinkMetrics?.eyeStrainScore ?? 15))}%
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 pt-1">
+              {!settings?.blink?.enabled
+                ? t('blink.disabledStatus')
+                : liveAnalysis.blinkMetrics?.prolongedStareDetected
+                ? t('blink.staringAlert')
+                : t('blink.normalEyeStrain')}
+            </p>
+          </div>
+          <div
+            className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${
+              (liveAnalysis.blinkMetrics?.eyeStrainScore ?? 0) >= 70
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                : 'bg-teal-500/10 border-teal-500/30 text-teal-400'
+            }`}
+          >
+            <Eye className="w-7 h-7" />
           </div>
         </div>
       </div>

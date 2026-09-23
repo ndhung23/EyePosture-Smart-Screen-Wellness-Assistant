@@ -10,6 +10,7 @@ import {
   Sparkles,
   Camera,
   Activity,
+  Bell,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
@@ -17,6 +18,7 @@ import { CalibrationModal } from '../components/CalibrationModal.js';
 
 export const MonitorPage: React.FC = () => {
   const {
+    settings,
     liveAnalysis,
     connectedCameras,
     selectedCameraId,
@@ -28,6 +30,7 @@ export const MonitorPage: React.FC = () => {
     setUseSimulatedCamera,
     simulationMode,
     setSimulationMode,
+    triggerOverlayAlert,
   } = useApp();
 
   const [isCalibOpen, setIsCalibOpen] = useState<boolean>(false);
@@ -53,13 +56,23 @@ export const MonitorPage: React.FC = () => {
             {t('monitor.subtitle')}
           </p>
         </div>
-        <button
-          onClick={() => setIsCalibOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 active:scale-95 transition-all"
-        >
-          <Target className="w-4 h-4" />
-          <span>{t('calibration.recalibrateButton')}</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => triggerOverlayAlert('DISTANCE')}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 hover:border-teal-500/40 border border-slate-700 text-slate-200 font-semibold text-xs transition-all active:scale-95"
+            title="Thử nghiệm popup cảnh báo nhảy ra đè lên mọi màn hình"
+          >
+            <Bell className="w-3.5 h-3.5 text-rose-400 animate-bounce" />
+            <span>Thử popup đè màn hình</span>
+          </button>
+          <button
+            onClick={() => setIsCalibOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 active:scale-95 transition-all"
+          >
+            <Target className="w-4 h-4" />
+            <span>{t('calibration.recalibrateButton')}</span>
+          </button>
+        </div>
       </div>
 
       {/* Privacy Notice Banner */}
@@ -154,16 +167,18 @@ export const MonitorPage: React.FC = () => {
                     <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                       <div
                         className={`relative border-2 rounded-3xl transition-all duration-300 flex flex-col items-center justify-between p-3 ${
-                          liveAnalysis.distanceState === 'TOO_CLOSE'
+                          !liveAnalysis.faceDetected
+                            ? 'border-slate-600/60 border-dashed text-slate-400'
+                            : liveAnalysis.distanceState === 'TOO_CLOSE'
                             ? 'border-rose-400/90 shadow-[0_0_25px_rgba(244,63,94,0.4)]'
                             : liveAnalysis.postureState === 'POOR'
                             ? 'border-amber-400/90 shadow-[0_0_25px_rgba(245,158,11,0.4)]'
                             : 'border-teal-400/80 shadow-[0_0_25px_rgba(20,184,166,0.3)]'
                         }`}
                         style={{
-                          width: `${Math.min(340, Math.max(180, 200 * liveAnalysis.distanceRatio))}px`,
-                          height: `${Math.min(360, Math.max(220, 240 * liveAnalysis.distanceRatio))}px`,
-                          transform: `rotate(${liveAnalysis.headAngles.roll}deg)`,
+                          width: `${Math.min(340, Math.max(180, 200 * (liveAnalysis.faceDetected ? liveAnalysis.distanceRatio : 1.0)))}px`,
+                          height: `${Math.min(360, Math.max(220, 240 * (liveAnalysis.faceDetected ? liveAnalysis.distanceRatio : 1.0)))}px`,
+                          transform: `rotate(${liveAnalysis.faceDetected ? liveAnalysis.headAngles.roll : 0}deg)`,
                         }}
                       >
                         {/* Corner Reticles */}
@@ -180,7 +195,9 @@ export const MonitorPage: React.FC = () => {
                         <div className="w-full flex justify-between items-end">
                           <span className="w-3 h-3 border-b-2 border-l-2 border-current" />
                           <span className="text-[10px] font-mono uppercase tracking-wider font-bold bg-slate-950/80 px-2 py-0.5 rounded-full border border-current/40">
-                            {liveAnalysis.distanceState === 'TOO_CLOSE'
+                            {!liveAnalysis.faceDetected
+                              ? 'CHƯA PHÁT HIỆN MẶT'
+                              : liveAnalysis.distanceState === 'TOO_CLOSE'
                               ? t('monitor.statusTooClose')
                               : liveAnalysis.slouchDetected
                               ? t('monitor.statusSlouch')
@@ -278,8 +295,9 @@ export const MonitorPage: React.FC = () => {
                 <span className={`w-2 h-2 rounded-full ${!useSimulatedCamera && cameraStream ? 'bg-emerald-400' : 'bg-cyan-400'}`} />
                 {!useSimulatedCamera && cameraStream ? 'Live Video Active' : 'Simulation Landmark Stream'}
               </span>
-              <span>
-                Scale Ratio: <b className="text-slate-200">{liveAnalysis.distanceRatio}x</b>
+              <span className="flex items-center gap-3">
+                <span>Scale: <b className="text-slate-200">{liveAnalysis.faceDetected ? `${liveAnalysis.distanceRatio}x` : '--'}</b></span>
+                <span>EAR: <b className="text-slate-200">{liveAnalysis.faceDetected ? (liveAnalysis.blinkMetrics?.averageEar ?? 0.28) : '--'}</b></span>
               </span>
             </div>
           </div>
@@ -292,12 +310,12 @@ export const MonitorPage: React.FC = () => {
                 <span className="text-[11px] text-teal-400">{t('monitor.testHarnessHint')}</span>
               </div>
 
-              <div className="grid grid-cols-4 gap-2 pt-1">
-                {(['UPRIGHT', 'SLOUCH', 'TOO_CLOSE', 'TILT'] as const).map((mode) => (
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-1">
+                {(['UPRIGHT', 'SLOUCH', 'TOO_CLOSE', 'TILT', 'PROLONGED_STARE', 'BLINKING'] as const).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setSimulationMode(mode)}
-                    className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all ${
+                    className={`py-1.5 px-2 rounded-lg text-[10px] font-semibold transition-all ${
                       simulationMode === mode
                         ? 'bg-teal-500 text-slate-950 font-bold shadow-sm'
                         : 'bg-slate-800/70 text-slate-300 hover:bg-slate-800'
@@ -352,7 +370,7 @@ export const MonitorPage: React.FC = () => {
                 {t('monitor.currentDistance')}
               </span>
               <span className="font-mono text-2xl font-bold text-slate-100">
-                ~{liveAnalysis.distanceEstimateCm} {t('monitor.distanceUnit')}
+                {liveAnalysis.faceDetected ? `~${liveAnalysis.distanceEstimateCm} ${t('monitor.distanceUnit')}` : `-- ${t('monitor.distanceUnit')}`}
               </span>
             </div>
 
@@ -376,6 +394,68 @@ export const MonitorPage: React.FC = () => {
                 {t('monitor.tooCloseDistance')}
               </div>
             </div>
+          </div>
+
+          {/* Eye Blink & Ocular Comfort Card (ErgoBlink Integration) */}
+          <div className="glass-card p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-teal-400" />
+                <span className="text-xs uppercase font-bold tracking-wider text-slate-400">
+                  {t('blink.title')}
+                </span>
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                !settings?.blink?.enabled
+                  ? 'bg-slate-800 text-slate-400 border border-slate-700'
+                  : (liveAnalysis.blinkMetrics?.eyeStrainScore ?? 0) < 35
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  : (liveAnalysis.blinkMetrics?.eyeStrainScore ?? 0) < 70
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+              }`}>
+                {!settings?.blink?.enabled
+                  ? t('blink.disabledStatus')
+                  : (liveAnalysis.blinkMetrics?.eyeStrainScore ?? 0) < 35
+                  ? t('blink.normalEyeStrain')
+                  : (liveAnalysis.blinkMetrics?.eyeStrainScore ?? 0) < 70
+                  ? t('blink.moderateEyeStrain')
+                  : t('blink.highEyeStrain')}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 pt-1">
+              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+                <span className="text-[11px] text-slate-400 block mb-1">{t('blink.blinkRate')}</span>
+                <span className="font-mono text-lg font-bold text-slate-100">
+                  {liveAnalysis.blinkMetrics?.blinksPerMinute ?? 16}
+                </span>
+                <span className="text-[10px] text-slate-500 block">{t('blink.blinksPerMin')}</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+                <span className="text-[11px] text-slate-400 block mb-1">{t('blink.comfortScore')}</span>
+                <span className="font-mono text-lg font-bold text-teal-400">
+                  {Math.max(0, 100 - (liveAnalysis.blinkMetrics?.eyeStrainScore ?? 15))}%
+                </span>
+                <span className="text-[10px] text-slate-500 block">Index</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+                <span className="text-[11px] text-slate-400 block mb-1">{t('blink.secondsSinceLast')}</span>
+                <span className="font-mono text-lg font-bold text-slate-100">
+                  {liveAnalysis.blinkMetrics?.secondsSinceLastBlink ?? 1.5}s
+                </span>
+                <span className="text-[10px] text-slate-500 block">Ago</span>
+              </div>
+            </div>
+
+            {settings?.blink?.enabled && liveAnalysis.blinkMetrics?.prolongedStareDetected && (
+              <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center gap-2 text-xs text-amber-300">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>{t('blink.staringAlertDesc').replace('{seconds}', String(Math.round(liveAnalysis.blinkMetrics.secondsSinceLastBlink)))}</span>
+              </div>
+            )}
           </div>
 
           {/* Biometric Angles */}

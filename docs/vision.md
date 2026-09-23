@@ -41,6 +41,22 @@ $$\text{Score} = 100 - (\text{PitchPenalty} + \text{RollPenalty} + \text{YawPena
 - 70–89: **Acceptable**
 - < 70: **Poor**
 
+### 2.4. Eye Blink & Ocular Fatigue Estimation (ErgoBlink Integration)
+To mitigate Computer Vision Syndrome (CVS) and ocular surface desiccation caused by reduced blinking during screen focus, EyePosture incorporates the Eye Aspect Ratio (EAR) formulation (Soukupová & Čech, 2016; Chin et al., ErgoBlink):
+
+1. **Eye Aspect Ratio (EAR)**:
+   $$\text{EAR} = \frac{||\text{EyelidTop} - \text{EyelidBottom}||}{||\text{EyeOuter} - \text{EyeInner}||}$$
+   - **Open Eye**: $\text{EAR} \approx 0.25 - 0.35$
+   - **Closed / Blinking Eye**: $\text{EAR} < 0.22$
+   - Debounced state machine requires $\ge 2$ consecutive frames below threshold to prevent eyelid flutter or image noise false alarms.
+
+2. **Blinks Per Minute (BPM)**:
+   Calculated across a 60-second sliding window. Typical healthy blinking rate is **15–20 BPM**; computer work drops it to **4–7 BPM**. Rates $< 10\text{ BPM}$ incur eye strain penalties.
+
+3. **Prolonged Stare Detection**:
+   $$\text{SecondsSinceLastBlink} \ge 7\text{s} \implies \text{Emit Prolonged Stare Alert}$$
+   Alerts user through non-intrusive micro-prompts or chimes to blink consciously.
+
 ---
 
 ## 3. Temporal Smoothing & Hysteresis
@@ -78,5 +94,7 @@ The synthetic harness (`SyntheticVisionHarness`) generates mathematical landmark
 - `createSlouchedLandmarks()`: 22° pitch down, 0.09 vertical slump.
 - `createTooCloseLandmarks()`: 1.45x scale ratio (~40 cm).
 - `createHeadTiltedLandmarks()`: 16° lateral roll.
+- `createBlinkingLandmarks()`: Eyelids closed (aperture ratio 0.15, EAR < 0.15).
+- `createProlongedStareLandmarks()`: Wide open eyelids without blinking.
 
 All automated unit tests run against these deterministic models without accessing physical camera hardware.

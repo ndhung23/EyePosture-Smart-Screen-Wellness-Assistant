@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EyePosture Alert</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background: transparent;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100vw;
+    }
+    .overlay-card {
+      position: relative;
+      width: 440px;
+      padding: 14px 18px 16px;
+      border-radius: 22px;
+      background: rgba(11, 15, 25, 0.94);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 25px rgba(20, 184, 166, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      opacity: 0;
+      transform: translateY(-18px) scale(0.96);
+      transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      -webkit-app-region: drag;
+    }
+    .overlay-card.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Glow types */
+    .overlay-card.type-distance {
+      border-color: rgba(244, 63, 94, 0.5);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 35px rgba(244, 63, 94, 0.3);
+    }
+    .overlay-card.type-posture {
+      border-color: rgba(245, 158, 11, 0.5);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 35px rgba(245, 158, 11, 0.3);
+    }
+    .overlay-card.type-blink, .overlay-card.type-break {
+      border-color: rgba(20, 184, 166, 0.5);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 35px rgba(20, 184, 166, 0.3);
+    }
+
+    .icon-container {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: rgba(20, 184, 166, 0.15);
+      color: #2dd4bf;
+      border: 1px solid rgba(20, 184, 166, 0.3);
+    }
+    .type-distance .icon-container {
+      background: rgba(244, 63, 94, 0.15);
+      color: #fb7185;
+      border-color: rgba(244, 63, 94, 0.3);
+    }
+    .type-posture .icon-container {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .content {
+      flex: 1;
+      min-width: 0;
+    }
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #2dd4bf;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .type-distance .badge-dot { background: #fb7185; }
+    .type-posture .badge-dot { background: #fbbf24; }
+
+    .badge-text {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #2dd4bf;
+    }
+    .type-distance .badge-text { color: #fb7185; }
+    .type-posture .badge-text { color: #fbbf24; }
+
+    .title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .desc {
+      font-size: 11.5px;
+      color: #94a3b8;
+      line-height: 1.4;
+      margin-top: 3px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .close-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255, 255, 255, 0.06);
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.15s;
+      -webkit-app-region: no-drag;
+    }
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 18px;
+      right: 18px;
+      height: 2px;
+      border-radius: 1px;
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 100%;
+      background: #2dd4bf;
+    }
+    .type-distance .progress-fill { background: #fb7185; }
+    .type-posture .progress-fill { background: #fbbf24; }
+  </style>
+</head>
+<body>
+  <div id="card" class="overlay-card">
+    <div class="icon-container" id="iconWrap">
+      <svg id="alertIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+
+    <div class="content">
+      <div class="badge-row">
+        <span class="badge-dot"></span>
+        <span class="badge-text" id="badgeText">EYEPOSTURE ALERT</span>
+      </div>
+      <div class="title" id="alertTitle">Cảnh báo khoảng cách</div>
+      <div class="desc" id="alertDesc">Bạn đang ngồi quá gần màn hình. Vui lòng lùi lại để bảo vệ mắt.</div>
+    </div>
+
+    <button class="close-btn" id="closeBtn" title="Đóng">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <script>
+    const card = document.getElementById('card');
+    const alertTitle = document.getElementById('alertTitle');
+    const alertDesc = document.getElementById('alertDesc');
+    const badgeText = document.getElementById('badgeText');
+    const progressFill = document.getElementById('progressFill');
+    const closeBtn = document.getElementById('closeBtn');
+    let timerId = null;
+
+    function playChime() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+        osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.12); // G5
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+      } catch {}
+    }
+
+    closeBtn.addEventListener('click', () => {
+      hide();
+      window.electronApi?.dismissOverlayAlert?.();
+    });
+
+    function show(data) {
+      if (timerId) clearTimeout(timerId);
+
+      card.className = 'overlay-card';
+      const type = (data?.type || 'DISTANCE').toUpperCase();
+      const iconWrap = document.getElementById('iconWrap');
+
+      if (type.includes('DISTANCE')) {
+        card.classList.add('type-distance');
+        badgeText.textContent = 'CẢNH BÁO KHOẢNG CÁCH';
+        iconWrap.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/></svg>';
+      } else if (type.includes('POSTURE')) {
+        card.classList.add('type-posture');
+        badgeText.textContent = 'CẢNH BÁO TƯ THẾ';
+        iconWrap.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+      } else if (type.includes('BLINK')) {
+        card.classList.add('type-blink');
+        badgeText.textContent = 'NHẮC NHỞ CHỚP MẮT';
+        iconWrap.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><path d="m14 10-4 4"/><path d="m10 10 4 4"/></svg>';
+      } else {
+        card.classList.add('type-break');
+        badgeText.textContent = 'NGHỈ NGƠI MẮT (20-20-20)';
+        iconWrap.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>';
+      }
+
+      alertTitle.textContent = data.title || 'EyePosture - Nghỉ ngơi mắt';
+      alertDesc.textContent = data.message || 'Quy tắc 20-20-20: Hãy nhìn xa 20 feet trong 20 giây.';
+
+      // Reset progress
+      progressFill.style.transition = 'none';
+      progressFill.style.width = '100%';
+
+      requestAnimationFrame(() => {
+        card.classList.add('show');
+        playChime();
+
+        const duration = data.durationMs || 4500;
+        progressFill.style.transition = `width ${duration}ms linear`;
+        progressFill.style.width = '0%';
+      });
+    }
+
+    function hide() {
+      card.classList.remove('show');
+      progressFill.style.transition = 'none';
+      progressFill.style.width = '0%';
+    }
+
+    if (window.electronApi?.onAlertShow) {
+      window.electronApi.onAlertShow((data) => {
+        show(data);
+      });
+    }
+
+    if (window.electronApi?.onAlertHide) {
+      window.electronApi.onAlertHide(() => {
+        hide();
+      });
+    }
+  </script>
+</body>
+</html>

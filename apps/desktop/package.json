@@ -6,7 +6,7 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite --open",
-    "build:electron": "tsc electron/main.ts --outDir dist-electron --module NodeNext --moduleResolution NodeNext --target ES2022 --skipLibCheck && node -e \"const fs=require('fs'); fs.copyFileSync('electron/preload.cjs','dist-electron/preload.cjs'); if(fs.existsSync('electron/icon.png')) fs.copyFileSync('electron/icon.png','dist-electron/icon.png'); if(fs.existsSync('electron/EyePosture.ico')) fs.copyFileSync('electron/EyePosture.ico','dist-electron/EyePosture.ico'); if(fs.existsSync('electron/EyePosture.png')) fs.copyFileSync('electron/EyePosture.png','dist-electron/EyePosture.png'); if(fs.existsSync('public/sql-wasm.wasm')) fs.copyFileSync('public/sql-wasm.wasm','dist-electron/sql-wasm.wasm');\"",
+    "build:electron": "tsc electron/main.ts --outDir dist-electron --module NodeNext --moduleResolution NodeNext --target ES2022 --skipLibCheck && node -e \"const fs=require('fs'); fs.copyFileSync('electron/preload.cjs','dist-electron/preload.cjs'); if(fs.existsSync('electron/overlay.html')) fs.copyFileSync('electron/overlay.html','dist-electron/overlay.html'); if(fs.existsSync('electron/icon.png')) fs.copyFileSync('electron/icon.png','dist-electron/icon.png'); if(fs.existsSync('electron/EyePosture.ico')) fs.copyFileSync('electron/EyePosture.ico','dist-electron/EyePosture.ico'); if(fs.existsSync('electron/EyePosture.png')) fs.copyFileSync('electron/EyePosture.png','dist-electron/EyePosture.png'); if(fs.existsSync('public/sql-wasm.wasm')) fs.copyFileSync('public/sql-wasm.wasm','dist-electron/sql-wasm.wasm');\"",
     "build": "tsc && vite build && npm run build:electron",
     "start": "electron .",
     "preview": "vite preview"
@@ -18,6 +18,7 @@
     "@eyeposture/reminder-engine": "*",
     "@eyeposture/shared-types": "*",
     "@eyeposture/vision": "*",
+    "@mediapipe/tasks-vision": "^1.0.1",
     "lucide-react": "^1.16.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

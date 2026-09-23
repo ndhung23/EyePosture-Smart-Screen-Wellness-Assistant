@@ -7,17 +7,20 @@ import {
 import { KeyFacialLandmarks } from '../types.js';
 import { DistanceEstimator } from '../estimators/distance-estimator.js';
 import { PostureEstimator } from '../estimators/posture-estimator.js';
+import { BlinkEstimator, BlinkEstimatorConfig } from '../estimators/blink-estimator.js';
 import { DistanceStateFilter, PostureStateFilter } from '../smoothing/temporal-filter.js';
 
 export interface VisionEngineConfig {
   distanceWarningDelayMs?: number;
   postureWarningDelayMs?: number;
   sensitivity?: number; // 1 to 5
+  blinkConfig?: BlinkEstimatorConfig;
 }
 
 export class VisionEngine {
   private distanceEstimator: DistanceEstimator;
   private postureEstimator: PostureEstimator;
+  private blinkEstimator: BlinkEstimator;
   private distanceStateFilter: DistanceStateFilter;
   private postureStateFilter: PostureStateFilter;
   private sensitivity: number = 3;
@@ -28,6 +31,7 @@ export class VisionEngine {
   constructor(config: VisionEngineConfig = {}) {
     this.distanceEstimator = new DistanceEstimator();
     this.postureEstimator = new PostureEstimator();
+    this.blinkEstimator = new BlinkEstimator(config.blinkConfig);
     this.distanceStateFilter = new DistanceStateFilter({
       warningDelayMs: config.distanceWarningDelayMs ?? 5000,
     });
@@ -44,6 +48,7 @@ export class VisionEngine {
     this.postureEstimator.setCalibration(calibration);
     this.distanceStateFilter.reset();
     this.postureStateFilter.reset();
+    this.blinkEstimator.reset();
   }
 
   public setSensitivity(sensitivity: number): void {
@@ -53,6 +58,14 @@ export class VisionEngine {
   public updateDelays(distanceDelayMs: number, postureDelayMs: number): void {
     this.distanceStateFilter = new DistanceStateFilter({ warningDelayMs: distanceDelayMs });
     this.postureStateFilter = new PostureStateFilter({ warningDelayMs: postureDelayMs });
+  }
+
+  public updateBlinkConfig(config: BlinkEstimatorConfig): void {
+    this.blinkEstimator.updateConfig(config);
+  }
+
+  public resetBlink(now: number = Date.now()): void {
+    this.blinkEstimator.reset(now);
   }
 
   /**
@@ -74,6 +87,7 @@ export class VisionEngine {
         postureState: 'GOOD',
         headAngles: { pitch: 0, roll: 0, yaw: 0 },
         slouchDetected: false,
+        blinkMetrics: this.blinkEstimator.estimate(null, now),
       };
     }
 
@@ -84,6 +98,9 @@ export class VisionEngine {
     // 2. Posture analysis
     const postureResult = this.postureEstimator.estimate(landmarks, this.sensitivity);
     const postureState = this.postureStateFilter.update(postureResult.postureScore, now);
+
+    // 3. Blink & Eye strain analysis (ErgoBlink integration)
+    const blinkMetrics = this.blinkEstimator.estimate(landmarks, now);
 
     return {
       timestamp: now,
@@ -100,6 +117,11 @@ export class VisionEngine {
         yaw: Number(postureResult.headAngles.yaw.toFixed(1)),
       },
       slouchDetected: postureResult.slouchDetected,
+      eyeAspectRatios: {
+        left: blinkMetrics.leftEar,
+        right: blinkMetrics.rightEar,
+      },
+      blinkMetrics,
       faceBoundingBox: {
         xMin: Math.min(landmarks.leftEyeOuter.x, landmarks.rightEyeOuter.x),
         yMin: landmarks.forehead.y,

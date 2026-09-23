@@ -86,8 +86,19 @@ export interface PrivacySettings {
 export interface SecuritySettings {
   enabled: boolean;
   passwordHash?: string;
+  recoveryEmail?: string;
   requireOnPause: boolean;
   requireOnQuit: boolean;
+  requireOnSettings?: boolean;
+}
+
+export interface BlinkSettings {
+  enabled: boolean;
+  earThreshold: number; // default 0.22
+  prolongedStareThresholdSec: number; // default 7s
+  minBlinksPerMinute: number; // default 10 BPM
+  cooldownSeconds: number; // default 30s
+  soundEnabled: boolean;
 }
 
 export interface UserSettings {
@@ -102,5 +113,6 @@ export interface UserSettings {
   notifications: NotificationSettings;
   privacy: PrivacySettings;
   security: SecuritySettings;
+  blink?: BlinkSettings;
   calibration?: CalibrationData;
 }

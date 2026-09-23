@@ -10,12 +10,14 @@ export class SyntheticVisionHarness {
     rollDeg?: number;    // roll angle in degrees (positive = tilted right)
     yawDeg?: number;     // yaw angle in degrees (positive = turned right)
     verticalOffset?: number; // normalized Y offset (positive = slumped down)
+    eyeOpeningRatio?: number; // 1.0 = normal open, 0.15 = closed/blinking
   } = {}): KeyFacialLandmarks {
     const scale = options.scale ?? 1.0;
     const pitchRad = ((options.pitchDeg ?? 0) * Math.PI) / 180;
     const rollRad = ((options.rollDeg ?? 0) * Math.PI) / 180;
     const yawOffset = (options.yawDeg ?? 0) / 90;
     const yOff = options.verticalOffset ?? 0;
+    const eyeOpening = options.eyeOpeningRatio ?? 1.0;
 
     // Base coordinates centered around (0.5, 0.5, 0)
     const cx = 0.5;
@@ -46,6 +48,16 @@ export class SyntheticVisionHarness {
     const rightInner = rotate(cx + baseHalfSpan * 0.5, cy - 0.02);
     const rightOuter = rotate(cx + baseHalfSpan * 1.5, cy - 0.02);
 
+    // Eyelid positions (vertical opening scaled by eyeOpening)
+    const eyeHalfHeight = (baseHalfSpan * 0.28 * eyeOpening) / 2;
+    const leftMidX = cx - baseHalfSpan;
+    const rightMidX = cx + baseHalfSpan;
+
+    const leftTop = rotate(leftMidX, cy - 0.02 - eyeHalfHeight);
+    const leftBottom = rotate(leftMidX, cy - 0.02 + eyeHalfHeight);
+    const rightTop = rotate(rightMidX, cy - 0.02 - eyeHalfHeight);
+    const rightBottom = rotate(rightMidX, cy - 0.02 + eyeHalfHeight);
+
     // Nose tip
     const nosePt = rotate(cx + yawOffset * 0.05, cy + 0.03);
 
@@ -57,6 +69,10 @@ export class SyntheticVisionHarness {
       leftEyeInner: { x: leftInner.x, y: leftInner.y, z: 0 },
       rightEyeInner: { x: rightInner.x, y: rightInner.y, z: 0 },
       rightEyeOuter: { x: rightOuter.x, y: rightOuter.y, z: 0 },
+      leftEyeTop: { x: leftTop.x, y: leftTop.y, z: 0 },
+      leftEyeBottom: { x: leftBottom.x, y: leftBottom.y, z: 0 },
+      rightEyeTop: { x: rightTop.x, y: rightTop.y, z: 0 },
+      rightEyeBottom: { x: rightBottom.x, y: rightBottom.y, z: 0 },
     };
   }
 
@@ -73,5 +89,15 @@ export class SyntheticVisionHarness {
   public static createHeadTiltedLandmarks(): KeyFacialLandmarks {
     // Roll sideways 16°
     return this.createUprightLandmarks({ rollDeg: 16 });
+  }
+
+  public static createBlinkingLandmarks(): KeyFacialLandmarks {
+    // Eyelids closed (aperture ratio 0.15 -> EAR < 0.1)
+    return this.createUprightLandmarks({ eyeOpeningRatio: 0.15 });
+  }
+
+  public static createProlongedStareLandmarks(): KeyFacialLandmarks {
+    // Wide open stare without blinking
+    return this.createUprightLandmarks({ eyeOpeningRatio: 1.1 });
   }
 }

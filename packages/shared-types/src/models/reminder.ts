@@ -4,6 +4,7 @@ export type ReminderType =
   | 'POSTURE'
   | 'DISTANCE'
   | 'SCREEN_TIME'
+  | 'BLINK_REMINDER'
   | 'CUSTOM';
 
 export type ReminderState = 

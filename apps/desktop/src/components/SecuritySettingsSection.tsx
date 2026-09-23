@@ -84,7 +84,7 @@ export const SecuritySettingsSection: React.FC = () => {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword) {
-      setFeedback({ type: 'error', message: t('security.enterCurrentPassword') });
+      setFeedback({ type: 'error', message: t('security.currentPasswordRequired') });
       return;
     }
     const currentHashed = await hashPassword(currentPassword);
@@ -117,7 +117,7 @@ export const SecuritySettingsSection: React.FC = () => {
   // 3. Handler: Remove password protection completely
   const handleRemovePassword = async () => {
     if (!currentPassword) {
-      setFeedback({ type: 'error', message: t('security.enterCurrentPassword') });
+      setFeedback({ type: 'error', message: t('security.currentPasswordRequired') });
       return;
     }
     const currentHashed = await hashPassword(currentPassword);
@@ -341,7 +341,7 @@ export const SecuritySettingsSection: React.FC = () => {
                 <span>{t('security.changePassword')}</span>
               </h4>
               <p className="text-xs text-slate-400 mt-1">
-                {t('security.enterCurrentPassword')}
+                {t('security.changePasswordDesc')}
               </p>
             </div>
 

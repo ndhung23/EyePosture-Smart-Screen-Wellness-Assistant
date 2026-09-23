@@ -21,8 +21,15 @@ export class SePayBillingProvider implements IBillingProvider {
   // Standard plan pricing in VND
   public static readonly PRICES_VND: Record<SubscriptionTier, { month: number; year: number; lifetime?: number }> = {
     FREE: { month: 0, year: 0, lifetime: 0 },
-    PRO: { month: 30000, year: 199000, lifetime: 300000 },
-    FAMILY: { month: 50000, year: 300000, lifetime: 300000 },
+    PRO: { month: 19000, year: 199000, lifetime: 299000 },
+    FAMILY: { month: 49000, year: 299000, lifetime: 499000 },
+  };
+
+  // Standard plan pricing in USD (International)
+  public static readonly PRICES_USD: Record<SubscriptionTier, { month: number; year: number; lifetime?: number }> = {
+    FREE: { month: 0, year: 0, lifetime: 0 },
+    PRO: { month: 0.99, year: 9.99, lifetime: 19.99 },
+    FAMILY: { month: 4.99, year: 19.99, lifetime: 29.99 },
   };
 
   constructor(config?: Partial<SePayConfig>) {
@@ -78,18 +85,20 @@ export class SePayBillingProvider implements IBillingProvider {
     tier?: SubscriptionTier;
     interval?: 'month' | 'year' | 'lifetime';
     customAmount?: number;
-    deviceCount?: 1 | 3;
+    deviceCount?: 1 | 4;
   }): SePayQrResult {
     const tier = options.tier || 'PRO';
     const interval = options.interval || 'month';
     let amount = options.customAmount;
     if (amount === undefined) {
-      if (tier === 'FAMILY' || options.deviceCount === 3) {
-        amount = interval === 'year' ? 300000 : 50000;
+      if (tier === 'FAMILY' || options.deviceCount === 4) {
+        if (interval === 'lifetime') amount = 499000;
+        else if (interval === 'year') amount = 299000;
+        else amount = 49000;
       } else {
-        if (interval === 'lifetime') amount = 300000;
+        if (interval === 'lifetime') amount = 299000;
         else if (interval === 'year') amount = 199000;
-        else amount = 30000;
+        else amount = 19000;
       }
     }
     const orderCode = `ORD${Date.now().toString().slice(-6)}`;

@@ -192,27 +192,47 @@ html.light .bg-slate-950,
   background-color: #f8fafc !important;
 }
 
+html.light .bg-slate-950\/85,
+html.light .bg-slate-950\/80,
+.theme-light .bg-slate-950\/85,
+.theme-light .bg-slate-950\/80 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+}
+
+html.light .bg-slate-950\/60,
+.theme-light .bg-slate-950\/60 {
+  background-color: #f1f5f9 !important;
+}
+
 html.light .bg-slate-900,
+html.light .bg-slate-900\/95,
+html.light .bg-slate-900\/90,
 html.light .bg-slate-900\/80,
 html.light .bg-slate-900\/60,
 html.light .bg-slate-900\/50,
 html.light .bg-slate-900\/40,
 .theme-light .bg-slate-900,
+.theme-light .bg-slate-900\/95,
+.theme-light .bg-slate-900\/90,
 .theme-light .bg-slate-900\/80,
 .theme-light .bg-slate-900\/60,
 .theme-light .bg-slate-900\/50,
 .theme-light .bg-slate-900\/40 {
-  background-color: rgba(255, 255, 255, 0.9) !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
 }
 
 html.light .bg-slate-800,
+html.light .bg-slate-800\/90,
 html.light .bg-slate-800\/80,
+html.light .bg-slate-800\/70,
 html.light .bg-slate-800\/60,
 html.light .bg-slate-800\/50,
 html.light .bg-slate-800\/40,
 html.light .bg-slate-800\/20,
 .theme-light .bg-slate-800,
+.theme-light .bg-slate-800\/90,
 .theme-light .bg-slate-800\/80,
+.theme-light .bg-slate-800\/70,
 .theme-light .bg-slate-800\/60,
 .theme-light .bg-slate-800\/50,
 .theme-light .bg-slate-800\/40,
@@ -328,4 +348,39 @@ html.light .text-teal-200,
 .theme-light .text-teal-200 {
   color: #115e59 !important;
 }
+
+/* Color accents in Light Mode - Crisp High Contrast */
+html.light .text-teal-400,
+.theme-light .text-teal-400 {
+  color: #0d9488 !important;
+}
+html.light .text-teal-300,
+.theme-light .text-teal-300 {
+  color: #0f766e !important;
+}
+html.light .text-indigo-400,
+.theme-light .text-indigo-400 {
+  color: #4f46e5 !important;
+}
+html.light .text-indigo-300,
+.theme-light .text-indigo-300 {
+  color: #4338ca !important;
+}
+html.light .text-cyan-400,
+.theme-light .text-cyan-400 {
+  color: #0891b2 !important;
+}
+html.light .text-amber-400,
+.theme-light .text-amber-400 {
+  color: #d97706 !important;
+}
+html.light .text-rose-400,
+.theme-light .text-rose-400 {
+  color: #e11d48 !important;
+}
+html.light .text-emerald-400,
+.theme-light .text-emerald-400 {
+  color: #059669 !important;
+}
+
 

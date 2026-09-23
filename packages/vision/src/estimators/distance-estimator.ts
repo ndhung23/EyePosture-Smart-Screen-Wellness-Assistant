@@ -47,8 +47,8 @@ export class DistanceEstimator {
     const currentScale = (ipd * 0.4) + (eyeSpan * 0.3) + (faceHeight * 0.3);
 
     if (!this.baseline || this.baseline.baselineFaceDistanceRatio <= 0) {
-      // Default uncalibrated reference: assume normalized scale ~0.25 is standard 60cm
-      const uncalibratedBase = 0.25;
+      // Default uncalibrated reference: assume normalized scale ~0.185 is standard 60cm
+      const uncalibratedBase = 0.185;
       const rawRatio = currentScale / uncalibratedBase;
       const smoothedRatio = this.emaRatio.update(rawRatio);
       const estCm = Math.round(this.defaultBaselineDistanceCm / Math.max(0.2, smoothedRatio));

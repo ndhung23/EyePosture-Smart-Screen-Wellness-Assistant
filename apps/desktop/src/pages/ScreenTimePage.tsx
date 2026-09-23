@@ -182,7 +182,7 @@ export const ScreenTimePage: React.FC = () => {
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="e.g. spotify.exe"
+              placeholder="Ví dụ: spotify.exe, chrome.exe..."
               value={newExclusion}
               onChange={(e) => setNewExclusion(e.target.value)}
               className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-teal-500"

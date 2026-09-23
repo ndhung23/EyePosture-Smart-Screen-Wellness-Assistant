@@ -1,4 +1,4 @@
-import { Power, Coffee, Droplets, BatteryCharging, Battery, AlertCircle, X, Sun, Moon, User as UserIcon, LogOut } from 'lucide-react';
+import { BatteryCharging, Battery, AlertCircle, X, User as UserIcon, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
 
@@ -7,14 +7,9 @@ export const Header: React.FC = () => {
     activeProfile,
     isMonitoring,
     toggleMonitoring,
-    startBreakNow,
-    logWaterGlass,
     governorStatus,
     activeReminders,
     dismissReminder,
-    theme,
-    effectiveTheme,
-    switchTheme,
     currentUser,
     openAuthModal,
     logout,
@@ -46,45 +41,6 @@ export const Header: React.FC = () => {
               {governorStatus.mode} ({governorStatus.targetFps} FPS)
             </span>
           </div>
-
-          {/* Quick Break Button */}
-          <button
-            onClick={startBreakNow}
-            title={t('breaks.startBreak')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 text-xs font-medium text-slate-200 transition-all active:scale-95"
-          >
-            <Coffee className="w-3.5 h-3.5 text-indigo-400" />
-            <span>{t('breaks.startBreak')}</span>
-          </button>
-
-          {/* Quick Water Button */}
-          <button
-            onClick={logWaterGlass}
-            title={t('hydration.logGlass')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 text-xs font-medium text-slate-200 transition-all active:scale-95"
-          >
-            <Droplets className="w-3.5 h-3.5 text-cyan-400" />
-            <span>{t('hydration.logGlass')}</span>
-          </button>
-
-          {/* Quick Theme Toggle Button */}
-          <button
-            onClick={() => switchTheme(effectiveTheme === 'dark' ? 'light' : 'dark')}
-            title={effectiveTheme === 'dark' ? t('header.lightMode') : t('header.darkMode')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 text-xs font-medium text-slate-200 transition-all active:scale-95"
-          >
-            {effectiveTheme === 'dark' ? (
-              <>
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">{t('header.lightMode')}</span>
-              </>
-            ) : (
-              <>
-                <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="hidden sm:inline">{t('header.darkMode')}</span>
-              </>
-            )}
-          </button>
 
           {/* User Account / Login Button */}
           {currentUser ? (

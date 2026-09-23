@@ -73,6 +73,14 @@ const mockSettings: UserSettings = {
     localRetentionDays: 60,
     cameraProcessingLocalOnly: true,
   },
+  blink: {
+    enabled: true,
+    earThreshold: 0.22,
+    prolongedStareThresholdSec: 7,
+    minBlinksPerMinute: 10,
+    cooldownSeconds: 30,
+    soundEnabled: true,
+  },
 };
 
 describe('Reminder Engine & Subsystems', () => {
@@ -285,5 +293,81 @@ describe('Reminder Engine & Subsystems', () => {
     expect(emittedEvents[1].type).toBe('SCREEN_TIME');
     expect(emittedEvents[1].state).toBe('ACTIVE_WARNING');
     expect(emittedEvents[1].priority).toBe('URGENT');
+  });
+
+  it('should emit BLINK_REMINDER when prolonged stare without blinking is detected', () => {
+    const engine = new ReminderEngine({
+      ...mockSettings,
+      notifications: { ...mockSettings.notifications, quietHoursEnabled: false },
+    });
+
+    const emittedEvents: ReminderEvent[] = [];
+    engine.subscribe((evt) => emittedEvents.push(evt));
+
+    const now = 1700000000000;
+    engine.processVisionAnalysis({
+      timestamp: now,
+      faceDetected: true,
+      confidence: 0.95,
+      distanceEstimateCm: 60,
+      distanceRatio: 1.0,
+      distanceState: 'SAFE',
+      postureScore: 90,
+      postureState: 'GOOD',
+      headAngles: { pitch: 0, roll: 0, yaw: 0 },
+      slouchDetected: false,
+      blinkMetrics: {
+        leftEar: 0.28,
+        rightEar: 0.28,
+        averageEar: 0.28,
+        blinkCount: 2,
+        blinksPerMinute: 6,
+        secondsSinceLastBlink: 8.5,
+        prolongedStareDetected: true,
+        eyeStrainScore: 75,
+      },
+    }, undefined, now);
+
+    expect(emittedEvents.length).toBe(1);
+    expect(emittedEvents[0].type).toBe('BLINK_REMINDER');
+    expect(emittedEvents[0].titleKey).toBe('blink.reminderTitle');
+    expect(emittedEvents[0].payload?.stareSeconds).toBe(9);
+  });
+
+  it('should not emit BLINK_REMINDER when blink reminder is disabled (default off)', () => {
+    const engine = new ReminderEngine({
+      ...mockSettings,
+      blink: { ...mockSettings.blink, enabled: false },
+      notifications: { ...mockSettings.notifications, quietHoursEnabled: false },
+    });
+
+    const emittedEvents: ReminderEvent[] = [];
+    engine.subscribe((evt) => emittedEvents.push(evt));
+
+    const now = 1700000000000;
+    engine.processVisionAnalysis({
+      timestamp: now,
+      faceDetected: true,
+      confidence: 0.95,
+      distanceEstimateCm: 60,
+      distanceRatio: 1.0,
+      distanceState: 'SAFE',
+      postureScore: 90,
+      postureState: 'GOOD',
+      headAngles: { pitch: 0, roll: 0, yaw: 0 },
+      slouchDetected: false,
+      blinkMetrics: {
+        leftEar: 0.28,
+        rightEar: 0.28,
+        averageEar: 0.28,
+        blinkCount: 2,
+        blinksPerMinute: 6,
+        secondsSinceLastBlink: 8.5,
+        prolongedStareDetected: true,
+        eyeStrainScore: 75,
+      },
+    }, undefined, now);
+
+    expect(emittedEvents.length).toBe(0);
   });
 });

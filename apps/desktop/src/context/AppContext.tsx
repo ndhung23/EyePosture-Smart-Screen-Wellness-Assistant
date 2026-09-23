@@ -10,6 +10,7 @@ import {
   CameraDeviceInfo,
   SecuritySettings,
   AppTheme,
+  CalibrationData,
 } from '@eyeposture/shared-types';
 import { hashPassword } from '../utils/crypto.js';
 import {
@@ -23,84 +24,23 @@ import {
   StatisticsRepository,
   LicenseRepository,
 } from '@eyeposture/database';
-import { VisionEngine, SyntheticVisionHarness } from '@eyeposture/vision';
+import { VisionEngine, SyntheticVisionHarness, KeyFacialLandmarks } from '@eyeposture/vision';
 import { ReminderEngine } from '@eyeposture/reminder-engine';
 import { LicenseVerifier, PRO_FEATURES } from '@eyeposture/billing';
 import { t, setLanguage, getLanguage, LanguageCode } from '@eyeposture/i18n';
+import { FaceLandmarkerService } from '../services/FaceLandmarkerService.js';
+import { AuthService } from '../services/AuthService.js';
 
-interface AppContextValue {
-  language: LanguageCode;
-  switchLanguage: (lang: LanguageCode) => void;
-  theme: AppTheme;
-  effectiveTheme: 'dark' | 'light';
-  switchTheme: (theme: AppTheme) => void;
-  currentUser: { id: string; email: string; name: string; role?: string } | null;
-  authToken: string | null;
-  authModalOpen: boolean;
-  authModalMode: 'login' | 'register';
-  openAuthModal: (mode?: 'login' | 'register') => void;
-  closeAuthModal: () => void;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  registerUser: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
-  syncEntitlements: (overrideToken?: string) => Promise<void>;
-  activeProfile: Profile | null;
-  profiles: Profile[];
-  switchProfile: (profileId: string) => void;
-  createProfile: (name: string, isChild: boolean) => void;
-  deleteProfile: (id: string) => void;
-  settings: UserSettings | null;
-  updateSettings: (newSettings: UserSettings) => void;
-  isMonitoring: boolean;
-  toggleMonitoring: () => void;
-  requestToggleMonitoring: (forceTarget?: boolean) => void;
-  requestQuitApp: () => void;
-  confirmQuit: () => void;
-  passwordModalConfig: {
-    isOpen: boolean;
-    action: 'PAUSE_MONITORING' | 'QUIT_APP';
-    onSuccess?: () => void;
-  } | null;
-  closePasswordModal: () => void;
-  verifyPassword: (password: string) => Promise<boolean>;
-  updateSecuritySettings: (newSecurity: SecuritySettings) => void;
-  liveAnalysis: VisionFrameAnalysis;
-  governorStatus: GovernorStatus;
-  activeReminders: ReminderEvent[];
-  dismissReminder: (id: string) => void;
-  snoozeReminder: (id: string, seconds?: number) => void;
-  dailyStats: DailyStatistics;
-  logWaterGlass: () => void;
-  startBreakNow: () => void;
-  completeBreak: () => void;
-  skipBreak: () => void;
-  isBreakActive: boolean;
-  breakProgress: { remainingSeconds: number; percentComplete: number };
-  hydrationProgress: { glassesToday: number; dailyGoalGlasses: number; percentComplete: number };
-  screenTimeMinutes: number;
-  screenTimeLimitMinutes: number;
-  subscriptionTier: SubscriptionTier;
-  upgradeToPro: () => Promise<void>;
-  clearLocalData: () => void;
-  connectedCameras: CameraDeviceInfo[];
-  selectedCameraId: string;
-  selectCamera: (id: string) => void;
-  cameraStream: MediaStream | null;
-  cameraError: string | null;
-  startCamera: (deviceId?: string) => Promise<void>;
-  stopCamera: () => void;
-  useSimulatedCamera: boolean;
-  setUseSimulatedCamera: (val: boolean) => void;
-  simulationMode: 'UPRIGHT' | 'SLOUCH' | 'TOO_CLOSE' | 'TILT';
-  setSimulationMode: (mode: 'UPRIGHT' | 'SLOUCH' | 'TOO_CLOSE' | 'TILT') => void;
-}
+import { AppContextValue, SimulationMode } from './AppContextTypes.js';
+
+export type { SimulationMode, AppContextValue };
 
 const AppContext = createContext<AppContextValue | null>(null);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLangState] = useState<LanguageCode>('en');
-  const [theme, setThemeState] = useState<AppTheme>('dark');
-  const [effectiveTheme, setEffectiveTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setThemeState] = useState<AppTheme>(() => (typeof localStorage !== 'undefined' && (localStorage.getItem('eyeposture_theme') as AppTheme)) || 'light');
+  const [effectiveTheme, setEffectiveTheme] = useState<'dark' | 'light'>('light');
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [settings, setSettings] = useState<UserSettings | null>(null);
@@ -110,9 +50,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeReminders, setActiveReminders] = useState<ReminderEvent[]>([]);
   const [passwordModalConfig, setPasswordModalConfig] = useState<{
     isOpen: boolean;
-    action: 'PAUSE_MONITORING' | 'QUIT_APP';
+    action: 'PAUSE_MONITORING' | 'QUIT_APP' | 'ACCESS_SETTINGS';
     onSuccess?: () => void;
   } | null>(null);
+  const [isSettingsUnlocked, setIsSettingsUnlocked] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string; role?: string } | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
@@ -177,11 +118,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [useSimulatedCamera, setUseSimulatedCamera] = useState<boolean>(false);
-  const [simulationMode, setSimulationMode] = useState<'UPRIGHT' | 'SLOUCH' | 'TOO_CLOSE' | 'TILT'>('UPRIGHT');
+  const [simulationMode, setSimulationMode] = useState<SimulationMode>('UPRIGHT');
   const [connectedCameras, setConnectedCameras] = useState<CameraDeviceInfo[]>([
     { deviceId: 'default', label: 'Default Integrated Camera', isDefault: true },
   ]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('default');
+  const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
+  const [calibrationSamplesCount, setCalibrationSamplesCount] = useState<number>(0);
+  const [activeCalibration, setActiveCalibration] = useState<CalibrationData | null>(null);
+  const isCalibratingRef = useRef<boolean>(false);
+  const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const [liveAnalysis, setLiveAnalysis] = useState<VisionFrameAnalysis>({
     timestamp: Date.now(),
@@ -267,13 +213,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setLanguage(userSettings.general.language);
       setLangState(userSettings.general.language);
       (window as any).electronApi?.setTrayLanguage?.(userSettings.general.language);
-      const initialTheme = userSettings.general.theme || 'dark';
+      const savedTheme = typeof localStorage !== 'undefined' ? (localStorage.getItem('eyeposture_theme') as AppTheme) : null;
+      const initialTheme = savedTheme || userSettings.general.theme || 'light';
       setThemeState(initialTheme);
 
       // Check cached license
       const cached = licenseRepo.getCachedLicense();
       if (cached && cached.tier) {
         setSubscriptionTier(cached.tier);
+      }
+
+      // Load saved calibration baseline if available
+      const latestCalib = calibRepo.getLatestCalibration(currentProf.id, 'default');
+      if (latestCalib) {
+        visionEngineRef.current.setCalibration(latestCalib);
+        setActiveCalibration(latestCalib);
       }
 
       // Initialize Reminder Engine
@@ -285,6 +239,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setIsBreakActive(true);
         }
         setActiveReminders((prev) => [event, ...prev.filter((e) => e.type !== event.type)]);
+
+        // Always-on-top centered desktop overlay alert
+        if (event.state === 'ACTIVE_WARNING') {
+          const title = t(event.titleKey as any) || event.titleKey;
+          const message = t(event.messageKey as any) || event.messageKey;
+          (window as any).electronApi?.showOverlayAlert?.({
+            type: event.type,
+            title,
+            message,
+            durationMs: 4500,
+          });
+        } else if (event.state === 'RESOLVED') {
+          (window as any).electronApi?.dismissOverlayAlert?.();
+        }
       });
     }
 
@@ -306,6 +274,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Theme switcher
   const switchTheme = (newTheme: AppTheme) => {
     setThemeState(newTheme);
+    try {
+      localStorage.setItem('eyeposture_theme', newTheme);
+    } catch {}
     if (settingsRef.current && activeProfile && reposRef.current.settingsRepo) {
       const updated = {
         ...settingsRef.current,
@@ -376,13 +347,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   useEffect(() => {
+    FaceLandmarkerService.getInstance().initialize().catch((err) => {
+      console.warn('[AppContext] FaceLandmarker init failed:', err);
+    });
+
+    const v = document.createElement('video');
+    v.muted = true;
+    v.playsInline = true;
+    v.autoplay = true;
+    v.style.position = 'fixed';
+    v.style.top = '-9999px';
+    v.style.left = '-9999px';
+    v.style.width = '640px';
+    v.style.height = '480px';
+    v.style.opacity = '0';
+    v.style.pointerEvents = 'none';
+    document.body.appendChild(v);
+    hiddenVideoRef.current = v;
+
     enumerateCameras();
     startCamera();
 
     return () => {
       stopCamera();
+      if (hiddenVideoRef.current) {
+        hiddenVideoRef.current.srcObject = null;
+        hiddenVideoRef.current.remove();
+        hiddenVideoRef.current = null;
+      }
+      FaceLandmarkerService.getInstance().close();
     };
   }, []);
+
+  useEffect(() => {
+    if (hiddenVideoRef.current && cameraStream) {
+      hiddenVideoRef.current.srcObject = cameraStream;
+      hiddenVideoRef.current.play().catch(() => {});
+    } else if (hiddenVideoRef.current && !cameraStream) {
+      hiddenVideoRef.current.srcObject = null;
+    }
+  }, [cameraStream]);
 
   // Listen to system tray actions & Electron quit requests
   useEffect(() => {
@@ -457,7 +461,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const fpsIntervalMs = Math.max(100, Math.round(1000 / governorStatus.targetFps));
 
     const cvTimer = setInterval(() => {
-      let sampleLandmarks;
+      let sampleLandmarks: KeyFacialLandmarks | null = null;
       if (useSimulatedCamera) {
         switch (simulationMode) {
           case 'SLOUCH':
@@ -469,13 +473,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           case 'TILT':
             sampleLandmarks = SyntheticVisionHarness.createHeadTiltedLandmarks();
             break;
+          case 'PROLONGED_STARE':
+            sampleLandmarks = SyntheticVisionHarness.createProlongedStareLandmarks();
+            break;
+          case 'BLINKING':
+            sampleLandmarks = Math.random() > 0.4
+              ? SyntheticVisionHarness.createUprightLandmarks()
+              : SyntheticVisionHarness.createBlinkingLandmarks();
+            break;
           case 'UPRIGHT':
           default:
             sampleLandmarks = SyntheticVisionHarness.createUprightLandmarks();
             break;
         }
       } else {
-        sampleLandmarks = SyntheticVisionHarness.createUprightLandmarks();
+        const v = hiddenVideoRef.current;
+        if (v && v.readyState >= 2 && !v.paused) {
+          sampleLandmarks = FaceLandmarkerService.getInstance().detect(v, performance.now());
+        }
+      }
+
+      if (isCalibratingRef.current && sampleLandmarks) {
+        visionEngineRef.current.addCalibrationSample(sampleLandmarks);
+        setCalibrationSamplesCount((prev) => prev + 1);
       }
 
       const analysis = visionEngineRef.current.processLandmarks(sampleLandmarks);
@@ -543,6 +563,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     requestToggleMonitoring();
   };
 
+  const requestAccessSettings = (onSuccess: () => void) => {
+    const sec = settingsRef.current?.security;
+    if (sec?.enabled && sec?.passwordHash && !isSettingsUnlocked) {
+      setPasswordModalConfig({
+        isOpen: true,
+        action: 'ACCESS_SETTINGS',
+        onSuccess: () => {
+          setIsSettingsUnlocked(true);
+          onSuccess();
+        },
+      });
+    } else {
+      onSuccess();
+    }
+  };
+
   const updateSecuritySettings = (newSecurity: SecuritySettings) => {
     if (!settings) return;
     const updated: UserSettings = { ...settings, security: newSecurity };
@@ -573,6 +609,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const startBreakNow = () => {
     setIsBreakActive(true);
     reminderEngineRef.current?.getBreakTimer().startBreak();
+    triggerOverlayAlert(
+      'BREAK',
+      t('breaks.breakTitle') || 'Đã đến giờ nghỉ ngơi!',
+      t('breaks.breakMessage') || 'Quy tắc 20-20-20: Hãy nhìn xa 20 feet trong 20 giây để thư giãn mắt.'
+    );
   };
 
   const completeBreak = () => {
@@ -634,6 +675,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (newSettings.general?.theme && newSettings.general.theme !== theme) {
       setThemeState(newSettings.general.theme);
     }
+    if (newSettings.blink && !newSettings.blink.enabled) {
+      setActiveReminders((prev) => prev.filter((r) => r.type !== 'BLINK_REMINDER'));
+    }
     if (activeProfile && reposRef.current.settingsRepo) {
       reposRef.current.settingsRepo.saveSettings(activeProfile.id, newSettings);
       reminderEngineRef.current?.updateSettings(newSettings);
@@ -649,90 +693,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAuthModalOpen(false);
   };
 
-  const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
-    const bases = ['http://localhost:8080', 'https://eyeposture.vercel.app'];
-    let lastErr;
-    for (const base of bases) {
-      try {
-        const res = await fetch(`${base}${endpoint}`, options);
-        return res;
-      } catch (e) {
-        lastErr = e;
-      }
-    }
-    throw lastErr || new Error('Network error');
-  };
-
   const syncEntitlements = async (overrideToken?: string) => {
     const token = overrideToken || authToken;
     if (!token) return;
-    try {
-      const fingerprint = localStorage.getItem('eyeposture_device_fingerprint') || 'desktop_device';
-      const res = await apiFetch(`/api/v1/entitlements?deviceId=${encodeURIComponent(fingerprint)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const body = await res.json();
-        if (body.payload?.tier) {
-          setSubscriptionTier(body.payload.tier);
-          if (reposRef.current.licenseRepo) {
-            reposRef.current.licenseRepo.saveCachedLicense(
-              body.entitlementToken,
-              'cloud_signature',
-              body.payload.expiresAt,
-              body.payload.tier,
-              body.payload.features || PRO_FEATURES
-            );
-          }
-        }
+    const body = await AuthService.fetchEntitlements(token);
+    if (body?.payload?.tier) {
+      setSubscriptionTier(body.payload.tier);
+      if (reposRef.current.licenseRepo) {
+        reposRef.current.licenseRepo.saveCachedLicense(
+          body.entitlementToken,
+          'cloud_signature',
+          body.payload.expiresAt,
+          body.payload.tier,
+          body.payload.features || PRO_FEATURES
+        );
       }
-    } catch (err) {
-      console.warn('Sync entitlements failed:', err);
     }
   };
 
   const login = async (email: string, password: string) => {
-    try {
-      const res = await apiFetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || 'Đăng nhập không thành công' };
-      }
-      setAuthToken(data.token);
-      setCurrentUser(data.user);
-      localStorage.setItem('eyeposture_auth_token', data.token);
-      localStorage.setItem('eyeposture_auth_user', JSON.stringify(data.user));
-      await syncEntitlements(data.token);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message || 'Lỗi kết nối máy chủ' };
-    }
+    const res = await AuthService.login(email, password);
+    if (!res.success) return { success: false, error: res.error };
+    const { token, user } = res.data;
+    setAuthToken(token);
+    setCurrentUser(user);
+    localStorage.setItem('eyeposture_auth_token', token);
+    localStorage.setItem('eyeposture_auth_user', JSON.stringify(user));
+    await syncEntitlements(token);
+    return { success: true };
   };
 
   const registerUser = async (email: string, password: string, name: string) => {
-    try {
-      const res = await apiFetch('/api/v1/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || 'Đăng ký không thành công' };
-      }
-      setAuthToken(data.token);
-      setCurrentUser(data.user);
-      localStorage.setItem('eyeposture_auth_token', data.token);
-      localStorage.setItem('eyeposture_auth_user', JSON.stringify(data.user));
-      await syncEntitlements(data.token);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message || 'Lỗi kết nối máy chủ' };
-    }
+    const res = await AuthService.register(email, password, name);
+    if (!res.success) return { success: false, error: res.error };
+    const { token, user } = res.data;
+    setAuthToken(token);
+    setCurrentUser(user);
+    localStorage.setItem('eyeposture_auth_token', token);
+    localStorage.setItem('eyeposture_auth_user', JSON.stringify(user));
+    await syncEntitlements(token);
+    return { success: true };
   };
 
   const logout = () => {
@@ -786,12 +786,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const startPostureCalibration = async (): Promise<CalibrationData | null> => {
+    return new Promise((resolve) => {
+      setIsCalibrating(true);
+      isCalibratingRef.current = true;
+      setCalibrationSamplesCount(0);
+
+      setTimeout(() => {
+        isCalibratingRef.current = false;
+        setIsCalibrating(false);
+
+        const currentCamId = selectedCameraId || 'default';
+        const baseline = visionEngineRef.current.finalizeCalibration(currentCamId);
+
+        if (baseline && activeProfile && reposRef.current.calibRepo) {
+          reposRef.current.calibRepo.saveCalibration(activeProfile.id, baseline);
+          setActiveCalibration(baseline);
+          console.log('[AppContext] Calibrated baseline saved:', baseline);
+        } else {
+          console.warn('[AppContext] Calibration completed with partial or fallback samples');
+        }
+
+        resolve(baseline);
+      }, 2500);
+    });
+  };
+
+  const triggerOverlayAlert = (type: string = 'DISTANCE', title?: string, message?: string) => {
+    let defTitle = 'Cảnh báo khoảng cách màn hình';
+    let defMsg = 'Bạn đang ngồi quá gần màn hình (<45cm). Vui lòng lùi lại!';
+    if (type.includes('POSTURE')) {
+      defTitle = 'Cảnh báo tư thế ngồi';
+      defMsg = 'Phát hiện gù lưng hoặc cúi đầu quá thấp. Hãy ngồi thẳng lưng!';
+    } else if (type.includes('BLINK')) {
+      defTitle = 'Nhắc nhở chớp mắt';
+      defMsg = 'Hãy chớp mắt vài lần để duy trì độ ẩm giác mạc!';
+    } else if (type.includes('BREAK')) {
+      defTitle = 'Đã đến giờ nghỉ mắt!';
+      defMsg = 'Quy tắc 20-20-20: Hãy nhìn xa 20 feet trong 20 giây.';
+    }
+    (window as any).electronApi?.showOverlayAlert?.({
+      type,
+      title: title || defTitle,
+      message: message || defMsg,
+      durationMs: 4500,
+    });
+  };
+
   const selectCamera = (id: string) => {
     setSelectedCameraId(id);
     if (settings) {
       updateSettings({ ...settings, camera: { ...settings.camera, deviceId: id } });
     }
     startCamera(id);
+    if (activeProfile && reposRef.current.calibRepo) {
+      const latestCalib = reposRef.current.calibRepo.getLatestCalibration(activeProfile.id, id);
+      if (latestCalib) {
+        visionEngineRef.current.setCalibration(latestCalib);
+        setActiveCalibration(latestCalib);
+      } else {
+        setActiveCalibration(null);
+      }
+    }
   };
 
   return (
@@ -825,6 +881,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         requestQuitApp,
         confirmQuit,
         passwordModalConfig,
+        requestAccessSettings,
+        isSettingsUnlocked,
         closePasswordModal,
         verifyPassword,
         updateSecuritySettings,
@@ -857,6 +915,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUseSimulatedCamera,
         simulationMode,
         setSimulationMode,
+        isCalibrating,
+        calibrationSamplesCount,
+        activeCalibration,
+        startPostureCalibration,
+        triggerOverlayAlert,
       }}
     >
       {children}

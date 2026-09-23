@@ -19,7 +19,7 @@ import { useApp } from '../context/AppContext.js';
 import { SecuritySettingsSection } from '../components/SecuritySettingsSection.js';
 import { t } from '@eyeposture/i18n';
 
-type SettingsTab = 'general' | 'posture' | 'distance' | 'breaks' | 'hydration' | 'notifications' | 'security';
+type SettingsTab = 'general' | 'posture' | 'distance' | 'breaks' | 'hydration' | 'blink' | 'notifications' | 'security';
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettings, language, switchLanguage, theme, switchTheme } = useApp();
@@ -62,6 +62,13 @@ export const SettingsPage: React.FC = () => {
       description: t('settings.hydrationDesc'),
       icon: Droplets,
       color: 'text-cyan-400',
+    },
+    {
+      id: 'blink' as SettingsTab,
+      label: t('blink.title'),
+      description: t('blink.subtitle'),
+      icon: Eye,
+      color: 'text-purple-400',
     },
     {
       id: 'notifications' as SettingsTab,
@@ -398,6 +405,153 @@ export const SettingsPage: React.FC = () => {
                 <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
                   <span className="text-xs text-slate-400 block">{t('common.status')}</span>
                   <span className="text-xl font-bold text-slate-100 mt-1 block">45 {t('common.minutes')}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* EYE BLINK TAB (ErgoBlink Integration) */}
+          {activeTab === 'blink' && (
+            <div className="glass-card p-6 space-y-6 border border-slate-800/80">
+              <div className="border-b border-slate-800 pb-4">
+                <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-purple-400" />
+                  <span>{t('blink.title')}</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">{t('blink.subtitle')}</p>
+              </div>
+
+              {/* Toggle Enable */}
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <span className="text-sm font-medium text-slate-200 block">{t('blink.enableBlink')}</span>
+                  <span className="text-xs text-slate-400">Continuous Eye Aspect Ratio (EAR) tracking to prevent dry eyes</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.blink?.enabled ?? false}
+                  onChange={(e) =>
+                    updateSettings({
+                      ...settings,
+                      blink: {
+                        enabled: e.target.checked,
+                        earThreshold: settings.blink?.earThreshold ?? 0.22,
+                        prolongedStareThresholdSec: settings.blink?.prolongedStareThresholdSec ?? 7,
+                        minBlinksPerMinute: settings.blink?.minBlinksPerMinute ?? 10,
+                        cooldownSeconds: settings.blink?.cooldownSeconds ?? 30,
+                        soundEnabled: settings.blink?.soundEnabled ?? true,
+                      },
+                    })
+                  }
+                  className="w-5 h-5 rounded bg-slate-800 border-slate-700 text-teal-500 focus:ring-0 cursor-pointer"
+                />
+              </div>
+
+              {/* Prolonged Stare Threshold */}
+              <div className="py-3 border-t border-slate-800/80 space-y-2">
+                <div className="flex justify-between text-xs text-slate-200">
+                  <span className="font-medium text-sm">{t('blink.stareThreshold')} ({settings.blink?.prolongedStareThresholdSec ?? 7}s)</span>
+                  <span className="text-purple-400 font-semibold">{settings.blink?.prolongedStareThresholdSec ?? 7} seconds</span>
+                </div>
+                <input
+                  type="range"
+                  min="4"
+                  max="15"
+                  step="1"
+                  value={settings.blink?.prolongedStareThresholdSec ?? 7}
+                  onChange={(e) =>
+                    updateSettings({
+                      ...settings,
+                      blink: {
+                        ...(settings.blink ?? {
+                          enabled: false,
+                          earThreshold: 0.22,
+                          minBlinksPerMinute: 10,
+                          cooldownSeconds: 30,
+                          soundEnabled: true,
+                        }),
+                        prolongedStareThresholdSec: Number(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-full accent-purple-500 bg-slate-800 h-2 rounded-lg cursor-pointer"
+                />
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>4s (High Awareness)</span>
+                  <span>7s (Recommended)</span>
+                  <span>15s (Lenient)</span>
+                </div>
+              </div>
+
+              {/* Minimum Desired BPM */}
+              <div className="py-3 border-t border-slate-800/80 space-y-2">
+                <div className="flex justify-between text-xs text-slate-200">
+                  <span className="font-medium text-sm">{t('blink.minBpm')} ({settings.blink?.minBlinksPerMinute ?? 10} BPM)</span>
+                  <span className="text-teal-400 font-semibold">{settings.blink?.minBlinksPerMinute ?? 10} blinks/min</span>
+                </div>
+                <input
+                  type="range"
+                  min="6"
+                  max="18"
+                  step="1"
+                  value={settings.blink?.minBlinksPerMinute ?? 10}
+                  onChange={(e) =>
+                    updateSettings({
+                      ...settings,
+                      blink: {
+                        ...(settings.blink ?? {
+                          enabled: false,
+                          earThreshold: 0.22,
+                          prolongedStareThresholdSec: 7,
+                          cooldownSeconds: 30,
+                          soundEnabled: true,
+                        }),
+                        minBlinksPerMinute: Number(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-full accent-teal-500 bg-slate-800 h-2 rounded-lg cursor-pointer"
+                />
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>6 BPM</span>
+                  <span>10 BPM (Target)</span>
+                  <span>18 BPM</span>
+                </div>
+              </div>
+
+              {/* EAR Threshold Sensitivity */}
+              <div className="py-3 border-t border-slate-800/80 space-y-2">
+                <div className="flex justify-between text-xs text-slate-200">
+                  <span className="font-medium text-sm">{t('blink.earThreshold')} ({settings.blink?.earThreshold ?? 0.22})</span>
+                  <span className="text-slate-400 font-mono">EAR: {settings.blink?.earThreshold ?? 0.22}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.16"
+                  max="0.28"
+                  step="0.01"
+                  value={settings.blink?.earThreshold ?? 0.22}
+                  onChange={(e) =>
+                    updateSettings({
+                      ...settings,
+                      blink: {
+                        ...(settings.blink ?? {
+                          enabled: false,
+                          prolongedStareThresholdSec: 7,
+                          minBlinksPerMinute: 10,
+                          cooldownSeconds: 30,
+                          soundEnabled: true,
+                        }),
+                        earThreshold: Number(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-full accent-purple-500 bg-slate-800 h-2 rounded-lg cursor-pointer"
+                />
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>0.16 (Tight Eyes)</span>
+                  <span>0.22 (Standard)</span>
+                  <span>0.28 (Sensitive)</span>
                 </div>
               </div>
             </div>

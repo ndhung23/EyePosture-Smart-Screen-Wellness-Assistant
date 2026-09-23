@@ -20,6 +20,7 @@ import {
 import { getAdminDashboardHtml } from './admin/dashboard-html.js';
 import { getLandingPageHtml } from './landing/landing-html.js';
 import { handleAdminRoutes } from './admin/admin-handlers.js';
+import { handlePasswordResetRoutes } from './auth/password-reset-handlers.js';
 import { SupabaseService } from './supabase-client.js';
 import {
   seedAdminAccount,
@@ -803,7 +804,7 @@ export class EyePostureApiServer {
       const body = await this.parseBody(req);
       const tier = (body.tier || 'PRO') as 'PRO' | 'FAMILY';
       const interval = (body.interval || 'month') as 'month' | 'year' | 'lifetime';
-      const amount = body.amount || (SePayBillingProvider.PRICES_VND[tier]?.[interval] ?? 30000);
+      const amount = body.amount || (SePayBillingProvider.PRICES_VND[tier]?.[interval] ?? 19000);
       const randomSuffix = Math.floor(100 + Math.random() * 900);
       const orderCode = `EP${Date.now().toString().slice(-6)}${randomSuffix}`;
       const transferContent = `EYEPOSTURE ${authResult.userId} ${orderCode}`;
@@ -929,6 +930,17 @@ export class EyePostureApiServer {
     });
 
     if (adminHandled) return;
+
+    // Delegate Password Reset & Forgot Password Routes
+    const resetHandled = await handlePasswordResetRoutes(req, res, pathname, method, {
+      users: this.users,
+      userSubscriptions: this.userSubscriptions,
+      supabase: this.supabase,
+      sendJson: (sRes, code, data) => this.sendJson(sRes, code, data),
+      parseBody: (sReq) => this.parseBody(sReq),
+      hashPassword: (p, s) => this.hashPassword(p, s),
+    });
+    if (resetHandled) return;
 
     this.sendJson(res, 404, { error: 'Endpoint not found' });
   }

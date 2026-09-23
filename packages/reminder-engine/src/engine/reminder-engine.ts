@@ -25,8 +25,10 @@ export class ReminderEngine {
   // Active reminder states
   private activePostureState: ReminderState = 'NORMAL';
   private activeDistanceState: ReminderState = 'NORMAL';
+  private activeBlinkState: ReminderState = 'NORMAL';
   private lastPostureAlertTime: number = 0;
   private lastDistanceAlertTime: number = 0;
+  private lastBlinkAlertTime: number = 0;
 
   // Screen time tracking in current day (minutes)
   private screenTimeMinutesToday: number = 0;
@@ -197,6 +199,40 @@ export class ReminderEngine {
           timestamp: now,
           canSnooze: false,
         });
+      }
+    }
+
+    // 3. Eye Blink / Prolonged Stare evaluation (ErgoBlink integration)
+    const blinkSettings = this.settings.blink;
+    if (blinkSettings?.enabled && analysis.blinkMetrics) {
+      const { prolongedStareDetected, eyeStrainScore, secondsSinceLastBlink } = analysis.blinkMetrics;
+      const cooldownMs = blinkSettings.cooldownSeconds * 1000;
+
+      if (prolongedStareDetected || eyeStrainScore >= 70) {
+        if (now - this.lastBlinkAlertTime >= cooldownMs) {
+          const policy = this.policyEngine.evaluate('BLINK_REMINDER', 'NORMAL', activeApp, now);
+          if (policy.allowed) {
+            this.lastBlinkAlertTime = now;
+            this.activeBlinkState = 'ACTIVE_WARNING';
+            this.policyEngine.recordDelivery('BLINK_REMINDER', now);
+            this.emit({
+              id: crypto.randomUUID(),
+              type: 'BLINK_REMINDER',
+              state: 'ACTIVE_WARNING',
+              priority: policy.adjustedPriority ?? 'NORMAL',
+              titleKey: 'blink.reminderTitle',
+              messageKey: 'blink.reminderMessage',
+              payload: {
+                stareSeconds: Math.round(secondsSinceLastBlink),
+                eyeStrainScore,
+              },
+              timestamp: now,
+              canSnooze: false,
+            });
+          }
+        }
+      } else if (!prolongedStareDetected && this.activeBlinkState === 'ACTIVE_WARNING') {
+        this.activeBlinkState = 'NORMAL';
       }
     }
   }

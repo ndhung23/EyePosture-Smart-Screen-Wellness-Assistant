@@ -136,6 +136,24 @@ export class SupabaseService {
     return data as DbUser;
   }
 
+  async updateUserPassword(id: string, password_hash: string, salt: string): Promise<boolean> {
+    if (!this.client) return false;
+    const { error } = await this.client
+      .from('users')
+      .update({
+        password_hash,
+        salt,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase updateUserPassword error:', error);
+      return false;
+    }
+    return true;
+  }
+
   // --- Subscriptions ---
   async getSubscription(userId: string): Promise<DbSubscription | null> {
     if (!this.client) return null;

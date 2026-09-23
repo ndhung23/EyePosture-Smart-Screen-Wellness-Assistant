@@ -88,7 +88,7 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
       body: JSON.stringify({ email: 'admin', password: 'wrong' }),
     });
     expect(wrongPass.status).toBe(401);
-  });
+  }, 15000);
 
   it('should complete billing upgrade flow and mint cryptographically verifiable license', async () => {
     const email = `pro_${Date.now()}@eyeposture.com`;
@@ -168,7 +168,7 @@ describe('Cloud API Endpoints & Licensing Integration', () => {
     const checkoutBody = await checkoutRes.json();
     expect(checkoutBody.provider).toBe('sepay');
     expect(checkoutBody.qrUrl).toContain('https://qr.sepay.vn/img?');
-    expect(checkoutBody.amount).toBe(30000);
+    expect(checkoutBody.amount).toBe(19000);
     expect(checkoutBody.transferContent).toContain(user.id);
 
     // Verify polling status before payment

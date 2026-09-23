@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Coffee, CheckCircle, Clock, Play, RotateCcw } from 'lucide-react';
+import { Eye, Coffee, CheckCircle, Clock, Play, RotateCcw, Bell } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
 
@@ -10,6 +10,7 @@ export const BreaksPage: React.FC = () => {
     dailyStats,
     settings,
     updateSettings,
+    triggerOverlayAlert,
   } = useApp();
 
   const breakMinsLeft = Math.floor(breakProgress.remainingSeconds / 60);
@@ -22,7 +23,7 @@ export const BreaksPage: React.FC = () => {
     if (!settings) return;
     updateSettings({
       ...settings,
-      breaks: { ...settings.breaks, intervalMinutes: Math.max(5, val) },
+      breaks: { ...settings.breaks, intervalMinutes: Math.max(1, val) },
     });
   };
 
@@ -32,6 +33,14 @@ export const BreaksPage: React.FC = () => {
       ...settings,
       breaks: { ...settings.breaks, durationSeconds: Math.max(10, val) },
     });
+  };
+
+  const handleTestOverlay = () => {
+    triggerOverlayAlert(
+      'BREAK',
+      'Đã đến giờ nghỉ ngơi mắt (20-20-20)!',
+      'Quy tắc 20-20-20: Rời mắt khỏi màn hình và nhìn xa ít nhất 6 mét trong 20 giây để thư giãn mắt.'
+    );
   };
 
   return (
@@ -55,13 +64,21 @@ export const BreaksPage: React.FC = () => {
             {t('breaks.eyeMusclesTip')}
           </p>
 
-          <div className="pt-2 flex items-center gap-3">
+          <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               onClick={startBreakNow}
               className="px-5 py-2.5 rounded-xl gradient-teal text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-teal-500/25 active:scale-95 transition-all"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>{t('breaks.startBreak')}</span>
+            </button>
+            <button
+              onClick={handleTestOverlay}
+              className="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-750 border border-teal-500/40 text-teal-300 font-bold text-xs flex items-center gap-2 shadow-sm active:scale-95 transition-all"
+              title="Kích hoạt popup nhắc nhở đè lên mọi màn hình ngay lập tức để thử nghiệm"
+            >
+              <Bell className="w-4 h-4 text-teal-400" />
+              <span>Thử popup đè màn hình</span>
             </button>
           </div>
         </div>

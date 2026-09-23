@@ -12,10 +12,12 @@
   "dependencies": {
     "@eyeposture/billing": "*",
     "@eyeposture/shared-types": "*",
-    "@supabase/supabase-js": "^2.116.0"
+    "@supabase/supabase-js": "^2.116.0",
+    "nodemailer": "^10.0.10"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@types/nodemailer": "^8.0.2",
     "typescript": "^5.7.2"
   }
 }

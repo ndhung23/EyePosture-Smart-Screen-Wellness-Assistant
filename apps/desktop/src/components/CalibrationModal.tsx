@@ -11,17 +11,23 @@ interface CalibrationModalProps {
 export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onClose }) => {
   const [step, setStep] = useState<number>(1);
   const [isMeasuring, setIsMeasuring] = useState<boolean>(false);
-  const { liveAnalysis } = useApp();
+  const [calibResult, setCalibResult] = useState<any>(null);
+  const { liveAnalysis, startPostureCalibration, calibrationSamplesCount, activeCalibration } = useApp();
 
   if (!isOpen) return null;
 
-  const handleStartMeasuring = () => {
+  const handleStartMeasuring = async () => {
     setIsMeasuring(true);
     setStep(4);
-    setTimeout(() => {
+    try {
+      const baseline = await startPostureCalibration();
+      setCalibResult(baseline);
+    } catch (err) {
+      console.warn('Calibration error:', err);
+    } finally {
       setIsMeasuring(false);
       setStep(5);
-    }, 2500);
+    }
   };
 
   const handleFinish = () => {
@@ -97,8 +103,12 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onCl
               <div>
                 <h4 className="font-semibold text-slate-200">{t('calibration.calibrating')}</h4>
                 <p className="text-xs text-slate-400 mt-1">
-                  Recording distance ratio ({liveAnalysis.distanceRatio}x) and facial center...
+                  Đang ghi nhận mẫu sinh trắc khuôn mặt ({calibrationSamplesCount} khung hình)...
                 </p>
+                <div className="mt-3 flex items-center justify-center gap-4 text-xs font-mono text-teal-300 bg-slate-950/60 py-1.5 px-3 rounded-xl border border-slate-800 max-w-xs mx-auto">
+                  <span>Khoảng cách: ~{liveAnalysis.distanceEstimateCm} cm</span>
+                  <span>Góc cúi: {liveAnalysis.headAngles.pitch}°</span>
+                </div>
               </div>
             </div>
           )}
@@ -111,6 +121,27 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({ isOpen, onCl
                 <p className="text-xs text-slate-400 mt-1">
                   {t('calibration.step5Detail')}
                 </p>
+
+                {(calibResult || activeCalibration) && (
+                  <div className="mt-4 grid grid-cols-3 gap-2 bg-slate-950/60 p-3 rounded-2xl border border-slate-800 text-xs">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Cự ly chuẩn</span>
+                      <span className="font-mono font-bold text-teal-400">~60 cm</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Góc cúi (Pitch)</span>
+                      <span className="font-mono font-bold text-slate-200">
+                        {(calibResult || activeCalibration)?.baselinePitch}°
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Góc nghiêng (Roll)</span>
+                      <span className="font-mono font-bold text-slate-200">
+                        {(calibResult || activeCalibration)?.baselineRoll}°
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

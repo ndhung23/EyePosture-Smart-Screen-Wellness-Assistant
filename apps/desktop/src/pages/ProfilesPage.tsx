@@ -97,7 +97,7 @@ export const ProfilesPage: React.FC = () => {
                     {t('profiles.selectProfile')}
                   </button>
                 ) : (
-                  <div className="flex-1 py-2 text-center text-xs font-semibold text-teal-400 bg-teal-500/10 rounded-xl">
+                  <div className="flex-1 py-2 text-center text-xs font-bold text-teal-400 bg-teal-500/10 border border-teal-500/20 rounded-xl">
                     {t('profiles.currentlySelected')}
                   </div>
                 )}

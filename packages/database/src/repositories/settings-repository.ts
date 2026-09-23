@@ -11,17 +11,28 @@ import {
   NotificationSettings,
   PrivacySettings,
   SecuritySettings,
+  BlinkSettings,
 } from '@eyeposture/shared-types';
+
+export const DEFAULT_BLINK_SETTINGS: BlinkSettings = {
+  enabled: false,
+  earThreshold: 0.22,
+  prolongedStareThresholdSec: 7,
+  minBlinksPerMinute: 10,
+  cooldownSeconds: 30,
+  soundEnabled: true,
+};
 
 export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
   enabled: false,
   requireOnPause: true,
   requireOnQuit: true,
+  requireOnSettings: true,
 };
 
 export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   language: 'en',
-  theme: 'dark',
+  theme: 'light',
   startWithWindows: true,
   minimizeToTray: true,
   autoCheckUpdates: true,
@@ -135,6 +146,7 @@ export class SettingsRepository {
       notifications: this.getCategory<NotificationSettings>(profileId, 'notifications', DEFAULT_NOTIFICATION_SETTINGS),
       privacy: this.getCategory<PrivacySettings>(profileId, 'privacy', DEFAULT_PRIVACY_SETTINGS),
       security: this.getCategory<SecuritySettings>(profileId, 'security', DEFAULT_SECURITY_SETTINGS),
+      blink: this.getCategory<BlinkSettings>(profileId, 'blink', DEFAULT_BLINK_SETTINGS),
     };
   }
 
@@ -149,5 +161,8 @@ export class SettingsRepository {
     this.saveCategory(profileId, 'notifications', settings.notifications);
     this.saveCategory(profileId, 'privacy', settings.privacy);
     this.saveCategory(profileId, 'security', settings.security);
+    if (settings.blink) {
+      this.saveCategory(profileId, 'blink', settings.blink);
+    }
   }
 }
