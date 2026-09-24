@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "dev": "npm run dev -w @eyeposture/desktop",
+    "web": "npm run dev -w @eyeposture/web",
+    "build:web": "npm run build -w @eyeposture/web",
     "desktop": "npm run start -w @eyeposture/desktop",
     "admin": "node apps/api/dist/start.js",
     "api": "node apps/api/dist/start.js",

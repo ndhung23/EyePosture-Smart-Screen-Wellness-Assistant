@@ -21,6 +21,8 @@ import { getAdminDashboardHtml } from './admin/dashboard-html.js';
 import { getLandingPageHtml } from './landing/landing-html.js';
 import { handleAdminRoutes } from './admin/admin-handlers.js';
 import { handlePasswordResetRoutes } from './auth/password-reset-handlers.js';
+import { handleAuthRoutes } from './auth/auth-handlers.js';
+import { handleVoucherRoutes } from './admin/voucher-handlers.js';
 import { SupabaseService } from './supabase-client.js';
 import {
   seedAdminAccount,
@@ -96,6 +98,62 @@ export class EyePostureApiServer {
     this.loadPersistedDevices();
     loadPersistedUsers(this.users, this.userSubscriptions);
     seedAdminAccount(this.users, this.userSubscriptions, this.supabase);
+    if (this.supabase.isAvailable()) {
+      this.syncFromSupabase().catch(() => {});
+    }
+  }
+
+  public async syncFromSupabase(): Promise<void> {
+    if (!this.supabase.isAvailable()) return;
+    try {
+      const [dbUsers, dbSubs, dbDevs] = await Promise.all([
+        this.supabase.getAllUsers(),
+        this.supabase.getAllSubscriptions(),
+        this.supabase.getAllDevices(),
+      ]);
+
+      const subMap = new Map<string, any>();
+      for (const s of dbSubs) subMap.set(s.user_id, s);
+
+      for (const u of dbUsers) {
+        this.users.set(u.id, {
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          role: (u.role as any) || 'USER',
+          passwordHash: u.password_hash,
+          salt: u.salt,
+          isBlocked: Boolean(u.is_blocked),
+          createdAt: u.created_at || new Date().toISOString(),
+          updatedAt: u.updated_at || new Date().toISOString(),
+        });
+        const sub = subMap.get(u.id);
+        if (sub) {
+          this.userSubscriptions.set(u.id, {
+            tier: sub.tier,
+            status: sub.status,
+            expiresAt: Number(sub.expires_at),
+          });
+        }
+      }
+
+      for (const d of dbDevs) {
+        this.devices.set(d.id, {
+          id: d.id,
+          userId: d.user_id || 'anonymous',
+          deviceName: d.device_name,
+          deviceFingerprint: d.device_fingerprint,
+          os: d.os,
+          appVersion: d.app_version,
+          status: (d.status as any) || (d.is_blocked ? 'BLOCKED' : 'ACTIVE'),
+          isBlocked: Boolean(d.is_blocked),
+          lastActiveAt: d.last_active_at || new Date().toISOString(),
+          createdAt: d.created_at || new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      console.error('[Supabase] Initial sync failed:', err);
+    }
   }
 
   private loadPersistedDevices(): void {
@@ -124,7 +182,15 @@ export class EyePostureApiServer {
   private savePersistedDevices(): void {
     try {
       const list = Array.from(this.devices.values());
-      const target = process.env.VERCEL ? '/tmp/eyeposture_devices.json' : path.join(os.tmpdir(), 'eyeposture_devices.json');
+      const dir = path.join(process.cwd(), 'data');
+      if (!fs.existsSync(dir)) {
+        try { fs.mkdirSync(dir, { recursive: true }); } catch {}
+      }
+      const target = fs.existsSync(dir)
+        ? path.join(dir, 'devices.json')
+        : process.env.VERCEL
+        ? '/tmp/eyeposture_devices.json'
+        : path.join(os.tmpdir(), 'eyeposture_devices.json');
       fs.writeFileSync(target, JSON.stringify(list, null, 2), 'utf8');
     } catch {
       // ignore
@@ -330,122 +396,18 @@ export class EyePostureApiServer {
       return;
     }
 
-    // 1. POST /api/v1/auth/register
-    if (pathname === '/api/v1/auth/register' && method === 'POST') {
-      const body = await this.parseBody(req);
-      const { email, password, name } = body;
-      if (!email || !password || !name) {
-        this.sendJson(res, 400, { error: 'Missing email, password, or name' });
-        return;
-      }
-      if (isAdminIdentifier(email)) {
-        this.sendJson(res, 409, { error: 'Tên người dùng admin đã được bảo lưu' });
-        return;
-      }
+    // 1 & 2. Delegate Auth Routes (Register & Login)
+    const authHandled = await handleAuthRoutes(req, res, pathname, method, {
+      users: this.users,
+      userSubscriptions: this.userSubscriptions,
+      supabase: this.supabase,
+      sendJson: (sRes, code, data) => this.sendJson(sRes, code, data),
+      parseBody: (sReq) => this.parseBody(sReq),
+      hashPassword: (p, s) => this.hashPassword(p, s),
+      createJwt: (payload) => this.createJwt(payload),
+    });
+    if (authHandled) return;
 
-      // Check existing in Supabase
-      if (this.supabase.isAvailable()) {
-        const existing = await this.supabase.findUserByEmail(email);
-        if (existing) {
-          this.sendJson(res, 409, { error: 'Email already registered' });
-          return;
-        }
-      }
-
-      const id = crypto.randomUUID();
-      const salt = crypto.randomBytes(16).toString('hex');
-      const passwordHash = this.hashPassword(password, salt);
-      const now = new Date().toISOString();
-
-      if (this.supabase.isAvailable()) {
-        await this.supabase.createUser({
-          id,
-          email,
-          name,
-          password_hash: passwordHash,
-          salt,
-          role: 'USER',
-          is_blocked: false,
-        });
-        await this.supabase.upsertSubscription(id, 'FREE', 'ACTIVE', Date.now() + 365 * 24 * 3600 * 1000);
-      }
-
-      const user = { id, email, name, role: 'USER' as const, createdAt: now, updatedAt: now };
-      this.users.set(id, { ...user, passwordHash, salt });
-      this.userSubscriptions.set(id, {
-        tier: 'FREE',
-        status: 'ACTIVE',
-        expiresAt: Date.now() + 365 * 24 * 3600 * 1000,
-      });
-
-      const token = this.createJwt({ userId: id, email });
-      savePersistedUsers(this.users, this.userSubscriptions);
-      this.sendJson(res, 201, { user, token });
-      return;
-    }
-
-    // 2. POST /api/v1/auth/login
-    if (pathname === '/api/v1/auth/login' && method === 'POST') {
-      const body = await this.parseBody(req);
-      const { email, password } = body;
-
-      let matchedUser: (User & { passwordHash: string; salt: string }) | undefined;
-      const cleanEmail = (email || '').trim().toLowerCase();
-      if (isAdminIdentifier(cleanEmail)) {
-        matchedUser = this.users.get(ADMIN_USER_ID);
-        if (!matchedUser) {
-          seedAdminAccount(this.users, this.userSubscriptions, this.supabase);
-          matchedUser = this.users.get(ADMIN_USER_ID);
-        }
-      } else {
-        for (const u of this.users.values()) {
-          if (u.email.toLowerCase() === cleanEmail) {
-            matchedUser = u;
-            break;
-          }
-        }
-      }
-
-      // Fallback query Supabase if not in memory
-      if (!matchedUser && this.supabase.isAvailable()) {
-        const dbUser = await this.supabase.findUserByEmail(email || '');
-        if (dbUser) {
-          matchedUser = {
-            id: dbUser.id,
-            email: dbUser.email,
-            name: dbUser.name,
-            role: dbUser.role as any,
-            passwordHash: dbUser.password_hash,
-            salt: dbUser.salt,
-            isBlocked: dbUser.is_blocked,
-            createdAt: dbUser.created_at || new Date().toISOString(),
-            updatedAt: dbUser.updated_at || new Date().toISOString(),
-          };
-          this.users.set(matchedUser.id, matchedUser);
-        }
-      }
-
-      if (!matchedUser) {
-        this.sendJson(res, 401, { error: 'Invalid credentials' });
-        return;
-      }
-
-      const hash = this.hashPassword(password, matchedUser.salt);
-      if (hash !== matchedUser.passwordHash) {
-        this.sendJson(res, 401, { error: 'Invalid credentials' });
-        return;
-      }
-
-      if (matchedUser.isBlocked) {
-        this.sendJson(res, 403, { error: 'Account has been suspended by administrator' });
-        return;
-      }
-
-      const token = this.createJwt({ userId: matchedUser.id, email: matchedUser.email });
-      const { passwordHash, salt, ...safeUser } = matchedUser;
-      this.sendJson(res, 200, { user: safeUser, token });
-      return;
-    }
 
     // 2b. GET /api/v1/orders/:orderCode/status (Realtime Polling for QR Payment)
     if (pathname.startsWith('/api/v1/orders/') && pathname.endsWith('/status') && method === 'GET') {
@@ -643,7 +605,11 @@ export class EyePostureApiServer {
       const deviceName = body.deviceName || body.name || 'Desktop PC';
       const deviceOs = body.os || 'Windows 11';
       const appVersion = body.appVersion || '1.0.0';
-      const userId = body.userId || `device_${fingerprint.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8)}`;
+      const isUuid = Boolean(
+        body.userId &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.userId)
+      );
+      const userId = isUuid ? body.userId : null;
 
       if (this.supabase.isAvailable()) {
         await this.supabase.upsertDevice({
@@ -924,6 +890,7 @@ export class EyePostureApiServer {
       users: this.users,
       devices: this.devices,
       userSubscriptions: this.userSubscriptions,
+      supabase: this.supabase,
       savePersistedDevices: () => this.savePersistedDevices(),
       sendJson: (sRes, code, data) => this.sendJson(sRes, code, data),
       parseBody: (sReq) => this.parseBody(sReq),
@@ -942,10 +909,20 @@ export class EyePostureApiServer {
     });
     if (resetHandled) return;
 
+    // Delegate Voucher Routes
+    const voucherHandled = await handleVoucherRoutes(req, res, pathname, method, {
+      sendJson: (sRes, code, data) => this.sendJson(sRes, code, data),
+      parseBody: (sReq) => this.parseBody(sReq),
+    });
+    if (voucherHandled) return;
+
     this.sendJson(res, 404, { error: 'Endpoint not found' });
   }
 
-  public listen(port: number = 0): Promise<number> {
+  public async listen(port: number = 0): Promise<number> {
+    if (this.supabase.isAvailable()) {
+      await this.syncFromSupabase().catch(() => {});
+    }
     return new Promise((resolve) => {
       this.server = http.createServer((req, res) => {
         this.handleRequest(req, res).catch((err) => {

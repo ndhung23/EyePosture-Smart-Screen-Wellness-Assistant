@@ -1,0 +1,35 @@
+[
+  {
+    "id": "vouch-chao-ban-moi",
+    "code": "CHAOBANMOI",
+    "discountPercent": 20,
+    "validUntil": "2026-12-31T23:59:59.000Z",
+    "maxUses": 500,
+    "usedCount": 28,
+    "isActive": true,
+    "createdAt": "2026-09-01T00:00:00.000Z",
+    "description": "Giảm 20% cho thành viên mới nâng cấp trải nghiệm Pro"
+  },
+  {
+    "id": "vouch-eye-health-50",
+    "code": "EYEHEALTH50",
+    "discountPercent": 50,
+    "validUntil": "2026-10-31T23:59:59.000Z",
+    "maxUses": 200,
+    "usedCount": 84,
+    "isActive": true,
+    "createdAt": "2026-09-15T00:00:00.000Z",
+    "description": "Ưu đãi Tuần Lễ Bảo Vệ Mắt - Giảm sâu 50% bản quyền 1 năm"
+  },
+  {
+    "id": "vouch-fpt-student",
+    "code": "FPTSTUDENT",
+    "discountPercent": 35,
+    "validUntil": "2026-12-31T23:59:59.000Z",
+    "maxUses": 0,
+    "usedCount": 65,
+    "isActive": true,
+    "createdAt": "2026-09-10T00:00:00.000Z",
+    "description": "Hỗ trợ 35% cho sinh viên, học sinh và giảng viên CNTT"
+  }
+]

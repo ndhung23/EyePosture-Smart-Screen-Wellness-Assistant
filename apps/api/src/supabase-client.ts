@@ -154,7 +154,51 @@ export class SupabaseService {
     return true;
   }
 
+  async getAllUsers(): Promise<DbUser[]> {
+    if (!this.client) return [];
+    const { data, error } = await this.client
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      console.error('Supabase getAllUsers error:', error);
+      return [];
+    }
+    return data as DbUser[];
+  }
+
+  async setUserBlocked(id: string, isBlocked: boolean): Promise<boolean> {
+    if (!this.client) return false;
+    const { error } = await this.client
+      .from('users')
+      .update({
+        is_blocked: isBlocked,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase setUserBlocked error:', error);
+      return false;
+    }
+    return true;
+  }
+
   // --- Subscriptions ---
+  async getAllSubscriptions(): Promise<DbSubscription[]> {
+    if (!this.client) return [];
+    const { data, error } = await this.client
+      .from('subscriptions')
+      .select('*');
+
+    if (error || !data) {
+      console.error('Supabase getAllSubscriptions error:', error);
+      return [];
+    }
+    return data as DbSubscription[];
+  }
+
   async getSubscription(userId: string): Promise<DbSubscription | null> {
     if (!this.client) return null;
     const { data, error } = await this.client
@@ -250,6 +294,20 @@ export class SupabaseService {
   }
 
   // --- Devices ---
+  async getAllDevices(): Promise<DbDevice[]> {
+    if (!this.client) return [];
+    const { data, error } = await this.client
+      .from('devices')
+      .select('*')
+      .order('last_active_at', { ascending: false });
+
+    if (error || !data) {
+      console.error('Supabase getAllDevices error:', error);
+      return [];
+    }
+    return data as DbDevice[];
+  }
+
   async getDeviceByFingerprint(fingerprint: string): Promise<DbDevice | null> {
     if (!this.client) return null;
     const { data, error } = await this.client
@@ -273,14 +331,48 @@ export class SupabaseService {
     return data as DbDevice[];
   }
 
-  async upsertDevice(device: Partial<DbDevice> & { device_fingerprint: string; user_id: string }): Promise<DbDevice | null> {
+  async upsertDevice(device: Partial<DbDevice> & { device_fingerprint: string; user_id?: string | null }): Promise<DbDevice | null> {
     if (!this.client) return null;
     const now = new Date().toISOString();
-    const { data, error } = await this.client
-      .from('devices')
-      .upsert(
-        {
-          user_id: device.user_id,
+
+    // Validate UUID format to prevent PostgreSQL 22P02 error
+    const isUuid = Boolean(
+      device.user_id &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(device.user_id)
+    );
+    const cleanUserId = isUuid ? device.user_id : null;
+
+    try {
+      const existing = await this.getDeviceByFingerprint(device.device_fingerprint);
+      if (existing) {
+        const updatePayload: Record<string, any> = {
+          device_name: device.device_name || existing.device_name,
+          os: device.os || existing.os,
+          app_version: device.app_version || existing.app_version,
+          status: device.status || existing.status,
+          last_active_at: now,
+        };
+        if (device.is_blocked !== undefined) {
+          updatePayload.is_blocked = Boolean(device.is_blocked);
+        }
+        if (cleanUserId) {
+          updatePayload.user_id = cleanUserId;
+        }
+
+        const { data, error } = await this.client
+          .from('devices')
+          .update(updatePayload)
+          .eq('id', existing.id)
+          .select('*')
+          .single();
+
+        if (error) {
+          console.error('Supabase updateDevice error:', error);
+          return null;
+        }
+        return data as DbDevice;
+      } else {
+        const insertPayload: Record<string, any> = {
           device_fingerprint: device.device_fingerprint,
           device_name: device.device_name || 'Desktop PC',
           os: device.os || 'Windows 11',
@@ -288,17 +380,47 @@ export class SupabaseService {
           status: device.status || 'ACTIVE',
           is_blocked: Boolean(device.is_blocked),
           last_active_at: now,
-        },
-        { onConflict: 'user_id,device_fingerprint' }
-      )
-      .select('*')
-      .single();
+        };
+        if (cleanUserId) {
+          insertPayload.user_id = cleanUserId;
+        }
 
-    if (error) {
-      console.error('Supabase upsertDevice error:', error);
+        const { data, error } = await this.client
+          .from('devices')
+          .insert(insertPayload)
+          .select('*')
+          .single();
+
+        if (error) {
+          console.error('Supabase insertDevice error:', error);
+          return null;
+        }
+        return data as DbDevice;
+      }
+    } catch (err) {
+      console.error('Supabase upsertDevice catch error:', err);
       return null;
     }
-    return data as DbDevice;
+  }
+
+  async setDeviceBlocked(query: string, isBlocked: boolean): Promise<boolean> {
+    if (!this.client) return false;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(query);
+    const filter = isUuid ? `id.eq.${query}` : `device_fingerprint.eq.${query}`;
+
+    const { error } = await this.client
+      .from('devices')
+      .update({
+        is_blocked: isBlocked,
+        status: isBlocked ? 'BLOCKED' : 'ACTIVE',
+      })
+      .or(filter);
+
+    if (error) {
+      console.error('Supabase setDeviceBlocked error:', error);
+      return false;
+    }
+    return true;
   }
 
   async deleteDevice(deviceId: string, userId: string): Promise<boolean> {

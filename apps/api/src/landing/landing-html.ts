@@ -19,7 +19,26 @@ export function getLandingPageHtml(): string {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<script>
+    (function() {
+      try {
+        const theme = localStorage.getItem('eyeposture_theme') || 'dark';
+        if (theme === 'light') {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.add('light');
+        } else {
+          document.documentElement.classList.remove('light');
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    };
+  </script>
   <style>
     ${styles}
   </style>
@@ -57,7 +76,13 @@ export function getLandingPageHtml(): string {
 
       <!-- Header Action Buttons -->
       <div class="hidden sm:flex items-center gap-2.5 shrink-0">
-        <!-- Auth Container (Login / Profile / Admin Hub) -->
+        <!-- Theme Toggle Button -->
+        <button id="theme-toggle-btn" class="theme-toggle-btn" title="Chuyển Chế Độ Sáng / Tối" aria-label="Toggle Theme">
+          <svg id="icon-sun" class="w-4 h-4 hidden text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <svg id="icon-moon" class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+
+        <!-- Auth Container (Login / User Profile) -->
         <div id="nav-auth-container" class="flex items-center gap-2"></div>
 
         <!-- Windows Download Trigger -->
@@ -83,8 +108,10 @@ export function getLandingPageHtml(): string {
       <a href="#pricing" class="block text-slate-300 hover:text-teal-400 py-1">Bảng Giá</a>
       <a href="#faq" class="block text-slate-300 hover:text-teal-400 py-1">Hỏi Đáp FAQ</a>
       <div class="pt-3 border-t border-slate-800 flex flex-col gap-2.5">
+        <button id="mobile-theme-toggle-btn" class="w-full py-2 px-3 rounded-lg bg-slate-900 text-slate-300 border border-slate-800 text-xs flex items-center justify-center gap-2">
+          <span>🌓 Đổi Giao Diện Sáng / Tối</span>
+        </button>
         <div id="mobile-auth-container"></div>
-        <a href="/admin" class="text-center py-2 text-xs rounded-lg bg-slate-900 text-slate-300 border border-slate-800">Vào Quản Trị Hub (/admin)</a>
         <button class="trigger-download w-full btn-glow text-slate-950 font-bold py-2.5 rounded-lg text-xs flex items-center justify-center gap-2">
           <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.902-1.799"/></svg>
           Tải Cho Windows (.exe)
@@ -664,10 +691,11 @@ export function getLandingPageHtml(): string {
           <div>
             <div class="text-xs font-bold uppercase tracking-wider text-teal-400 mb-2">Gói Nâng Cao</div>
             <h3 class="text-2xl font-black text-white">PRO WELLNESS</h3>
-            <div class="mt-4 mb-6 flex items-baseline gap-2">
+            <div class="mt-4 mb-2 flex items-baseline gap-2" id="pro-price-display">
               <span class="text-4xl font-black text-teal-300">49.000đ</span>
               <span class="text-xs text-slate-400"> / tháng (hoặc gói năm)</span>
             </div>
+            <div id="pro-discount-badge" class="hidden inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mb-4 animate-pulse"></div>
             <p class="text-xs sm:text-sm text-slate-300 mb-6">
               Dành cho lập trình viên, designer, người làm việc nhiều giờ và phụ huynh quản lý con em.
             </p>
@@ -696,12 +724,38 @@ export function getLandingPageHtml(): string {
             </ul>
           </div>
 
-          <div class="mt-8">
-            <button class="trigger-download w-full btn-glow text-slate-950 font-extrabold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg">
-              <span>Tải & Trải Nghiệm Bản Pro Ngay</span>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-            </button>
-          </div>
+            <div class="mt-6 p-3.5 rounded-2xl bg-slate-900/80 dark:bg-slate-900/80 light:bg-slate-50 border border-slate-800 dark:border-slate-800 light:border-slate-200 space-y-2">
+              <div class="flex items-center justify-between text-xs font-semibold text-slate-300 dark:text-slate-300 light:text-slate-700">
+                <span class="flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+                  <span>Mã Voucher Giảm Giá</span>
+                </span>
+                <span class="text-[10px] text-teal-400 dark:text-teal-400 light:text-teal-600 font-mono">VD: EYEHEALTH50</span>
+              </div>
+              <div class="flex gap-2">
+                <input 
+                  type="text" 
+                  id="pricing-voucher-input" 
+                  placeholder="Nhập mã voucher..."
+                  class="flex-1 uppercase font-mono px-3 py-1.5 rounded-xl bg-slate-950/80 dark:bg-slate-950/80 light:bg-white border border-slate-700/80 dark:border-slate-700/80 light:border-slate-300 text-xs text-teal-300 dark:text-teal-300 light:text-teal-700 placeholder:text-slate-500 focus:outline-none focus:border-teal-500"
+                />
+                <button 
+                  type="button" 
+                  onclick="applyVoucher()"
+                  class="px-3 py-1.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 dark:text-teal-300 light:text-teal-700 border border-teal-500/40 text-xs font-bold transition active:scale-95 whitespace-nowrap"
+                >
+                  Áp Dụng
+                </button>
+              </div>
+              <div id="pricing-voucher-msg" class="hidden text-xs"></div>
+            </div>
+
+            <div class="mt-6">
+              <button class="trigger-download w-full btn-glow text-slate-950 font-extrabold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg">
+                <span>Tải & Trải Nghiệm Bản Pro Ngay</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              </button>
+            </div>
         </div>
 
       </div>
@@ -825,8 +879,8 @@ export function getLandingPageHtml(): string {
       <div class="flex flex-wrap items-center gap-6 text-slate-400">
         <a href="#features" class="hover:text-teal-400 transition">Tính Năng</a>
         <a href="#privacy" class="hover:text-teal-400 transition">Bảo Mật Local</a>
+        <a href="#pricing" class="hover:text-teal-400 transition">Bảng Giá</a>
         <a href="/download/win" class="hover:text-teal-400 transition">Tải Cho Windows</a>
-        <a href="/admin" class="hover:text-teal-400 transition">Quản Trị Hub</a>
         <a href="https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant" target="_blank" rel="noopener" class="hover:text-teal-400 transition flex items-center gap-1">
           GitHub Repo
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
