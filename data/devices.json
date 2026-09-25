@@ -49,14 +49,62 @@
   },
   {
     "id": "2c4a36cc-0ff7-4869-9ff2-0658873b0dae",
-    "userId": "a1c8ddff-0b84-404d-8367-a346520d014d",
+    "userId": "da085247-b72e-4b12-9d55-c04bf64164b1",
     "deviceName": "Hung Laptop",
     "deviceFingerprint": "hw_macbook_01",
     "os": "macOS",
     "appVersion": "1.0.0",
     "status": "ACTIVE",
     "isBlocked": false,
-    "lastActiveAt": "2026-09-24T10:37:12.436+00:00",
+    "lastActiveAt": "2026-09-25T14:57:32.045+00:00",
     "createdAt": "2026-09-24T10:37:12.0983+00:00"
+  },
+  {
+    "id": "4609a391-d828-4324-b65c-1bfcaf23c50b",
+    "userId": "da085247-b72e-4b12-9d55-c04bf64164b1",
+    "deviceFingerprint": "hw_macbook_01",
+    "deviceName": "Hung Laptop",
+    "os": "macOS",
+    "appVersion": "1.0.0",
+    "status": "ACTIVE",
+    "isBlocked": false,
+    "lastActiveAt": "2026-09-25T14:57:32.044Z",
+    "createdAt": "2026-09-25T14:57:32.044Z"
+  },
+  {
+    "id": "d640153f-6991-407f-b0a0-bbd0c5408501",
+    "userId": "54ea75c5-860c-4508-a5aa-d1aaeac849d2",
+    "deviceFingerprint": "hw_macbook_01",
+    "deviceName": "Hung Laptop",
+    "os": "macOS",
+    "appVersion": "1.0.0",
+    "status": "ACTIVE",
+    "isBlocked": false,
+    "lastActiveAt": "2026-09-25T14:57:54.234Z",
+    "createdAt": "2026-09-25T14:57:54.234Z"
+  },
+  {
+    "id": "70502bce-57bd-4241-b436-7d2fa8ce3bb5",
+    "userId": "687019d3-3ee1-40d4-bd62-1e04f1f9cb25",
+    "deviceName": "Hung Laptop",
+    "deviceFingerprint": "hw_macbook_01",
+    "os": "macOS",
+    "appVersion": "1.0.0",
+    "status": "ACTIVE",
+    "isBlocked": false,
+    "lastActiveAt": "2026-09-25T16:36:58.909+00:00",
+    "createdAt": "2026-09-25T14:57:55.026507+00:00"
+  },
+  {
+    "id": "5a7e847b-363c-404d-93ac-f25e89f4d441",
+    "userId": "687019d3-3ee1-40d4-bd62-1e04f1f9cb25",
+    "deviceFingerprint": "hw_macbook_01",
+    "deviceName": "Hung Laptop",
+    "os": "macOS",
+    "appVersion": "1.0.0",
+    "status": "ACTIVE",
+    "isBlocked": false,
+    "lastActiveAt": "2026-09-25T16:36:58.908Z",
+    "createdAt": "2026-09-25T16:36:58.908Z"
   }
 ]

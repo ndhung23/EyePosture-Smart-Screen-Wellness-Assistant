@@ -1,22 +1,49 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark, .dark *));
+@custom-variant light (&:is(.light, .light *));
+
 @layer base {
   :root {
     --bg-page: #030712;
     --text-primary: #f8fafc;
+    color-scheme: dark;
   }
 
-  html.light {
+  html.light, [data-theme="light"] {
     --bg-page: #f8fafc;
     --text-primary: #0f172a;
+    color-scheme: light;
+  }
+
+  html.dark, [data-theme="dark"] {
+    --bg-page: #030712;
+    --text-primary: #f8fafc;
+    color-scheme: dark;
   }
 
   body {
     background-color: var(--bg-page);
     color: var(--text-primary);
     scroll-behavior: smooth;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
+}
+
+/* Light mode structural overrides for smooth container backgrounds */
+html.light .min-h-screen,
+html.light main {
+  background-color: #f8fafc;
+}
+
+html.light .bg-slate-950,
+html.light div.bg-slate-950 {
+  background-color: #f8fafc;
+}
+
+html.light header.bg-slate-950\/70 {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: #e2e8f0;
 }
 
 /* Custom animations */

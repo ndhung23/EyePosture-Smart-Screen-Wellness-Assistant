@@ -24,6 +24,7 @@ export class VisionEngine {
   private distanceStateFilter: DistanceStateFilter;
   private postureStateFilter: PostureStateFilter;
   private sensitivity: number = 3;
+  private distanceThresholdMultiplier: number = 1.25;
 
   // Calibration accumulator
   private calibrationSamples: KeyFacialLandmarks[] = [];
@@ -53,6 +54,12 @@ export class VisionEngine {
 
   public setSensitivity(sensitivity: number): void {
     this.sensitivity = Math.max(1, Math.min(5, sensitivity));
+  }
+
+  public setDistanceThresholdCm(thresholdCm: number): void {
+    if (thresholdCm > 0) {
+      this.distanceThresholdMultiplier = Number((60 / Math.max(30, thresholdCm)).toFixed(2));
+    }
   }
 
   public updateDelays(distanceDelayMs: number, postureDelayMs: number): void {
@@ -92,7 +99,7 @@ export class VisionEngine {
     }
 
     // 1. Distance analysis
-    const distResult = this.distanceEstimator.estimate(landmarks);
+    const distResult = this.distanceEstimator.estimate(landmarks, this.distanceThresholdMultiplier);
     const distanceState = this.distanceStateFilter.update(distResult.isTooCloseInstant, now);
 
     // 2. Posture analysis

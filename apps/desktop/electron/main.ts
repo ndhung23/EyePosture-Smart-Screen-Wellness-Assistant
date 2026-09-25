@@ -172,7 +172,26 @@ function createWindow() {
   });
 
   mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
-    console.log(`[Renderer L${level}]: ${message} (${sourceId}:${line})`);
+    // Filter out internal WebAssembly, MediaPipe, WebGL, and high-frequency logs
+    const msg = (message || '').toLowerCase();
+    const src = (sourceId || '').toLowerCase();
+    if (
+      src.includes('wasm') ||
+      src.includes('vision') ||
+      src.includes('mediapipe') ||
+      msg.includes('vision_wasm') ||
+      msg.includes('gl_') ||
+      msg.includes('emscripten') ||
+      msg.includes('facelandmarker') ||
+      msg.includes('tensorflow') ||
+      msg.includes('tflite') ||
+      msg.includes('webgl')
+    ) {
+      return;
+    }
+    if (level >= 3) {
+      console.error(`[Renderer Error]: ${message} (${sourceId}:${line})`);
+    }
   });
 
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {

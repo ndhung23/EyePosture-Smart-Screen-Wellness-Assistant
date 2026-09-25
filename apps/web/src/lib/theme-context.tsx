@@ -18,15 +18,28 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
   const [mounted, setMounted] = useState(false);
 
+  const applyTheme = (t: Theme) => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    if (t === 'light') {
+      root.classList.remove('dark');
+      root.classList.add('light');
+      root.setAttribute('data-theme', 'light');
+    } else {
+      root.classList.remove('light');
+      root.classList.add('dark');
+      root.setAttribute('data-theme', 'dark');
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('eyeposture_theme') as Theme;
     if (saved === 'light' || saved === 'dark') {
       setTheme(saved);
-      document.documentElement.classList.toggle('light', saved === 'light');
-      document.documentElement.classList.toggle('dark', saved === 'dark');
+      applyTheme(saved);
     } else {
-      document.documentElement.classList.add('dark');
+      applyTheme('dark');
     }
   }, []);
 
@@ -34,8 +47,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
     localStorage.setItem('eyeposture_theme', next);
-    document.documentElement.classList.toggle('light', next === 'light');
-    document.documentElement.classList.toggle('dark', next === 'dark');
+    applyTheme(next);
   };
 
   return (

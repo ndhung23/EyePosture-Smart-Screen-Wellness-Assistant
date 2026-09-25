@@ -11,6 +11,8 @@ export interface PostureEstimationResult {
 
 export class PostureEstimator {
   private baseline: CalibrationData | null = null;
+  private adaptiveBaseline: { pitch: number; roll: number; y: number } | null = null;
+  private adaptiveSamples: { pitch: number; roll: number; y: number }[] = [];
   private emaPitch = new ExponentialMovingAverage(0.2);
   private emaRoll = new ExponentialMovingAverage(0.2);
   private emaYaw = new ExponentialMovingAverage(0.2);
@@ -18,10 +20,16 @@ export class PostureEstimator {
 
   public setCalibration(baseline: CalibrationData): void {
     this.baseline = baseline;
+    this.adaptiveBaseline = null;
+    this.adaptiveSamples = [];
     this.emaPitch.reset();
     this.emaRoll.reset();
     this.emaYaw.reset();
     this.emaScore.reset();
+  }
+
+  public getCalibration(): CalibrationData | null {
+    return this.baseline;
   }
 
   public calculateAngles(landmarks: KeyFacialLandmarks): HeadAngles {
@@ -54,6 +62,19 @@ export class PostureEstimator {
     // Compute center Y of face (average of forehead and chin)
     const currentCenterY = (landmarks.forehead.y + landmarks.chin.y) / 2;
 
+    // Adaptive soft baseline if no manual calibration exists yet
+    if (!this.baseline) {
+      if (this.adaptiveSamples.length < 20) {
+        this.adaptiveSamples.push({ pitch: angles.pitch, roll: angles.roll, y: currentCenterY });
+        if (this.adaptiveSamples.length >= 10) {
+          const avgP = this.adaptiveSamples.reduce((acc, s) => acc + s.pitch, 0) / this.adaptiveSamples.length;
+          const avgR = this.adaptiveSamples.reduce((acc, s) => acc + s.roll, 0) / this.adaptiveSamples.length;
+          const avgY = this.adaptiveSamples.reduce((acc, s) => acc + s.y, 0) / this.adaptiveSamples.length;
+          this.adaptiveBaseline = { pitch: avgP, roll: avgR, y: avgY };
+        }
+      }
+    }
+
     // Baseline adjustments
     let baselinePitch = 0;
     let baselineRoll = 0;
@@ -63,6 +84,10 @@ export class PostureEstimator {
       baselinePitch = this.baseline.baselinePitch;
       baselineRoll = this.baseline.baselineRoll;
       baselineY = this.baseline.baselineY;
+    } else if (this.adaptiveBaseline) {
+      baselinePitch = this.adaptiveBaseline.pitch;
+      baselineRoll = this.adaptiveBaseline.roll;
+      baselineY = this.adaptiveBaseline.y;
     }
 
     // Delta from baseline
@@ -77,25 +102,26 @@ export class PostureEstimator {
     // Penalty scoring
     let penalty = 0;
 
-    // Pitch penalty: looking down > 12 degrees
-    if (deltaPitch > 12 / factor) {
-      penalty += (deltaPitch - 12 / factor) * 2.5 * factor;
+    // Pitch penalty: looking down > 13 degrees
+    if (deltaPitch > 13 / factor) {
+      penalty += (deltaPitch - 13 / factor) * 2.2 * factor;
     }
 
-    // Roll penalty: head tilted sideways > 8 degrees
-    if (deltaRoll > 8 / factor) {
-      penalty += (deltaRoll - 8 / factor) * 3.0 * factor;
+    // Roll penalty: head tilted sideways > 9 degrees
+    if (deltaRoll > 9 / factor) {
+      penalty += (deltaRoll - 9 / factor) * 2.8 * factor;
     }
 
-    // Yaw penalty: turned away from screen > 20 degrees
-    if (deltaYaw > 20 / factor) {
-      penalty += (deltaYaw - 20 / factor) * 1.5 * factor;
+    // Yaw penalty: turned away from screen > 22 degrees
+    if (deltaYaw > 22 / factor) {
+      penalty += (deltaYaw - 22 / factor) * 1.4 * factor;
     }
 
-    // Vertical slouch penalty: dropped down > 0.05 normalized
-    const slouchDetected = verticalDrop > 0.05 / factor;
+    // Vertical slouch penalty: dropped down > 0.06 normalized
+    const slouchThreshold = 0.06 / factor;
+    const slouchDetected = verticalDrop > slouchThreshold;
     if (slouchDetected) {
-      penalty += verticalDrop * 250 * factor;
+      penalty += (verticalDrop - slouchThreshold * 0.3) * 240 * factor;
     }
 
     const rawScore = Math.max(20, Math.min(100, Math.round(100 - penalty)));
@@ -114,5 +140,7 @@ export class PostureEstimator {
     this.emaRoll.reset();
     this.emaYaw.reset();
     this.emaScore.reset();
+    this.adaptiveSamples = [];
+    this.adaptiveBaseline = null;
   }
 }

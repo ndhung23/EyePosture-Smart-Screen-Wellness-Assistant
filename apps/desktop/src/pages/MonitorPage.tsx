@@ -51,7 +51,14 @@ export const MonitorPage: React.FC = () => {
     if (!currentUser && cameraStream) {
       stopCamera();
     }
-  }, [currentUser, cameraStream]);
+  }, [currentUser, cameraStream, stopCamera]);
+
+  // Auto-start camera when entering MonitorPage if logged in and camera not running
+  useEffect(() => {
+    if (currentUser && !cameraStream && !useSimulatedCamera && !cameraError) {
+      startCamera();
+    }
+  }, [currentUser, cameraStream, useSimulatedCamera, cameraError, startCamera]);
 
   // Bind live camera stream to HTMLVideoElement
   useEffect(() => {
@@ -462,6 +469,14 @@ export const MonitorPage: React.FC = () => {
                         <RefreshCw className="w-8 h-8 text-teal-400 animate-spin mx-auto opacity-70" />
                         <h4 className="text-sm font-semibold text-slate-200">{t('monitor.cameraInitializing')}</h4>
                         <p className="text-xs text-slate-400">{t('monitor.cameraInitWait')}</p>
+                        <div className="pt-2">
+                          <button
+                            onClick={() => startCamera(selectedCameraId)}
+                            className="px-3.5 py-1.5 rounded-xl bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs hover:bg-teal-500/30 transition font-medium"
+                          >
+                            Bật Camera
+                          </button>
+                        </div>
                       </>
                     )}
                   </div>

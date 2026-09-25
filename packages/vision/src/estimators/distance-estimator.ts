@@ -43,8 +43,22 @@ export class DistanceEstimator {
     const eyeSpan = this.calculatePointDistance(landmarks.leftEyeOuter, landmarks.rightEyeOuter);
     const faceHeight = this.calculatePointDistance(landmarks.chin, landmarks.forehead);
 
-    // Combined scale metric
-    const currentScale = (ipd * 0.4) + (eyeSpan * 0.3) + (faceHeight * 0.3);
+    // 3. Angle foreshortening compensation (prevents distance jumping when user rotates or tilts head)
+    const dyFace = Math.max(0.01, landmarks.chin.y - landmarks.forehead.y);
+    const dzFace = (landmarks.chin.z - landmarks.forehead.z) * 1.5;
+    const pitchRad = Math.atan2(dzFace, dyFace);
+    const cosPitch = Math.max(0.75, Math.abs(Math.cos(pitchRad)));
+
+    const eyeMidX = (landmarks.leftEyeInner.x + landmarks.rightEyeInner.x) / 2;
+    const rawEyeSpan = Math.max(0.01, landmarks.rightEyeOuter.x - landmarks.leftEyeOuter.x);
+    const yawOffset = (landmarks.noseTip.x - eyeMidX) / rawEyeSpan;
+    const yawRad = (yawOffset * Math.PI) / 2;
+    const cosYaw = Math.max(0.75, Math.abs(Math.cos(yawRad)));
+
+    // Combined scale metric with foreshortening compensation
+    const compensatedEyeSpan = eyeSpan / cosYaw;
+    const compensatedFaceHeight = faceHeight / cosPitch;
+    const currentScale = (ipd * 0.4) + (compensatedEyeSpan * 0.3) + (compensatedFaceHeight * 0.3);
 
     if (!this.baseline || this.baseline.baselineFaceDistanceRatio <= 0) {
       // Default uncalibrated reference: assume normalized scale ~0.185 is standard 60cm

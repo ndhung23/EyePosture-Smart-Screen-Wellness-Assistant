@@ -7,6 +7,7 @@ export class FaceLandmarkerService {
   private isInitializing: boolean = false;
   private initialized: boolean = false;
   private lastTimestamp: number = 0;
+  private lastDetectErrorTime: number = 0;
 
   public static getInstance(): FaceLandmarkerService {
     if (!FaceLandmarkerService.instance) {
@@ -27,25 +28,38 @@ export class FaceLandmarkerService {
     console.log('[FaceLandmarkerService] Initializing MediaPipe FaceLandmarker...');
 
     try {
-      // 1. Resolve Vision Tasks Wasm files
+      // 1. Resolve Vision Tasks Wasm files (local first, CDN fallback)
       let vision;
-      try {
-        const wasmPath = window.location.protocol === 'file:' 
-          ? 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
-          : './wasm';
-        vision = await FilesetResolver.forVisionTasks(wasmPath);
-      } catch (wasmErr) {
-        console.warn('[FaceLandmarkerService] Local wasm failed, falling back to CDN:', wasmErr);
-        vision = await FilesetResolver.forVisionTasks(
-          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
-        );
+      const wasmCandidates = [
+        './wasm',
+        '/wasm',
+        'wasm',
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
+      ];
+
+      for (const wp of wasmCandidates) {
+        try {
+          vision = await FilesetResolver.forVisionTasks(wp);
+          if (vision) {
+            console.log(`[FaceLandmarkerService] Resolved wasm files from: ${wp}`);
+            break;
+          }
+        } catch (wErr) {
+          console.warn(`[FaceLandmarkerService] Wasm candidate ${wp} failed:`, wErr);
+        }
       }
 
-      // 2. Create FaceLandmarker instance (GPU first with CPU fallback)
+      if (!vision) {
+        throw new Error('Could not resolve Vision Tasks wasm files from any source.');
+      }
+
+      // 2. Create FaceLandmarker instance (local model first with CDN fallback, GPU -> CPU)
       const modelCandidates = [
-        window.location.protocol === 'file:' ? null : './models/face_landmarker.task',
+        './models/face_landmarker.task',
+        '/models/face_landmarker.task',
+        'models/face_landmarker.task',
         'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-      ].filter(Boolean) as string[];
+      ];
 
       let created = false;
       for (const modelPath of modelCandidates) {
@@ -65,7 +79,6 @@ export class FaceLandmarkerService {
           console.log(`[FaceLandmarkerService] Loaded model from: ${modelPath} (GPU mode)`);
           break;
         } catch (gpuErr) {
-          console.warn(`[FaceLandmarkerService] GPU init failed for ${modelPath}, trying CPU...`, gpuErr);
           try {
             this.landmarker = await FaceLandmarker.createFromOptions(vision, {
               baseOptions: {
@@ -82,7 +95,7 @@ export class FaceLandmarkerService {
             console.log(`[FaceLandmarkerService] Loaded model from: ${modelPath} (CPU mode)`);
             break;
           } catch (cpuErr) {
-            console.warn(`[FaceLandmarkerService] CPU init also failed for ${modelPath}:`, cpuErr);
+            // Continue to next candidate
           }
         }
       }
@@ -109,6 +122,11 @@ export class FaceLandmarkerService {
   public detect(video: HTMLVideoElement, timestampMs: number = performance.now()): KeyFacialLandmarks | null {
     if (!this.landmarker || !this.initialized) {
       return null;
+    }
+
+    // Auto-resume if video paused with active stream
+    if (video.paused && video.srcObject) {
+      video.play().catch(() => {});
     }
 
     // Ensure video is playing and has valid dimensions
@@ -151,7 +169,10 @@ export class FaceLandmarkerService {
         rightEar: { x: pts[454].x, y: pts[454].y, z: pts[454].z },
       };
     } catch (err) {
-      console.warn('[FaceLandmarkerService] Frame detection failed:', err);
+      if (!this.lastDetectErrorTime || Date.now() - this.lastDetectErrorTime > 5000) {
+        this.lastDetectErrorTime = Date.now();
+        console.warn('[FaceLandmarkerService] Frame detection failed:', err);
+      }
       return null;
     }
   }

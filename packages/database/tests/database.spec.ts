@@ -73,7 +73,7 @@ describe('Database Layer & Repositories', () => {
     const profile = profileRepo.create({ name: 'Jane', isChild: false, isDefault: true });
     const settings = settingsRepo.getSettings(profile.id);
 
-    expect(settings.general.language).toBe('en');
+    expect(settings.general.language).toBe('vi');
     expect(settings.breaks.intervalMinutes).toBe(20);
     expect(settings.distance.thresholdCm).toBe(50);
     expect(settings.security.enabled).toBe(false);

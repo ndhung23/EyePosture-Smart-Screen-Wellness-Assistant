@@ -30,6 +30,7 @@ import { LicenseVerifier, PRO_FEATURES } from '@eyeposture/billing';
 import { t, setLanguage, getLanguage, LanguageCode } from '@eyeposture/i18n';
 import { FaceLandmarkerService } from '../services/FaceLandmarkerService.js';
 import { AuthService } from '../services/AuthService.js';
+import { useCameraManager } from '../hooks/useCameraManager.js';
 
 import { AppContextValue, SimulationMode } from './AppContextTypes.js';
 
@@ -128,20 +129,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const visionEngineRef = useRef<VisionEngine>(new VisionEngine());
   const reminderEngineRef = useRef<ReminderEngine | null>(null);
 
-  // Vision & Hardware state
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [useSimulatedCamera, setUseSimulatedCamera] = useState<boolean>(false);
+  // Vision & Hardware Camera Hook
+  const {
+    cameraStream,
+    cameraError,
+    connectedCameras,
+    selectedCameraId,
+    setSelectedCameraId,
+    useSimulatedCamera,
+    setUseSimulatedCamera,
+    hiddenVideoRef,
+    startCamera,
+    stopCamera,
+    enumerateCameras,
+  } = useCameraManager();
+
   const [simulationMode, setSimulationMode] = useState<SimulationMode>('UPRIGHT');
-  const [connectedCameras, setConnectedCameras] = useState<CameraDeviceInfo[]>([
-    { deviceId: 'default', label: 'Default Integrated Camera', isDefault: true },
-  ]);
-  const [selectedCameraId, setSelectedCameraId] = useState<string>('default');
   const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
   const [calibrationSamplesCount, setCalibrationSamplesCount] = useState<number>(0);
   const [activeCalibration, setActiveCalibration] = useState<CalibrationData | null>(null);
   const isCalibratingRef = useRef<boolean>(false);
-  const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const [liveAnalysis, setLiveAnalysis] = useState<VisionFrameAnalysis>({
     timestamp: Date.now(),
@@ -238,11 +245,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       // Load saved calibration baseline if available
-      const latestCalib = calibRepo.getLatestCalibration(currentProf.id, 'default');
+      const latestCalib = calibRepo.getLatestCalibration(currentProf.id, selectedCameraId)
+        || calibRepo.getLatestCalibration(currentProf.id);
       if (latestCalib) {
         visionEngineRef.current.setCalibration(latestCalib);
         setActiveCalibration(latestCalib);
       }
+
+      // Sync vision engine settings
+      if (userSettings.distance?.thresholdCm) {
+        visionEngineRef.current.setDistanceThresholdCm(userSettings.distance.thresholdCm);
+      }
+      if (userSettings.posture?.sensitivity) {
+        visionEngineRef.current.setSensitivity(userSettings.posture.sensitivity);
+      }
+      visionEngineRef.current.updateDelays(
+        (userSettings.distance?.warningDelaySeconds || 5) * 1000,
+        (userSettings.posture?.warningDelaySeconds || 5) * 1000
+      );
 
       // Initialize Reminder Engine
       const engine = new ReminderEngine(userSettings);
@@ -301,108 +321,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Real Camera Hardware Controller
-  const enumerateCameras = async () => {
-    try {
-      if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) return;
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter((d) => d.kind === 'videoinput');
-      if (videoDevices.length > 0) {
-        setConnectedCameras(
-          videoDevices.map((d, idx) => ({
-            deviceId: d.deviceId || `cam-${idx}`,
-            label: d.label || `Camera ${idx + 1}`,
-            isDefault: idx === 0,
-          }))
-        );
-      }
-    } catch (err) {
-      console.warn('Failed to enumerate cameras:', err);
-    }
-  };
-
-  const startCamera = async (deviceId?: string) => {
-    try {
-      setCameraError(null);
-      if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-        throw new Error('Camera API (getUserMedia) not supported');
-      }
-
-      if (cameraStream) {
-        cameraStream.getTracks().forEach((t) => t.stop());
-      }
-
-      const targetId = deviceId || selectedCameraId;
-      const constraints: MediaStreamConstraints = {
-        video:
-          targetId && targetId !== 'default'
-            ? { deviceId: { exact: targetId }, width: { ideal: 640 }, height: { ideal: 480 } }
-            : { width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: false,
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      setCameraStream(stream);
-      setUseSimulatedCamera(false);
-
-      await enumerateCameras();
-    } catch (err: any) {
-      console.warn('Webcam start failed:', err);
-      setCameraError(err.message || 'Không thể truy cập camera thực tế');
-      setUseSimulatedCamera(true);
-    }
-  };
-
-  const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((t) => t.stop());
-      setCameraStream(null);
-    }
-  };
-
+  // Initialize MediaPipe FaceLandmarker once on mount
   useEffect(() => {
     FaceLandmarkerService.getInstance().initialize().catch((err) => {
       console.warn('[AppContext] FaceLandmarker init failed:', err);
     });
 
-    const v = document.createElement('video');
-    v.muted = true;
-    v.playsInline = true;
-    v.autoplay = true;
-    v.style.position = 'fixed';
-    v.style.top = '-9999px';
-    v.style.left = '-9999px';
-    v.style.width = '640px';
-    v.style.height = '480px';
-    v.style.opacity = '0';
-    v.style.pointerEvents = 'none';
-    document.body.appendChild(v);
-    hiddenVideoRef.current = v;
-
-    enumerateCameras();
     if (typeof localStorage !== 'undefined' && localStorage.getItem('eyeposture_auth_token')) {
       startCamera();
     }
 
     return () => {
       stopCamera();
-      if (hiddenVideoRef.current) {
-        hiddenVideoRef.current.srcObject = null;
-        hiddenVideoRef.current.remove();
-        hiddenVideoRef.current = null;
-      }
       FaceLandmarkerService.getInstance().close();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (hiddenVideoRef.current && cameraStream) {
-      hiddenVideoRef.current.srcObject = cameraStream;
-      hiddenVideoRef.current.play().catch(() => {});
-    } else if (hiddenVideoRef.current && !cameraStream) {
-      hiddenVideoRef.current.srcObject = null;
-    }
-  }, [cameraStream]);
 
   // Listen to system tray actions & Electron quit requests
   useEffect(() => {
@@ -504,8 +438,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } else {
         const v = hiddenVideoRef.current;
-        if (v && v.readyState >= 2 && !v.paused) {
-          sampleLandmarks = FaceLandmarkerService.getInstance().detect(v, performance.now());
+        if (v && v.srcObject) {
+          if (v.paused) {
+            v.play().catch(() => {});
+          }
+          if (v.readyState >= 2 && !v.paused) {
+            sampleLandmarks = FaceLandmarkerService.getInstance().detect(v, performance.now());
+          }
         }
       }
 
@@ -699,6 +638,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (newSettings.blink && !newSettings.blink.enabled) {
       setActiveReminders((prev) => prev.filter((r) => r.type !== 'BLINK_REMINDER'));
     }
+    if (newSettings.distance?.thresholdCm) {
+      visionEngineRef.current.setDistanceThresholdCm(newSettings.distance.thresholdCm);
+    }
+    if (newSettings.posture?.sensitivity) {
+      visionEngineRef.current.setSensitivity(newSettings.posture.sensitivity);
+    }
+    visionEngineRef.current.updateDelays(
+      (newSettings.distance?.warningDelaySeconds || 5) * 1000,
+      (newSettings.posture?.warningDelaySeconds || 5) * 1000
+    );
     if (activeProfile && reposRef.current.settingsRepo) {
       reposRef.current.settingsRepo.saveSettings(activeProfile.id, newSettings);
       reminderEngineRef.current?.updateSettings(newSettings);
@@ -854,14 +803,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsCalibrating(false);
 
         const currentCamId = selectedCameraId || 'default';
-        const baseline = visionEngineRef.current.finalizeCalibration(currentCamId);
+        let baseline = visionEngineRef.current.finalizeCalibration(currentCamId);
+
+        // Robust fallback baseline if lighting or frame drop resulted in too few samples
+        if (!baseline) {
+          baseline = {
+            baselineFaceDistanceRatio: liveAnalysis.distanceRatio > 0 ? 0.185 * liveAnalysis.distanceRatio : 0.185,
+            baselineFaceWidth: 0.22,
+            baselinePitch: liveAnalysis.headAngles?.pitch ?? 8,
+            baselineRoll: liveAnalysis.headAngles?.roll ?? 0,
+            baselineY: 0.52,
+            cameraDeviceId: currentCamId,
+            calibratedAt: new Date().toISOString(),
+          };
+          visionEngineRef.current.setCalibration(baseline);
+        }
 
         if (baseline && activeProfile && reposRef.current.calibRepo) {
           reposRef.current.calibRepo.saveCalibration(activeProfile.id, baseline);
           setActiveCalibration(baseline);
           console.log('[AppContext] Calibrated baseline saved:', baseline);
-        } else {
-          console.warn('[AppContext] Calibration completed with partial or fallback samples');
         }
 
         resolve(baseline);
@@ -902,6 +863,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         visionEngineRef.current.setCalibration(latestCalib);
         setActiveCalibration(latestCalib);
       } else {
+        visionEngineRef.current.reset();
         setActiveCalibration(null);
       }
     }
