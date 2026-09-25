@@ -21,12 +21,27 @@ export interface AppContextValue {
   theme: AppTheme;
   effectiveTheme: 'dark' | 'light';
   switchTheme: (theme: AppTheme) => void;
-  currentUser: { id: string; email: string; name: string; role?: string } | null;
+  currentUser: {
+    id: string;
+    email: string;
+    name: string;
+    role?: string;
+    createdAt?: string;
+    subscription?: {
+      tier: SubscriptionTier;
+      status: string;
+      expiresAt: number | null;
+    };
+  } | null;
   authToken: string | null;
   authModalOpen: boolean;
   authModalMode: 'login' | 'register';
   openAuthModal: (mode?: 'login' | 'register') => void;
   closeAuthModal: () => void;
+  isProfileModalOpen: boolean;
+  openProfileModal: () => void;
+  closeProfileModal: () => void;
+  updateUserProfile: (data: { name?: string; currentPassword?: string; newPassword?: string }) => Promise<{ success: boolean; message?: string; error?: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   registerUser: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;

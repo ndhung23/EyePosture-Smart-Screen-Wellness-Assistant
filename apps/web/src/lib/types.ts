@@ -42,3 +42,19 @@ export interface VoucherItem {
   usageCount: number;
   maxUsage?: number | null;
 }
+
+export interface SubscriptionPlan {
+  id: string;
+  tier: 'PRO' | 'FAMILY';
+  interval: 'month' | 'year' | 'lifetime';
+  nameVi: string;
+  nameEn: string;
+  descriptionVi?: string;
+  descriptionEn?: string;
+  priceVnd: number;
+  priceUsd: number;
+  originalPriceVnd?: number;
+  isActive: boolean;
+  sortOrder: number;
+  updatedAt?: string;
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, Sparkles, Tag, ArrowRight, ShieldCheck, QrCode, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
@@ -15,9 +15,31 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
   const [checkingVoucher, setCheckingVoucher] = useState(false);
   const [checkoutModal, setCheckoutModal] = useState<{ tier: string; amount: number; orderCode: string; qrUrl: string } | null>(null);
 
+  const [dbPlans, setDbPlans] = useState<Record<string, number>>({
+    PRO_month: 19000,
+    PRO_year: 199000,
+    FAMILY_month: 49000,
+    FAMILY_year: 299000,
+  });
+
+  useEffect(() => {
+    fetch('/api/pricing')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.plans && Array.isArray(data.plans)) {
+          const map: Record<string, number> = {};
+          for (const p of data.plans) {
+            map[`${p.tier}_${p.interval}`] = p.priceVnd;
+          }
+          setDbPlans((prev) => ({ ...prev, ...map }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const basePrices = {
-    PRO: interval === 'year' ? 590000 : 59000,
-    FAMILY: interval === 'year' ? 990000 : 99000,
+    PRO: dbPlans[`PRO_${interval}`] || (interval === 'year' ? 199000 : 19000),
+    FAMILY: dbPlans[`FAMILY_${interval}`] || (interval === 'year' ? 299000 : 49000),
   };
 
   const getDiscountedPrice = (amount: number) => {

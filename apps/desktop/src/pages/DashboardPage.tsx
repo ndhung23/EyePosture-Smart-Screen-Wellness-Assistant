@@ -10,6 +10,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   ChevronRight,
+  Crown,
+  Sparkles,
+  Lock,
+  User,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
@@ -32,7 +36,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     hydrationProgress,
     screenTimeMinutes,
     screenTimeLimitMinutes,
+    currentUser,
+    openAuthModal,
+    subscriptionTier,
+    language,
+    effectiveTheme,
   } = useApp();
+
+  const isVi = language === 'vi';
+  const isLight = effectiveTheme === 'light';
+  const tier = (currentUser?.subscription?.tier || subscriptionTier || 'FREE').toUpperCase();
+
+  const getExpiryBadgeText = () => {
+    const expiresAt = currentUser?.subscription?.expiresAt;
+    if (!expiresAt || expiresAt > Date.now() + 5 * 365 * 86400 * 1000) {
+      return isVi ? 'Vĩnh viễn' : 'Lifetime';
+    }
+    const daysLeft = Math.max(0, Math.ceil((expiresAt - Date.now()) / (1000 * 60 * 60 * 24)));
+    return isVi ? `Còn ${daysLeft} ngày` : `${daysLeft}d left`;
+  };
 
   const [isCalibOpen, setIsCalibOpen] = useState<boolean>(false);
 
@@ -45,6 +67,164 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   return (
     <div className="p-8 space-y-8 max-w-6xl mx-auto pb-16">
+      {/* Account Tier Banner */}
+      {!currentUser ? (
+        <div
+          className={`p-4 rounded-2xl border flex items-center justify-between shadow-lg transition-all ${
+            isLight
+              ? 'bg-gradient-to-r from-teal-50 via-cyan-50/70 to-slate-50 border-teal-200'
+              : 'bg-gradient-to-r from-slate-900 via-teal-950/40 to-slate-900 border-teal-500/30'
+          }`}
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-500 shrink-0">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className={`font-bold text-sm ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                  {isVi ? 'Chế độ Khách (Chưa đăng nhập)' : 'Guest Mode (Not Signed In)'}
+                </span>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded font-semibold border ${
+                    isLight
+                      ? 'bg-slate-200 text-slate-700 border-slate-300'
+                      : 'bg-slate-800 text-slate-400 border-slate-700'
+                  }`}
+                >
+                  {isVi ? 'GIỚI HẠN TÍNH NĂNG' : 'LIMITED ACCESS'}
+                </span>
+              </div>
+              <p className={`text-xs mt-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                {isVi
+                  ? 'Hãy đăng nhập để đồng bộ lịch sử thói quen tư thế và kích hoạt đầy đủ quyền lợi gói bản quyền trên máy tính này.'
+                  : 'Please sign in to sync your posture habits history and activate your full license privileges on this computer.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => openAuthModal('login')}
+            className="px-4 py-2 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-md shadow-teal-500/20 active:scale-95 transition-all whitespace-nowrap ml-3"
+          >
+            {isVi ? 'Đăng nhập ngay' : 'Sign In Now'}
+          </button>
+        </div>
+      ) : tier === 'FAMILY' ? (
+        <div
+          className={`p-4 rounded-2xl border flex items-center justify-between shadow-xl transition-all ${
+            isLight
+              ? 'bg-gradient-to-r from-purple-100/90 via-fuchsia-50/70 to-pink-50 border-purple-200 shadow-purple-500/5'
+              : 'bg-gradient-to-r from-purple-950/60 via-slate-900 to-purple-950/40 border-purple-500/40 shadow-purple-500/10'
+          }`}
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center text-white shadow-md shadow-purple-500/30 shrink-0">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className={`font-black text-sm ${isLight ? 'text-purple-950 font-black' : 'text-purple-200'}`}>
+                  {isVi ? 'GÓI FAMILY ELITE CAO CẤP' : 'FAMILY ELITE PLAN'}
+                </span>
+                <span
+                  className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                    isLight
+                      ? 'bg-purple-200/80 text-purple-900 border-purple-300'
+                      : 'bg-purple-500/30 text-purple-200 border-purple-400/40'
+                  }`}
+                >
+                  VIP ACTIVE • {getExpiryBadgeText()}
+                </span>
+              </div>
+              <p className={`text-xs mt-0.5 ${isLight ? 'text-purple-900/80 font-medium' : 'text-slate-300'}`}>
+                {isVi
+                  ? 'Toàn bộ tính năng AI 3D, đo khoảng cách thời gian thực, cảnh báo mỏi mắt và kết nối 5 thiết bị đã sẵn sàng hoạt động.'
+                  : 'Full 3D AI telemetry, real-time distance alerts, eye fatigue monitoring and 5 device connections are active.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : tier === 'PRO' ? (
+        <div
+          className={`p-4 rounded-2xl border flex items-center justify-between shadow-xl transition-all ${
+            isLight
+              ? 'bg-gradient-to-r from-amber-100/90 via-yellow-50/70 to-orange-50 border-amber-200 shadow-amber-500/5'
+              : 'bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/40 border-amber-500/40 shadow-amber-500/10'
+          }`}
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 to-yellow-500 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/30 shrink-0">
+              <Crown className="w-5 h-5 font-bold" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className={`font-black text-sm ${isLight ? 'text-amber-950 font-black' : 'text-amber-200'}`}>
+                  {isVi ? 'GÓI PRO VIP CHUYÊN NGHIỆP' : 'PRO VIP PLAN'}
+                </span>
+                <span
+                  className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                    isLight
+                      ? 'bg-amber-200/80 text-amber-900 border-amber-300'
+                      : 'bg-amber-500/30 text-amber-200 border-amber-400/40'
+                  }`}
+                >
+                  VIP ACTIVE • {getExpiryBadgeText()}
+                </span>
+              </div>
+              <p className={`text-xs mt-0.5 ${isLight ? 'text-amber-900/80 font-medium' : 'text-slate-300'}`}>
+                {isVi
+                  ? 'Đã mở khóa toàn bộ Phân tích tư thế 3D AI, Cảnh báo khoảng cách thông minh và Báo cáo chuyên sâu.'
+                  : 'Full 3D AI posture telemetry, intelligent distance alerts, and in-depth wellness analytics are unlocked.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={`p-4 rounded-2xl border flex items-center justify-between shadow-md transition-all ${
+            isLight
+              ? 'bg-slate-100 border-slate-200'
+              : 'bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border-slate-700/80'
+          }`}
+        >
+          <div className="flex items-center gap-3.5">
+            <div
+              className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${
+                isLight ? 'bg-slate-200 border-slate-300 text-slate-600' : 'bg-slate-800 border-slate-700 text-slate-400'
+              }`}
+            >
+              <User className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className={`font-bold text-sm ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
+                  {isVi ? 'Gói Miễn Phí (Free Edition)' : 'Free Edition'}
+                </span>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded border ${
+                    isLight ? 'bg-slate-200 text-slate-600 border-slate-300' : 'bg-slate-800 text-slate-400 border-slate-700'
+                  }`}
+                >
+                  {isVi ? 'TÍNH NĂNG CƠ BẢN' : 'BASIC FEATURES'}
+                </span>
+              </div>
+              <p className={`text-xs mt-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                {isVi
+                  ? 'Nâng cấp lên gói PRO hoặc FAMILY để mở khóa AI đo khoảng cách 3D, nhận diện mỏi mắt và báo cáo nâng cao.'
+                  : 'Upgrade to PRO or FAMILY to unlock 3D distance AI, eye strain detection, and advanced ergonomics.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigate('subscription')}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-all whitespace-nowrap ml-3"
+          >
+            <Crown className="w-4 h-4" />
+            <span>{isVi ? 'Nâng cấp PRO' : 'Upgrade to PRO'}</span>
+          </button>
+        </div>
+      )}
+
       {/* Top Status Overview Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Screen Wellness Score Card */}
@@ -72,7 +252,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
         {/* Eye-to-Screen Distance Card */}
         <div
-          onClick={() => onNavigate('monitor')}
+          onClick={() => {
+            if (!currentUser) openAuthModal('login');
+            else onNavigate('monitor');
+          }}
           className="glass-card glass-card-interactive p-6 flex items-center justify-between"
         >
           <div className="space-y-1">
@@ -82,24 +265,40 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <div className="flex items-baseline gap-2">
               <span
                 className={`font-display text-2xl font-bold ${
-                  liveAnalysis.distanceState === 'TOO_CLOSE' ? 'text-rose-400' : 'text-emerald-400'
+                  !currentUser
+                    ? 'text-slate-400'
+                    : liveAnalysis.distanceState === 'TOO_CLOSE'
+                    ? 'text-rose-400'
+                    : 'text-emerald-400'
                 }`}
               >
-                {liveAnalysis.distanceState === 'TOO_CLOSE' ? t('dashboard.tooClose') : t('dashboard.statusGood')}
+                {!currentUser
+                  ? isVi
+                    ? 'Chưa kích hoạt'
+                    : 'Inactive'
+                  : liveAnalysis.distanceState === 'TOO_CLOSE'
+                  ? t('dashboard.tooClose')
+                  : t('dashboard.statusGood')}
               </span>
               <span className="text-xs text-slate-400 font-mono">
-                {liveAnalysis.faceDetected ? `~${liveAnalysis.distanceEstimateCm} cm` : '-- cm'}
+                {currentUser && liveAnalysis.faceDetected ? `~${liveAnalysis.distanceEstimateCm} cm` : '-- cm'}
               </span>
             </div>
             <p className="text-xs text-slate-400 pt-1">
-              {liveAnalysis.distanceState === 'TOO_CLOSE'
+              {!currentUser
+                ? isVi
+                  ? 'Đăng nhập để khởi động camera đo khoảng cách'
+                  : 'Sign in to activate camera distance tracking'
+                : liveAnalysis.distanceState === 'TOO_CLOSE'
                 ? t('dashboard.leanBackHint')
                 : t('dashboard.ergonomicDistance')}
             </p>
           </div>
           <div
             className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${
-              liveAnalysis.distanceState === 'TOO_CLOSE'
+              !currentUser
+                ? 'bg-slate-800/40 border-slate-700/60 text-slate-500'
+                : liveAnalysis.distanceState === 'TOO_CLOSE'
                 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
                 : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
             }`}
@@ -110,7 +309,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
         {/* Sitting Posture Status Card */}
         <div
-          onClick={() => onNavigate('monitor')}
+          onClick={() => {
+            if (!currentUser) openAuthModal('login');
+            else onNavigate('monitor');
+          }}
           className="glass-card glass-card-interactive p-6 flex items-center justify-between"
         >
           <div className="space-y-1">
@@ -120,28 +322,42 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <div className="flex items-baseline gap-2">
               <span
                 className={`font-display text-2xl font-bold ${
-                  liveAnalysis.postureState === 'POOR'
+                  !currentUser
+                    ? 'text-slate-400'
+                    : liveAnalysis.postureState === 'POOR'
                     ? 'text-amber-400'
                     : liveAnalysis.postureState === 'ACCEPTABLE'
                     ? 'text-cyan-400'
                     : 'text-emerald-400'
                 }`}
               >
-                {liveAnalysis.postureState === 'POOR'
+                {!currentUser
+                  ? isVi
+                    ? 'Chưa kích hoạt'
+                    : 'Inactive'
+                  : liveAnalysis.postureState === 'POOR'
                   ? t('dashboard.statusPoor')
                   : liveAnalysis.postureState === 'ACCEPTABLE'
                   ? t('dashboard.statusAcceptable')
                   : t('dashboard.statusGood')}
               </span>
-              <span className="text-xs text-slate-400 font-mono">{liveAnalysis.postureScore}/100</span>
+              <span className="text-xs text-slate-400 font-mono">{currentUser ? `${liveAnalysis.postureScore}/100` : '--/100'}</span>
             </div>
             <p className="text-xs text-slate-400 pt-1">
-              {liveAnalysis.slouchDetected ? t('dashboard.slouchWarning') : t('dashboard.alignedGood')}
+              {!currentUser
+                ? isVi
+                  ? 'Đăng nhập để nhận diện tư thế thời gian thực'
+                  : 'Sign in for real-time posture analysis'
+                : liveAnalysis.slouchDetected
+                ? t('dashboard.slouchWarning')
+                : t('dashboard.alignedGood')}
             </p>
           </div>
           <div
             className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${
-              liveAnalysis.postureState === 'POOR'
+              !currentUser
+                ? 'bg-slate-800/40 border-slate-700/60 text-slate-500'
+                : liveAnalysis.postureState === 'POOR'
                 ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
                 : 'bg-teal-500/10 border-teal-500/30 text-teal-400'
             }`}
@@ -318,18 +534,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <h3 className="text-sm font-semibold text-slate-300 mb-4">{t('dashboard.quickActionsTitle')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button
-            onClick={toggleMonitoring}
+            onClick={() => {
+              if (!currentUser) openAuthModal('login');
+              else toggleMonitoring();
+            }}
             className="p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 flex flex-col items-center gap-2 transition-all active:scale-95"
           >
             <div
               className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                isMonitoring ? 'bg-teal-500/20 text-teal-400' : 'bg-rose-500/20 text-rose-400'
+                isMonitoring && currentUser ? 'bg-teal-500/20 text-teal-400' : 'bg-rose-500/20 text-rose-400'
               }`}
             >
               <Eye className="w-5 h-5" />
             </div>
             <span className="text-xs font-semibold text-slate-200">
-              {isMonitoring ? t('dashboard.quickActions.pause') : t('dashboard.quickActions.resume')}
+              {!currentUser
+                ? isVi
+                  ? 'Đăng nhập để bật'
+                  : 'Sign in to enable'
+                : isMonitoring
+                ? t('dashboard.quickActions.pause')
+                : t('dashboard.quickActions.resume')}
             </span>
           </button>
 

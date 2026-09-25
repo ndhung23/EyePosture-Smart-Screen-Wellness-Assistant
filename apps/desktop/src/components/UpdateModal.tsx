@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Download, RefreshCw, X, ExternalLink, AlertCircle, ArrowUpCircle } from 'lucide-react';
+import { Sparkles, Download, RefreshCw, X, AlertCircle, ArrowUpCircle } from 'lucide-react';
 import { UpdateService, VersionInfo } from '../services/UpdateService.js';
+import { useApp } from '../context/AppContext.js';
 
 interface UpdateModalProps {
   isOpen?: boolean;
@@ -13,6 +14,10 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
   onClose: controlledOnClose,
   autoCheckOnMount = true,
 }) => {
+  const { language, effectiveTheme } = useApp();
+  const isVi = language === 'vi';
+  const isLight = effectiveTheme === 'light';
+
   const [internalOpen, setInternalOpen] = useState(false);
   const [checking, setChecking] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -46,13 +51,17 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
         if (res.error) {
           setErrorMessage(res.error);
         } else {
-          setErrorMessage('Bạn đang sử dụng phiên bản mới nhất (' + res.currentVersion + ')');
+          setErrorMessage(
+            isVi
+              ? `Bạn đang sử dụng phiên bản mới nhất (v${res.currentVersion})`
+              : `You are running the latest version (v${res.currentVersion})`
+          );
         }
         setInternalOpen(true);
       }
     } catch (e: any) {
       if (!quiet) {
-        setErrorMessage(e.message || 'Lỗi kiểm tra cập nhật');
+        setErrorMessage(e.message || (isVi ? 'Lỗi kiểm tra cập nhật' : 'Failed to check updates'));
         setInternalOpen(true);
       }
     } finally {
@@ -62,7 +71,6 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
 
   useEffect(() => {
     if (autoCheckOnMount) {
-      // Delay auto-check 3.5 seconds after app starts so startup is fast
       const timer = setTimeout(() => {
         runCheck(true);
       }, 3500);
@@ -86,49 +94,77 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
     setDownloading(true);
     setDownloadProgress(0);
     setErrorMessage(null);
-    setStatusText('Đang tải bản cập nhật... 0%');
+    setStatusText(isVi ? 'Đang tải bản cập nhật... 0%' : 'Downloading update... 0%');
 
     const res = await UpdateService.downloadAndInstall(versionInfo.downloadUrl, (progress) => {
       setDownloadProgress(progress.percent);
-      setStatusText(`Đang tải bản cập nhật... ${progress.percent}%`);
+      setStatusText(
+        isVi
+          ? `Đang tải bản cập nhật... ${progress.percent}%`
+          : `Downloading update... ${progress.percent}%`
+      );
       if (progress.percent >= 100) {
-        setStatusText('Tải hoàn tất! Đang khởi động bộ cài...');
+        setStatusText(
+          isVi
+            ? 'Tải hoàn tất! Đang khởi động bộ cài...'
+            : 'Download complete! Launching installer...'
+        );
       }
     });
 
     if (!res.success) {
       setDownloading(false);
-      setErrorMessage(res.error || 'Tải bản cập nhật thất bại. Vui lòng thử tải qua trình duyệt.');
-    }
-  };
-
-  const handleOpenBrowser = () => {
-    if (versionInfo?.downloadUrl) {
-      UpdateService.openInBrowser(versionInfo.downloadUrl);
+      setErrorMessage(
+        res.error ||
+          (isVi
+            ? 'Tải bản cập nhật thất bại. Vui lòng kiểm tra kết nối mạng và thử lại sau.'
+            : 'Update download failed. Please check network connection and try again.')
+      );
     }
   };
 
   if (!isOpen) return null;
 
-  const hasNewer = versionInfo && UpdateService.compareVersions(versionInfo.latestVersion, currentVersion) > 0;
+  const hasNewer =
+    versionInfo && UpdateService.compareVersions(versionInfo.latestVersion, currentVersion) > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden text-slate-100 flex flex-col">
+      <div
+        className={`relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col border ${
+          isLight
+            ? 'bg-white border-slate-200 text-slate-800'
+            : 'bg-slate-900/95 border-slate-700/80 text-slate-100'
+        }`}
+      >
         {/* Header Background Glow */}
         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-teal-500/20 via-cyan-500/10 to-transparent pointer-events-none" />
 
         {/* Top bar */}
-        <div className="relative flex items-center justify-between p-6 pb-4 border-b border-slate-800">
+        <div
+          className={`relative flex items-center justify-between p-6 pb-4 border-b ${
+            isLight ? 'border-slate-100' : 'border-slate-800'
+          }`}
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-teal-500/20 text-slate-950">
               <Sparkles className="w-5 h-5 font-bold" />
             </div>
             <div>
-              <h3 className="font-display font-bold text-lg text-slate-100">
-                {hasNewer ? 'Có Bản Cập Nhật Mới!' : 'Kiểm Tra Bản Cập Nhật'}
+              <h3
+                className={`font-display font-bold text-lg ${
+                  isLight ? 'text-slate-900' : 'text-slate-100'
+                }`}
+              >
+                {hasNewer
+                  ? isVi
+                    ? 'Có Bản Cập Nhật Mới!'
+                    : 'New Update Available!'
+                  : isVi
+                  ? 'Kiểm Tra Bản Cập Nhật'
+                  : 'Check for Updates'}
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                 EyePosture Smart Screen Wellness Assistant
               </p>
             </div>
@@ -136,7 +172,11 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           {!downloading && (
             <button
               onClick={handleClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-colors"
+              className={`p-1.5 rounded-lg transition-colors ${
+                isLight
+                  ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/80'
+              }`}
             >
               <X className="w-5 h-5" />
             </button>
@@ -147,23 +187,41 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
         <div className="relative p-6 space-y-5">
           {checking ? (
             <div className="flex flex-col items-center justify-center py-8 space-y-3">
-              <RefreshCw className="w-8 h-8 text-teal-400 animate-spin" />
-              <p className="text-sm text-slate-300">Đang kiểm tra máy chủ...</p>
+              <RefreshCw className="w-8 h-8 text-teal-500 animate-spin" />
+              <p className={`text-sm ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                {isVi ? 'Đang kiểm tra máy chủ...' : 'Checking server for updates...'}
+              </p>
             </div>
           ) : hasNewer ? (
             <>
               {/* Version Comparison Pill */}
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60">
+              <div
+                className={`flex items-center justify-between p-3.5 rounded-xl border ${
+                  isLight
+                    ? 'bg-slate-50 border-slate-200'
+                    : 'bg-slate-800/60 border-slate-700/60'
+                }`}
+              >
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-slate-400">Hiện tại:</span>
-                  <span className="px-2 py-0.5 rounded bg-slate-700 font-mono text-slate-300 font-semibold">
+                  <span className={isLight ? 'text-slate-500' : 'text-slate-400'}>
+                    {isVi ? 'Hiện tại:' : 'Current:'}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded font-mono font-semibold ${
+                      isLight
+                        ? 'bg-slate-200 text-slate-800'
+                        : 'bg-slate-700 text-slate-300'
+                    }`}
+                  >
                     v{currentVersion}
                   </span>
                 </div>
-                <ArrowUpCircle className="w-4 h-4 text-teal-400" />
+                <ArrowUpCircle className="w-4 h-4 text-teal-500" />
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-slate-400">Mới nhất:</span>
-                  <span className="px-2.5 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40 font-mono font-bold">
+                  <span className={isLight ? 'text-slate-500' : 'text-slate-400'}>
+                    {isVi ? 'Mới nhất:' : 'Latest:'}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded bg-teal-500/20 text-teal-600 font-mono font-bold border border-teal-500/40">
                     v{versionInfo?.latestVersion}
                   </span>
                 </div>
@@ -171,51 +229,96 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
 
               {/* Release Notes */}
               <div className="space-y-2">
-                <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                  Nội dung cập nhật:
+                <span
+                  className={`text-xs font-semibold uppercase tracking-wider ${
+                    isLight ? 'text-slate-700' : 'text-slate-300'
+                  }`}
+                >
+                  {isVi ? 'Nội dung cập nhật:' : 'Release Notes:'}
                 </span>
-                <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-300 whitespace-pre-line leading-relaxed max-h-40 overflow-y-auto">
+                <div
+                  className={`p-3.5 rounded-xl border text-xs whitespace-pre-line leading-relaxed max-h-40 overflow-y-auto ${
+                    isLight
+                      ? 'bg-slate-50 border-slate-200 text-slate-700'
+                      : 'bg-slate-950/60 border-slate-800 text-slate-300'
+                  }`}
+                >
                   {versionInfo?.releaseNotes}
                 </div>
               </div>
 
               {/* Download Progress Bar */}
               {downloading && (
-                <div className="space-y-2 p-3.5 rounded-xl bg-slate-800/40 border border-teal-500/30">
+                <div
+                  className={`space-y-2 p-3.5 rounded-xl border ${
+                    isLight
+                      ? 'bg-teal-50/60 border-teal-200'
+                      : 'bg-slate-800/40 border-teal-500/30'
+                  }`}
+                >
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-teal-300 font-medium">{statusText}</span>
-                    <span className="font-mono text-slate-300">{downloadProgress}%</span>
+                    <span className="text-teal-600 font-semibold">{statusText}</span>
+                    <span
+                      className={`font-mono ${
+                        isLight ? 'text-slate-700' : 'text-slate-300'
+                      }`}
+                    >
+                      {downloadProgress}%
+                    </span>
                   </div>
-                  <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className={`w-full h-2.5 rounded-full overflow-hidden ${
+                      isLight ? 'bg-slate-200' : 'bg-slate-800'
+                    }`}
+                  >
                     <div
                       className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 transition-all duration-300 ease-out"
                       style={{ width: `${downloadProgress}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-slate-400 text-center">
-                    Ứng dụng sẽ tự động chạy bộ cài đặt và khởi động lại sau khi tải xong.
+                  <p
+                    className={`text-[11px] text-center ${
+                      isLight ? 'text-slate-500' : 'text-slate-400'
+                    }`}
+                  >
+                    {isVi
+                      ? 'Ứng dụng sẽ tự động chạy bộ cài đặt và khởi động lại sau khi tải xong.'
+                      : 'The application will automatically launch the installer once downloaded.'}
                   </p>
                 </div>
               )}
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-6 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
+              <div className="w-12 h-12 rounded-full bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-500">
                 <Sparkles className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-semibold text-sm text-slate-200">
-                  Bạn đang sử dụng phiên bản mới nhất!
+                <h4
+                  className={`font-semibold text-sm ${
+                    isLight ? 'text-slate-800' : 'text-slate-200'
+                  }`}
+                >
+                  {isVi
+                    ? 'Bạn đang sử dụng phiên bản mới nhất!'
+                    : 'You are on the latest version!'}
                 </h4>
-                <p className="text-xs text-slate-400 mt-1">
-                  Phiên bản hiện tại: <span className="font-mono text-teal-300 font-bold">v{currentVersion}</span>
+                <p
+                  className={`text-xs mt-1 ${
+                    isLight ? 'text-slate-500' : 'text-slate-400'
+                  }`}
+                >
+                  {isVi ? 'Phiên bản hiện tại:' : 'Current version:'}{' '}
+                  <span className="font-mono text-teal-600 font-bold">
+                    v{currentVersion}
+                  </span>
                 </p>
               </div>
             </div>
           )}
 
           {errorMessage && (
-            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{errorMessage}</span>
             </div>
@@ -223,59 +326,57 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 px-6 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between gap-3">
+        <div
+          className={`p-4 px-6 border-t flex items-center justify-end gap-3 ${
+            isLight ? 'bg-slate-50/90 border-slate-100' : 'bg-slate-900/90 border-slate-800'
+          }`}
+        >
           {hasNewer ? (
-            <>
-              <button
-                type="button"
-                onClick={handleOpenBrowser}
-                disabled={downloading}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors disabled:opacity-50"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Tải qua web</span>
-              </button>
-
-              <div className="flex items-center gap-2">
-                {!downloading && (
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
-                  >
-                    Để sau
-                  </button>
-                )}
+            <div className="flex items-center gap-3">
+              {!downloading && (
                 <button
                   type="button"
-                  onClick={handleStartUpdate}
-                  disabled={downloading}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 active:scale-95 transition-all disabled:opacity-60"
+                  onClick={handleClose}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                    isLight
+                      ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
                 >
-                  {downloading ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Đang cập nhật...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4" />
-                      <span>Cập nhật ngay</span>
-                    </>
-                  )}
+                  {isVi ? 'Để sau' : 'Later'}
                 </button>
-              </div>
-            </>
-          ) : (
-            <div className="w-full flex justify-end">
+              )}
               <button
                 type="button"
-                onClick={handleClose}
-                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors"
+                onClick={handleStartUpdate}
+                disabled={downloading}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/20 active:scale-95 transition-all disabled:opacity-60"
               >
-                Đóng
+                {downloading ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>{isVi ? 'Đang cập nhật...' : 'Updating...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>{isVi ? 'Cập nhật ngay' : 'Update Now'}</span>
+                  </>
+                )}
               </button>
             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleClose}
+              className={`px-5 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                isLight
+                  ? 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+              }`}
+            >
+              {isVi ? 'Đóng' : 'Close'}
+            </button>
           )}
         </div>
       </div>

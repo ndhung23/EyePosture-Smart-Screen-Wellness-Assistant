@@ -8,13 +8,14 @@ import { AdminStats } from '@/components/admin/admin-stats';
 import { UsersTable } from '@/components/admin/users-table';
 import { DevicesTable } from '@/components/admin/devices-table';
 import { VoucherManager } from '@/components/admin/voucher-manager';
+import { PricingManager } from '@/components/admin/pricing-manager';
 import { UserProfile, DeviceItem, VoucherItem, SubscriptionTier } from '@/lib/types';
-import { Users, Laptop, Ticket, Lock, RefreshCw } from 'lucide-react';
+import { Users, Laptop, Ticket, Lock, RefreshCw, CreditCard } from 'lucide-react';
 
 export default function AdminPage() {
   const { user, login, isAdmin } = useAuth();
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'USERS' | 'DEVICES' | 'VOUCHERS'>('USERS');
+  const [activeTab, setActiveTab] = useState<'USERS' | 'DEVICES' | 'VOUCHERS' | 'PLANS'>('USERS');
 
   // Admin login form states if not logged in as admin
   const [adminEmail, setAdminEmail] = useState('');
@@ -281,6 +282,16 @@ export default function AdminPage() {
               <Ticket className="w-4 h-4" />
               <span>{t('admin_vouchers_tab')} ({vouchers.length})</span>
             </button>
+            <button
+              onClick={() => setActiveTab('PLANS')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${activeTab === 'PLANS'
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'text-slate-400 light:text-slate-700 hover:text-white'
+                }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Gói & Bảng giá</span>
+            </button>
           </div>
 
           <button
@@ -321,6 +332,8 @@ export default function AdminPage() {
                 onDeleteVoucher={handleDeleteVoucher}
               />
             )}
+
+            {activeTab === 'PLANS' && <PricingManager />}
           </div>
         )}
       </main>

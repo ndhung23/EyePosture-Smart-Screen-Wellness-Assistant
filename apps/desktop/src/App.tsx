@@ -7,6 +7,7 @@ import { PasswordPromptModal } from './components/PasswordPromptModal.js';
 import { AuthModal } from './components/AuthModal.js';
 import { PerformancePanel } from './components/PerformancePanel.js';
 import { UpdateModal } from './components/UpdateModal.js';
+import { AccountProfileModal } from './components/AccountProfileModal.js';
 
 import { DashboardPage } from './pages/DashboardPage.js';
 import { MonitorPage } from './pages/MonitorPage.js';
@@ -20,6 +21,16 @@ import { PrivacyPage } from './pages/PrivacyPage.js';
 
 const MainContent: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<NavPage>('dashboard');
+
+  React.useEffect(() => {
+    const handleNavigate = (e: any) => {
+      if (e.detail) {
+        setCurrentPage(e.detail as NavPage);
+      }
+    };
+    window.addEventListener('eyeposture:navigate', handleNavigate);
+    return () => window.removeEventListener('eyeposture:navigate', handleNavigate);
+  }, []);
 
   React.useEffect(() => {
     try {
@@ -93,6 +104,7 @@ const MainContent: React.FC = () => {
       <AuthModal />
       <PerformancePanel />
       <UpdateModal autoCheckOnMount={true} />
+      <AccountProfileModal onNavigateToSubscription={() => setCurrentPage('subscription')} />
     </div>
   );
 };

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Users, UserPlus, Shield, Check, Trash2, Baby, User } from 'lucide-react';
+import { Users, UserPlus, Shield, Check, Trash2, Baby, User, Sparkles, Lock } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
 
 export const ProfilesPage: React.FC = () => {
-  const { profiles, activeProfile, switchProfile, createProfile, deleteProfile } = useApp();
+  const { profiles, activeProfile, switchProfile, createProfile, deleteProfile, subscriptionTier, currentUser, openAuthModal } = useApp();
 
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [newName, setNewName] = useState<string>('');
@@ -13,6 +13,10 @@ export const ProfilesPage: React.FC = () => {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
+    if (profiles.length >= 1 && subscriptionTier !== 'FAMILY') {
+      window.dispatchEvent(new CustomEvent('eyeposture:navigate', { detail: 'subscription' }));
+      return;
+    }
     createProfile(newName.trim(), isChild);
     setNewName('');
     setIsChild(false);
@@ -30,13 +34,49 @@ export const ProfilesPage: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => setIsCreating(true)}
+          onClick={() => {
+            if (profiles.length >= 1 && subscriptionTier !== 'FAMILY') {
+              window.dispatchEvent(new CustomEvent('eyeposture:navigate', { detail: 'subscription' }));
+            } else {
+              setIsCreating(true);
+            }
+          }}
           className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition-all"
         >
-          <UserPlus className="w-4 h-4" />
-          <span>{t('profiles.createProfile')}</span>
+          {profiles.length >= 1 && subscriptionTier !== 'FAMILY' ? <Lock className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+          <span>{profiles.length >= 1 && subscriptionTier !== 'FAMILY' ? 'Thêm hồ sơ (Gói Family)' : t('profiles.createProfile')}</span>
         </button>
       </div>
+
+      {/* Family Tier Gating Banner */}
+      {subscriptionTier !== 'FAMILY' && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-slate-900 to-purple-950/30 border border-purple-500/30 flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-purple-200 flex items-center gap-1.5">
+                <span>Tính năng Quản lý Đa Hồ Sơ Gia Đình</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">GÓI FAMILY</span>
+              </p>
+              <p className="text-[11px] text-slate-300 mt-0.5">
+                Gói Family cho phép tạo đến 4-5 hồ sơ độc lập cho người lớn và con nhỏ, kèm bộ lọc công thái học và khóa giới hạn giờ dùng cho trẻ em.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              if (!currentUser) openAuthModal('login');
+              else window.dispatchEvent(new CustomEvent('eyeposture:navigate', { detail: 'subscription' }));
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-bold text-xs shadow-lg shadow-purple-500/20 active:scale-95 transition-all whitespace-nowrap ml-3"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Nâng cấp Family</span>
+          </button>
+        </div>
+      )}
 
       {/* Profile Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

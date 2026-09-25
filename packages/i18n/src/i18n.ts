@@ -10,11 +10,24 @@ const locales: Record<LanguageCode, TranslationSchema> = {
   vi,
 };
 
-let currentLanguage: LanguageCode = 'en';
+let currentLanguage: LanguageCode = (() => {
+  if (typeof localStorage !== 'undefined') {
+    const saved = localStorage.getItem('eyeposture_language');
+    if (saved === 'en' || saved === 'vi') return saved;
+  }
+  return 'vi';
+})();
 
 export function setLanguage(lang: LanguageCode): void {
   if (locales[lang]) {
     currentLanguage = lang;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('eyeposture_language', lang);
+      } catch {
+        // ignore storage errors
+      }
+    }
   }
 }
 

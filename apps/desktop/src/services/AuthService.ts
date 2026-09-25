@@ -129,6 +129,21 @@ export class AuthService {
     return null;
   }
 
+  public static async fetchPricingPlans(): Promise<any[]> {
+    try {
+      const res = await AuthService.apiFetch('/api/pricing');
+      if (res.ok) {
+        const data = await AuthService.parseJson(res);
+        if (data.plans && Array.isArray(data.plans)) {
+          return data.plans;
+        }
+      }
+    } catch (err) {
+      console.warn('Fetch pricing plans error:', err);
+    }
+    return [];
+  }
+
   private static offlineCodes = new Map<string, string>();
 
   public static async requestPasswordReset(
@@ -187,6 +202,29 @@ export class AuthService {
         return { success: true, message: 'Mật khẩu đã được đặt lại thành công.' };
       }
       return { success: false, error: err.message || 'Mã xác thực không hợp lệ' };
+    }
+  }
+
+  public static async updateProfile(
+    token: string,
+    data: { name?: string; currentPassword?: string; newPassword?: string }
+  ): Promise<{ success: boolean; user?: any; message?: string; error?: string }> {
+    try {
+      const res = await AuthService.apiFetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      const resData = await AuthService.parseJson(res);
+      if (!res.ok) {
+        return { success: false, error: resData.error || 'Cập nhật thất bại' };
+      }
+      return { success: true, user: resData.user, message: resData.message };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Lỗi kết nối máy chủ' };
     }
   }
 }

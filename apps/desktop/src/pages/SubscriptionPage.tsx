@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, Check, Crown, QrCode, Copy, CheckCircle2, X, RefreshCw, Users, ShieldCheck, Zap } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
+import { AuthService } from '../services/AuthService.js';
 import { t, getLanguage } from '@eyeposture/i18n';
 
 export type PlanKey =
@@ -110,6 +111,7 @@ const PLAN_DETAILS: Record<PlanKey, PlanDetail> = {
 
 export const SubscriptionPage: React.FC = () => {
   const { subscriptionTier, upgradeToPro, currentUser, authToken, openAuthModal, syncEntitlements, language } = useApp();
+  const [plansState, setPlansState] = useState<Record<PlanKey, PlanDetail>>(PLAN_DETAILS);
   const [selectedInterval, setSelectedInterval] = useState<BillingInterval>('month');
   const [isUpgrading, setIsUpgrading] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
@@ -127,13 +129,39 @@ export const SubscriptionPage: React.FC = () => {
   const [isLoadingOrder, setIsLoadingOrder] = useState<boolean>(false);
   const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
 
+  // Sync pricing from database on mount
+  useEffect(() => {
+    AuthService.fetchPricingPlans().then((serverPlans) => {
+      if (serverPlans && serverPlans.length > 0) {
+        setPlansState((prev) => {
+          const updated = { ...prev };
+          for (const sp of serverPlans) {
+            const key = sp.id as PlanKey;
+            if (updated[key]) {
+              updated[key] = {
+                ...updated[key],
+                titleVi: sp.nameVi || updated[key].titleVi,
+                titleEn: sp.nameEn || updated[key].titleEn,
+                amountVnd: sp.priceVnd,
+                amountUsd: `$${sp.priceUsd}`,
+                priceVi: `${sp.priceVnd.toLocaleString('vi-VN')}đ`,
+                priceEn: `$${sp.priceUsd}`,
+              };
+            }
+          }
+          return updated;
+        });
+      }
+    });
+  }, []);
+
   const isVi = language === 'vi' || getLanguage() === 'vi';
 
   const bankCode = ((import.meta as any).env?.PAYMENT_BANK_CODE as string) || 'BIDV';
   const bankAccount = ((import.meta as any).env?.PAYMENT_BANK_ACCOUNT as string) || '4661398013';
   const bankAccountName = ((import.meta as any).env?.PAYMENT_BANK_ACCOUNT_NAME as string) || 'NGUYEN DUY HUNG';
 
-  const currentPlanInfo = PLAN_DETAILS[selectedPlan];
+  const currentPlanInfo = plansState[selectedPlan] || PLAN_DETAILS[selectedPlan];
   const fallbackQrUrl = `https://qr.sepay.vn/img?acc=${bankAccount}&bank=${bankCode}&amount=${currentPlanInfo.amountVnd}&des=${encodeURIComponent(
     currentPlanInfo.content
   )}`;
@@ -168,7 +196,7 @@ export const SubscriptionPage: React.FC = () => {
           provider: 'sepay',
           tier,
           interval,
-          amount: PLAN_DETAILS[key].amountVnd,
+          amount: (plansState[key] || PLAN_DETAILS[key]).amountVnd,
         }),
       }).catch(() =>
         fetch('https://eyeposture.vercel.app/api/v1/subscription/checkout', {
@@ -181,7 +209,7 @@ export const SubscriptionPage: React.FC = () => {
             provider: 'sepay',
             tier,
             interval,
-            amount: PLAN_DETAILS[key].amountVnd,
+            amount: (plansState[key] || PLAN_DETAILS[key]).amountVnd,
           }),
         })
       );
@@ -248,8 +276,8 @@ export const SubscriptionPage: React.FC = () => {
   // Compute active card data based on selected interval
   const proKey = `PRO_${selectedInterval.toUpperCase()}` as PlanKey;
   const familyKey = `FAMILY_${selectedInterval.toUpperCase()}` as PlanKey;
-  const proPlan = PLAN_DETAILS[proKey];
-  const familyPlan = PLAN_DETAILS[familyKey];
+  const proPlan = plansState[proKey] || PLAN_DETAILS[proKey];
+  const familyPlan = plansState[familyKey] || PLAN_DETAILS[familyKey];
 
   const featureMatrix = [
     { nameKey: 'subscription.features.basicReminders', free: true, pro: true, family: true },
@@ -319,27 +347,41 @@ export const SubscriptionPage: React.FC = () => {
       {/* Current Active Plan Status Banner */}
       <div className="glass-card p-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl gradient-teal flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-teal-500/20">
-            {subscriptionTier === 'PRO' ? <Crown className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold shadow-lg ${
+            subscriptionTier === 'FAMILY'
+              ? 'bg-gradient-to-tr from-purple-600 to-pink-500 text-white shadow-purple-500/25'
+              : subscriptionTier === 'PRO'
+              ? 'gradient-amber text-slate-950 shadow-amber-500/25'
+              : 'bg-slate-800 text-slate-400'
+          }`}>
+            {subscriptionTier === 'FAMILY' ? <Users className="w-6 h-6" /> : subscriptionTier === 'PRO' ? <Crown className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs uppercase font-bold tracking-wider text-slate-400">
                 {t('subscription.currentPlan')}
               </span>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                {subscriptionTier === 'PRO' ? t('subscription.tierPro') : t('subscription.tierFree')}
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                subscriptionTier === 'FAMILY'
+                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-sm shadow-purple-500/10'
+                  : subscriptionTier === 'PRO'
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm shadow-amber-500/10'
+                  : 'bg-slate-800 text-slate-400 border-slate-700'
+              }`}>
+                {subscriptionTier === 'FAMILY' ? '💎 FAMILY ELITE' : subscriptionTier === 'PRO' ? '👑 PRO VIP' : 'FREE EDITION'}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              {subscriptionTier === 'PRO'
+              {subscriptionTier === 'FAMILY'
+                ? (isVi ? 'Bản quyền Gia đình cao cấp — Đã mở khóa toàn bộ tính năng và hỗ trợ đa người dùng.' : 'Family Elite License — Full features and multi-user support active.')
+                : subscriptionTier === 'PRO'
                 ? t('subscription.proLicensedDesc')
                 : t('subscription.freeLicensedDesc')}
             </p>
           </div>
         </div>
 
-        {subscriptionTier !== 'PRO' && (
+        {subscriptionTier === 'FREE' && (
           <button
             onClick={() => handleSelectPlan('PRO', selectedInterval)}
             className="px-5 py-2.5 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition-all flex items-center gap-1.5"
@@ -501,12 +543,19 @@ export const SubscriptionPage: React.FC = () => {
           </div>
           <button
             onClick={() => handleSelectPlan('FAMILY', selectedInterval)}
-            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+            disabled={subscriptionTier === 'FAMILY'}
+            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-70 disabled:cursor-default"
           >
-            <QrCode className="w-4 h-4" />
-            {isVi
-              ? `Chọn gói Gia đình (${familyPlan.priceVi})`
-              : `Choose Family Plan (${familyPlan.priceEn})`}
+            {subscriptionTier === 'FAMILY' ? (
+              isVi ? 'Bản quyền Family đang kích hoạt' : 'Family License Active'
+            ) : (
+              <>
+                <QrCode className="w-4 h-4" />
+                {isVi
+                  ? `Chọn gói Gia đình (${familyPlan.priceVi})`
+                  : `Choose Family Plan (${familyPlan.priceEn})`}
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -31,7 +31,7 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
 };
 
 export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
-  language: 'en',
+  language: 'vi',
   theme: 'light',
   startWithWindows: true,
   minimizeToTray: true,

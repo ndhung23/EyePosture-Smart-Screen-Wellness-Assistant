@@ -38,13 +38,15 @@ export type { SimulationMode, AppContextValue };
 const AppContext = createContext<AppContextValue | null>(null);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLangState] = useState<LanguageCode>('en');
+  const [language, setLangState] = useState<LanguageCode>(() => (typeof localStorage !== 'undefined' && (localStorage.getItem('eyeposture_language') as LanguageCode)) || 'vi');
   const [theme, setThemeState] = useState<AppTheme>(() => (typeof localStorage !== 'undefined' && (localStorage.getItem('eyeposture_theme') as AppTheme)) || 'light');
   const [effectiveTheme, setEffectiveTheme] = useState<'dark' | 'light'>('light');
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [isMonitoring, setIsMonitoring] = useState<boolean>(true);
+  const [isMonitoring, setIsMonitoring] = useState<boolean>(() => {
+    return typeof localStorage !== 'undefined' && !!localStorage.getItem('eyeposture_auth_token');
+  });
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('FREE');
   const [isBreakActive, setIsBreakActive] = useState<boolean>(false);
   const [activeReminders, setActiveReminders] = useState<ReminderEvent[]>([]);
@@ -54,10 +56,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     onSuccess?: () => void;
   } | null>(null);
   const [isSettingsUnlocked, setIsSettingsUnlocked] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string; role?: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    email: string;
+    name: string;
+    role?: string;
+    createdAt?: string;
+    subscription?: {
+      tier: SubscriptionTier;
+      status: string;
+      expiresAt: number | null;
+    };
+  } | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
 
   const applyThemeToDOM = (resolvedTheme: 'dark' | 'light') => {
     if (typeof document === 'undefined') return;
@@ -366,7 +380,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     hiddenVideoRef.current = v;
 
     enumerateCameras();
-    startCamera();
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('eyeposture_auth_token')) {
+      startCamera();
+    }
 
     return () => {
       stopCamera();
@@ -541,7 +557,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const requestToggleMonitoring = (forceTarget?: boolean) => {
     const nextState = forceTarget !== undefined ? forceTarget : !isMonitoringRef.current;
     if (nextState) {
+      if (!currentUser) {
+        openAuthModal('login');
+        return;
+      }
       setIsMonitoring(true);
+      if (!cameraStream) startCamera();
       return;
     }
 
@@ -693,6 +714,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAuthModalOpen(false);
   };
 
+  const openProfileModal = () => {
+    setIsProfileModalOpen(true);
+  };
+
+  const closeProfileModal = () => {
+    setIsProfileModalOpen(false);
+  };
+
+  const updateUserProfile = async (data: { name?: string; currentPassword?: string; newPassword?: string }) => {
+    if (!authToken) return { success: false, error: 'Chưa đăng nhập' };
+    const res = await AuthService.updateProfile(authToken, data);
+    if (!res.success) return { success: false, error: res.error };
+    if (res.user) {
+      setCurrentUser(res.user);
+      localStorage.setItem('eyeposture_auth_user', JSON.stringify(res.user));
+    }
+    return { success: true, message: res.message || 'Cập nhật thành công!' };
+  };
+
   const syncEntitlements = async (overrideToken?: string) => {
     const token = overrideToken || authToken;
     if (!token) return;
@@ -723,6 +763,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('eyeposture_auth_token', token);
     localStorage.setItem('eyeposture_auth_user', JSON.stringify(user));
     await syncEntitlements(token);
+    setIsMonitoring(true);
+    startCamera();
     return { success: true };
   };
 
@@ -738,6 +780,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('eyeposture_auth_token', token);
     localStorage.setItem('eyeposture_auth_user', JSON.stringify(user));
     await syncEntitlements(token);
+    setIsMonitoring(true);
+    startCamera();
     return { success: true };
   };
 
@@ -745,6 +789,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAuthToken(null);
     setCurrentUser(null);
     setSubscriptionTier('FREE');
+    setIsMonitoring(false);
+    stopCamera();
     localStorage.removeItem('eyeposture_auth_token');
     localStorage.removeItem('eyeposture_auth_user');
   };
@@ -875,6 +921,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         authModalMode,
         openAuthModal,
         closeAuthModal,
+        isProfileModalOpen,
+        openProfileModal,
+        closeProfileModal,
+        updateUserProfile,
         login,
         registerUser,
         logout,

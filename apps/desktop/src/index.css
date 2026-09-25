@@ -383,4 +383,56 @@ html.light .text-emerald-400,
   color: #059669 !important;
 }
 
+/* Purple Accents & Backgrounds in Light Mode */
+html.light .text-purple-400,
+.theme-light .text-purple-400 {
+  color: #7e22ce !important;
+}
+html.light .text-purple-300,
+.theme-light .text-purple-300 {
+  color: #6b21a8 !important;
+}
+html.light .text-purple-200,
+.theme-light .text-purple-200 {
+  color: #581c87 !important;
+}
+html.light .bg-purple-950\/60,
+html.light .bg-purple-950\/40,
+html.light .bg-purple-950\/30,
+.theme-light .bg-purple-950\/60,
+.theme-light .bg-purple-950\/40,
+.theme-light .bg-purple-950\/30 {
+  background-color: rgba(243, 232, 255, 0.95) !important;
+  color: #3b0764 !important;
+}
+html.light .border-purple-500\/40,
+html.light .border-purple-500\/50,
+.theme-light .border-purple-500\/40,
+.theme-light .border-purple-500\/50 {
+  border-color: rgba(216, 180, 254, 0.9) !important;
+}
+
+/* Amber Accents & Backgrounds in Light Mode */
+html.light .text-amber-300,
+.theme-light .text-amber-300 {
+  color: #b45309 !important;
+}
+html.light .text-amber-200,
+.theme-light .text-amber-200 {
+  color: #78350f !important;
+}
+html.light .bg-amber-950\/40,
+html.light .bg-amber-950\/30,
+.theme-light .bg-amber-950\/40,
+.theme-light .bg-amber-950\/30 {
+  background-color: rgba(254, 243, 199, 0.95) !important;
+  color: #78350f !important;
+}
+html.light .border-amber-500\/40,
+html.light .border-amber-500\/50,
+.theme-light .border-amber-500\/40,
+.theme-light .border-amber-500\/50 {
+  border-color: rgba(252, 211, 77, 0.9) !important;
+}
+
 
