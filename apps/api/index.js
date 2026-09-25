@@ -22472,7 +22472,7 @@ var require_version = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.version = void 0;
-    exports2.version = "2.116.0";
+    exports2.version = "2.117.1";
   }
 });
 
@@ -26343,6 +26343,10 @@ var require_RealtimeClient = __commonJS({
        * the client remains in callback mode and continues to refresh from it on heartbeat,
        * even after a bootstrap/override `setAuth(token)` call.
        *
+       * The callback is called on connect and on every heartbeat (`heartbeatIntervalMs`,
+       * default 25000ms). Its token must stay valid past the next call, or the server closes
+       * the channel at expiry with no automatic resubscribe.
+       *
        * @param token A JWT string to override the token set on the client.
        *
        * @example Setting the authorization header
@@ -28650,7 +28654,7 @@ var init_dist3 = __esm({
         return query;
       }
     };
-    version2 = "2.116.0";
+    version2 = "2.117.1";
     DEFAULT_HEADERS = { "X-Client-Info": `storage-js/${version2}` };
     StorageBucketApi = class extends BaseApiClient {
       constructor(url, headers = {}, fetch$1, opts) {
@@ -30215,7 +30219,7 @@ var require_version2 = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.version = void 0;
-    exports2.version = "2.116.0";
+    exports2.version = "2.117.1";
   }
 });
 
@@ -30627,7 +30631,6 @@ var require_helpers = __commonJS({
     exports2.validateExp = validateExp;
     exports2.getAlgorithm = getAlgorithm;
     exports2.validateUUID = validateUUID;
-    exports2.assertPasskeyExperimentalEnabled = assertPasskeyExperimentalEnabled;
     exports2.assertRecoveryCodesExperimentalEnabled = assertRecoveryCodesExperimentalEnabled;
     exports2.userNotAvailableProxy = userNotAvailableProxy;
     exports2.insecureUserWarningProxy = insecureUserWarningProxy;
@@ -30962,11 +30965,6 @@ var require_helpers = __commonJS({
     function validateUUID(str) {
       if (!UUID_REGEX.test(str)) {
         throw new Error("@supabase/auth-js: Expected parameter to be UUID but is not");
-      }
-    }
-    function assertPasskeyExperimentalEnabled(experimental) {
-      if (!experimental.passkey) {
-        throw new Error("@supabase/auth-js: the passkey API is experimental and disabled by default. Enable it by passing `auth: { experimental: { passkey: true } }` to createClient (or to the GoTrueClient constructor).");
       }
     }
     function assertRecoveryCodesExperimentalEnabled(experimental) {
@@ -32265,11 +32263,8 @@ var require_GoTrueAdminApi = __commonJS({
        * Lists all passkeys for a user.
        *
        * This function should only be called on a server. Never expose your secret key in the browser.
-       *
-       * Requires `auth.experimental.passkey: true`.
        */
       async _adminListPasskeys(params) {
-        (0, helpers_1.assertPasskeyExperimentalEnabled)(this.experimental);
         (0, helpers_1.validateUUID)(params.userId);
         try {
           return await (0, fetch_1._request)(this.fetch, "GET", `${this.url}/admin/users/${params.userId}/passkeys`, { headers: this.headers, xform: (data) => ({ data, error: null }) });
@@ -32284,11 +32279,8 @@ var require_GoTrueAdminApi = __commonJS({
        * Deletes a user's passkey.
        *
        * This function should only be called on a server. Never expose your secret key in the browser.
-       *
-       * Requires `auth.experimental.passkey: true`.
        */
       async _adminDeletePasskey(params) {
-        (0, helpers_1.assertPasskeyExperimentalEnabled)(this.experimental);
         (0, helpers_1.validateUUID)(params.userId);
         (0, helpers_1.validateUUID)(params.passkeyId);
         try {
@@ -35685,31 +35677,16 @@ var require_GoTrueClient = __commonJS({
           const hasExpired = currentSession.expires_at ? currentSession.expires_at * 1e3 - Date.now() < constants_1.EXPIRY_MARGIN_MS : false;
           this._debug("#__loadSession()", `session has${hasExpired ? "" : " not"} expired`, "expires_at", currentSession.expires_at);
           if (!hasExpired) {
-            if (this.userStorage) {
-              const maybeUser = await (0, helpers_1.getItemAsync)(this.userStorage, this.storageKey + "-user");
-              if (maybeUser === null || maybeUser === void 0 ? void 0 : maybeUser.user) {
-                currentSession.user = maybeUser.user;
-              } else {
-                currentSession.user = (0, helpers_1.userNotAvailableProxy)();
-              }
-            }
-            if (this.storage.isServer && currentSession.user && !currentSession.user.__isUserNotAvailableProxy) {
-              const suppressWarningRef = { value: this.suppressGetSessionWarning };
-              currentSession.user = (0, helpers_1.insecureUserWarningProxy)(currentSession.user, suppressWarningRef);
-              if (suppressWarningRef.value) {
-                this.suppressGetSessionWarning = true;
-              }
-            }
-            return { data: { session: currentSession }, error: null };
+            return { data: { session: await this._hydrateSessionUser(currentSession) }, error: null };
           }
           const { data: session, error: error2 } = await this._callRefreshToken(currentSession.refresh_token);
           if (error2) {
-            const accessTokenStillValid = !!(currentSession.expires_at && currentSession.expires_at * 1e3 > Date.now());
-            if (accessTokenStillValid) {
-              const stillStored = await (0, helpers_1.getItemAsync)(this.storage, this.storageKey);
-              if (stillStored && stillStored.refresh_token === currentSession.refresh_token) {
-                return this._returnResult({ data: { session: currentSession }, error: null });
-              }
+            const stored = await (0, helpers_1.getItemAsync)(this.storage, this.storageKey);
+            if (stored && this._isValidSession(stored) && stored.expires_at && stored.expires_at * 1e3 > Date.now()) {
+              return this._returnResult({
+                data: { session: await this._hydrateSessionUser(stored) },
+                error: null
+              });
             }
             return this._returnResult({ data: { session: null }, error: error2 });
           }
@@ -35717,6 +35694,26 @@ var require_GoTrueClient = __commonJS({
         } finally {
           this._debug("#__loadSession()", "end");
         }
+      }
+      /**
+       * Completes a session read back from storage so it matches what callers of
+       * `getSession()` expect: fills in `session.user` from `userStorage` when the
+       * client keeps the user in split storage, and wraps the user in the
+       * insecure-access warning proxy on the server.
+       */
+      async _hydrateSessionUser(session) {
+        if (this.userStorage) {
+          const maybeUser = await (0, helpers_1.getItemAsync)(this.userStorage, this.storageKey + "-user");
+          session.user = (maybeUser === null || maybeUser === void 0 ? void 0 : maybeUser.user) ? maybeUser.user : (0, helpers_1.userNotAvailableProxy)();
+        }
+        if (this.storage.isServer && session.user && !session.user.__isUserNotAvailableProxy) {
+          const suppressWarningRef = { value: this.suppressGetSessionWarning };
+          session.user = (0, helpers_1.insecureUserWarningProxy)(session.user, suppressWarningRef);
+          if (suppressWarningRef.value) {
+            this.suppressGetSessionWarning = true;
+          }
+        }
+        return session;
       }
       /**
        * Gets the current user details if there is an existing session. This method
@@ -38425,13 +38422,35 @@ var require_GoTrueClient = __commonJS({
        * 2. Prompts user via navigator.credentials.get()
        * 3. Verifies credential with server and creates session
        *
-       * Requires `auth.experimental.passkey: true`.
+       * Pass `options.mediation: 'conditional'` to use WebAuthn Conditional UI
+       * (passkey autofill) instead of the modal picker; the value is forwarded to
+       * `navigator.credentials.get()` unchanged.
+       *
+       * The challenge fetched in step 1 expires after the server's
+       * GOTRUE_WEBAUTHN_CHALLENGE_EXPIRY_DURATION (5 minutes by default). With
+       * `mediation: 'conditional'` the autofill prompt can stay pending for longer
+       * than that: the browser ceremony then still succeeds, but verification fails
+       * with `error_code: "webauthn_challenge_expired"`. Recover by calling
+       * `signInWithPasskey()` again. It fetches a fresh challenge and, unless you
+       * passed your own `options.signal`, cancels the pending ceremony first, so
+       * the browser never sees two concurrent WebAuthn requests; the earlier call
+       * resolves with a `WebAuthnError` whose code is `ERROR_CEREMONY_ABORTED`. If
+       * you pass your own `signal`, abort it before retrying.
        *
        * @category Auth
+       *
+       * @example Sign in with Conditional UI (passkey autofill)
+       * ```js
+       * // <input autocomplete="username webauthn" /> somewhere on the page
+       * const { data, error } = await supabase.auth.signInWithPasskey({
+       *   options: {
+       *     mediation: 'conditional'
+       *   }
+       * });
+       * ```
        */
       async signInWithPasskey(credentials) {
-        var _a, _b, _c;
-        (0, helpers_1.assertPasskeyExperimentalEnabled)(this.experimental);
+        var _a, _b, _c, _d;
         try {
           if (!(0, webauthn_1.browserSupportsWebAuthn)()) {
             return this._returnResult({
@@ -38449,7 +38468,8 @@ var require_GoTrueClient = __commonJS({
           const signal = (_c = (_b = credentials === null || credentials === void 0 ? void 0 : credentials.options) === null || _b === void 0 ? void 0 : _b.signal) !== null && _c !== void 0 ? _c : webauthn_1.webAuthnAbortService.createNewAbortSignal();
           const { data: credential, error: credentialError } = await (0, webauthn_1.getCredential)({
             publicKey: publicKeyOptions,
-            signal
+            signal,
+            mediation: (_d = credentials === null || credentials === void 0 ? void 0 : credentials.options) === null || _d === void 0 ? void 0 : _d.mediation
           });
           if (credentialError || !credential) {
             return this._returnResult({
@@ -38475,13 +38495,12 @@ var require_GoTrueClient = __commonJS({
        * 2. Prompts user via navigator.credentials.create()
        * 3. Verifies credential with server
        *
-       * Requires an active session. Requires `auth.experimental.passkey: true`.
+       * Requires an active session.
        *
        * @category Auth
        */
       async registerPasskey(credentials) {
         var _a, _b;
-        (0, helpers_1.assertPasskeyExperimentalEnabled)(this.experimental);
         try {
           if (!(0, webauthn_1.browserSupportsWebAuthn)()) {
             return this._returnResult({
@@ -38522,7 +38541,6 @@ var require_GoTrueClient = __commonJS({
        * Returns WebAuthn credential creation options to pass to navigator.credentials.create().
        */
       async _startPasskeyRegistration() {
-        (0, helpers_1.assertPasskeyExperimentalEnabled)(this.experimental);
         try {
           return await this._useSession(async (result) => {
             const { data: { session }, error: sessionError } = result;
@@ -38554,7 +38572,6 @@ var require_GoTrueClient = __commonJS({
        * The credentialResponse should be the serialized output of navigator.credentials.create().
        */
       async _verifyPasskeyRegistration(params) {
-        (0, helpers_1.assertPasskeyExperimentalEnabled)(this.experimental);
         try {
           return await this._useSession(async (result) => {
             const { data: { session }, error: sessionError } = result;
@@ -38590,7 +38607,6 @@ var require_GoTrueClient = __commonJS({
        */
       async _startPasskeyAuthentication(params) {
         var _a;
-        (0, helpers_1.assertPasskeyExperimentalEnabled)(this.experimental);
         try {
           const { data, error: error2 } = await (0, fetch_1._request)(this.fetch, "POST", `${this.url}/passkeys/authentication/options`, {
             headers: this.headers,
@@ -38614,7 +38630,6 @@ var require_GoTrueClient = __commonJS({
        * The credential should be the serialized output of navigator.credentials.get().
        */
       async _verifyPasskeyAuthentication(params) {
-        (0, helpers_1.assertPasskeyExperimentalEnabled)(this.experimental);
         try {
           const { data, error: error2 } = await (0, fetch_1._request)(this.fetch, "POST", `${this.url}/passkeys/authentication/verify`, {
             headers: this.headers,
@@ -38643,7 +38658,6 @@ var require_GoTrueClient = __commonJS({
        * List all passkeys for the current user.
        */
       async _listPasskeys() {
-        (0, helpers_1.assertPasskeyExperimentalEnabled)(this.experimental);
         try {
           return await this._useSession(async (result) => {
             const { data: { session }, error: sessionError } = result;
@@ -38674,7 +38688,6 @@ var require_GoTrueClient = __commonJS({
        * Update a passkey.
        */
       async _updatePasskey(params) {
-        (0, helpers_1.assertPasskeyExperimentalEnabled)(this.experimental);
         try {
           return await this._useSession(async (result) => {
             const { data: { session }, error: sessionError } = result;
@@ -38705,7 +38718,6 @@ var require_GoTrueClient = __commonJS({
        * Delete a passkey.
        */
       async _deletePasskey(params) {
-        (0, helpers_1.assertPasskeyExperimentalEnabled)(this.experimental);
         try {
           return await this._useSession(async (result) => {
             const { data: { session }, error: sessionError } = result;
@@ -39010,7 +39022,7 @@ var init_dist4 = __esm({
     import_auth_js = __toESM(require_main3(), 1);
     __reExport(dist_exports, __toESM(require_main2(), 1));
     __reExport(dist_exports, __toESM(require_main3(), 1));
-    version3 = "2.116.0";
+    version3 = "2.117.1";
     JS_ENV = "";
     if (typeof Deno !== "undefined") {
       JS_ENV = "deno";

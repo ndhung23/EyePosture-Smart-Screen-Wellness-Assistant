@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/electron-builder.json",
+  "appId": "com.eyeposture.desktop",
+  "productName": "EyePosture",
+  "directories": {
+    "output": "release"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "icon": "EyePosture.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": true,
+    "allowElevation": true,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "EyePosture.ico",
+    "uninstallerIcon": "EyePosture.ico",
+    "installerHeaderIcon": "EyePosture.ico",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "EyePosture",
+    "artifactName": "EyePosture-Setup.${ext}",
+    "uninstallDisplayName": "EyePosture Smart Screen Wellness Assistant"
+  }
+}
