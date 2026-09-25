@@ -1,10 +1,11 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, powerMonitor, Notification, session, screen } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, powerMonitor, Notification, session, screen, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import https from 'https';
 import http from 'http';
 import crypto from 'crypto';
+import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -329,6 +330,103 @@ ipcMain.on('overlay:dismiss', () => {
 
 ipcMain.on('app:request-quit', () => {
   requestQuitFromElectron();
+});
+
+ipcMain.handle('app:get-version', () => {
+  return app.getVersion() || '1.0.0';
+});
+
+ipcMain.handle('shell:open-external', (_event, targetUrl: string) => {
+  if (targetUrl && (targetUrl.startsWith('https://') || targetUrl.startsWith('http://'))) {
+    shell.openExternal(targetUrl);
+    return true;
+  }
+  return false;
+});
+
+function downloadFileWithRedirects(
+  targetUrl: string,
+  destPath: string,
+  onProgress?: (p: { percent: number; receivedBytes: number; totalBytes: number }) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    try {
+      const parsed = new URL(targetUrl);
+      const client = parsed.protocol === 'https:' ? https : http;
+
+      const req = client.get(targetUrl, (res) => {
+        if (res.statusCode && [301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
+          return resolve(downloadFileWithRedirects(res.headers.location, destPath, onProgress));
+        }
+        if (res.statusCode !== 200) {
+          return reject(new Error(`Download failed with status: ${res.statusCode}`));
+        }
+
+        const totalBytes = parseInt(res.headers['content-length'] || '0', 10);
+        let receivedBytes = 0;
+        const fileStream = fs.createWriteStream(destPath);
+
+        res.on('data', (chunk) => {
+          receivedBytes += chunk.length;
+          if (totalBytes > 0 && onProgress) {
+            const percent = Math.min(100, Math.round((receivedBytes / totalBytes) * 100));
+            onProgress({ percent, receivedBytes, totalBytes });
+          }
+        });
+
+        res.pipe(fileStream);
+
+        fileStream.on('finish', () => {
+          fileStream.close(() => resolve());
+        });
+
+        fileStream.on('error', (err) => {
+          fs.unlink(destPath, () => {});
+          reject(err);
+        });
+      });
+
+      req.on('error', reject);
+      req.setTimeout(60000, () => {
+        req.destroy(new Error('Download timeout'));
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+ipcMain.handle('updater:download-and-install', async (event, downloadUrl: string) => {
+  try {
+    const tempDir = app.getPath('temp');
+    const installerPath = path.join(tempDir, 'EyePosture-Setup-Update.exe');
+
+    await downloadFileWithRedirects(downloadUrl, installerPath, (progress) => {
+      try {
+        event.sender.send('updater:download-progress', progress);
+      } catch {}
+    });
+
+    // Launch installer and cleanly exit current process
+    setTimeout(() => {
+      try {
+        const child = spawn(installerPath, [], {
+          detached: true,
+          stdio: 'ignore',
+        });
+        child.unref();
+        isQuitting = true;
+        app.quit();
+      } catch (err) {
+        console.error('Failed to spawn installer:', err);
+      }
+    }, 1200);
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Download update error:', err);
+    return { success: false, error: err.message };
+  }
 });
 
 app.whenReady().then(() => {

@@ -35,4 +35,14 @@ contextBridge.exposeInMainWorld('electronApi', {
   onAlertHide: (callback) => {
     ipcRenderer.on('alert:hide', () => callback());
   },
+  getAppVersion: () => ipcRenderer.invoke('app:get-version'),
+  openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
+  downloadAndInstallUpdate: (url) => ipcRenderer.invoke('updater:download-and-install', url),
+  onUpdateDownloadProgress: (callback) => {
+    const listener = (_event, progress) => callback(progress);
+    ipcRenderer.on('updater:download-progress', listener);
+    return () => {
+      ipcRenderer.removeListener('updater:download-progress', listener);
+    };
+  },
 });

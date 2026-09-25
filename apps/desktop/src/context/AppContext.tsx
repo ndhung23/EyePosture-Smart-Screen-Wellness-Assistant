@@ -717,6 +717,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { token, user } = res.data;
     setAuthToken(token);
     setCurrentUser(user);
+    if (user?.subscription?.tier) {
+      setSubscriptionTier(user.subscription.tier);
+    }
     localStorage.setItem('eyeposture_auth_token', token);
     localStorage.setItem('eyeposture_auth_user', JSON.stringify(user));
     await syncEntitlements(token);
@@ -729,6 +732,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { token, user } = res.data;
     setAuthToken(token);
     setCurrentUser(user);
+    if (user?.subscription?.tier) {
+      setSubscriptionTier(user.subscription.tier);
+    }
     localStorage.setItem('eyeposture_auth_token', token);
     localStorage.setItem('eyeposture_auth_user', JSON.stringify(user));
     await syncEntitlements(token);
@@ -738,6 +744,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = () => {
     setAuthToken(null);
     setCurrentUser(null);
+    setSubscriptionTier('FREE');
     localStorage.removeItem('eyeposture_auth_token');
     localStorage.removeItem('eyeposture_auth_user');
   };
@@ -748,7 +755,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedUser = localStorage.getItem('eyeposture_auth_user');
       if (savedToken && savedUser) {
         setAuthToken(savedToken);
-        setCurrentUser(JSON.parse(savedUser));
+        const parsed = JSON.parse(savedUser);
+        setCurrentUser(parsed);
+        if (parsed?.subscription?.tier) {
+          setSubscriptionTier(parsed.subscription.tier);
+        }
         syncEntitlements(savedToken);
       }
     } catch {}

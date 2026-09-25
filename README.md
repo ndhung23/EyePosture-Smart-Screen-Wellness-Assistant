@@ -57,6 +57,8 @@ npm run dev
 # Package Windows Desktop Application (.exe installer)
 npm run package:win
 ```
+# Build again
+npm run installer:win
 
 ---
 

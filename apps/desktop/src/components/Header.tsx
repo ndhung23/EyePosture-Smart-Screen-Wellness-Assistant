@@ -1,4 +1,4 @@
-import { BatteryCharging, Battery, AlertCircle, X, User as UserIcon, LogOut } from 'lucide-react';
+import { BatteryCharging, Battery, AlertCircle, X, User as UserIcon, LogOut, ArrowUpCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
 
@@ -41,6 +41,16 @@ export const Header: React.FC = () => {
               {governorStatus.mode} ({governorStatus.targetFps} FPS)
             </span>
           </div>
+
+          {/* Check for updates button */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('eyeposture:check-update'))}
+            title="Kiểm tra bản cập nhật mới"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-xs text-slate-300 hover:text-teal-300 transition-all active:scale-95"
+          >
+            <ArrowUpCircle className="w-3.5 h-3.5 text-teal-400" />
+            <span className="hidden sm:inline font-medium text-[11px]">Cập nhật</span>
+          </button>
 
           {/* User Account / Login Button */}
           {currentUser ? (

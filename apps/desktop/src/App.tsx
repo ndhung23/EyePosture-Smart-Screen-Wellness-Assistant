@@ -6,6 +6,7 @@ import { BreakModal } from './components/BreakModal.js';
 import { PasswordPromptModal } from './components/PasswordPromptModal.js';
 import { AuthModal } from './components/AuthModal.js';
 import { PerformancePanel } from './components/PerformancePanel.js';
+import { UpdateModal } from './components/UpdateModal.js';
 
 import { DashboardPage } from './pages/DashboardPage.js';
 import { MonitorPage } from './pages/MonitorPage.js';
@@ -91,6 +92,7 @@ const MainContent: React.FC = () => {
       <PasswordPromptModal />
       <AuthModal />
       <PerformancePanel />
+      <UpdateModal autoCheckOnMount={true} />
     </div>
   );
 };
