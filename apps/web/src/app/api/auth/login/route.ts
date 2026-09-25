@@ -11,23 +11,6 @@ export async function POST(req: NextRequest) {
     const { email, password } = await req.json();
     const cleanEmail = (email || '').trim().toLowerCase();
 
-    // Check special admin login
-    if (cleanEmail === 'admin' || cleanEmail === 'admin@eyeposture.com' || cleanEmail === 'admin@gmail.com') {
-      if (password === '1' || password === 'admin123') {
-        const adminUser = {
-          id: '00000000-0000-4000-8000-000000000001',
-          email: 'admin',
-          name: 'Quản Trị Viên (Admin)',
-          role: 'ADMIN',
-          status: 'ACTIVE',
-          isBlocked: false,
-          subscription: { tier: 'FAMILY', status: 'ACTIVE', expiresAt: Date.now() + 10 * 365 * 86400 * 1000 },
-        };
-        const token = `token_admin_${Date.now()}`;
-        return NextResponse.json({ user: adminUser, token });
-      }
-    }
-
     const supabase = getAdminSupabase();
     const { data: dbUser, error } = await supabase
       .from('users')

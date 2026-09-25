@@ -18,9 +18,11 @@ export function Navbar({ onOpenAuth }: { onOpenAuth: () => void }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform duration-300">
-            <Eye className="w-5 h-5 text-white" />
-          </div>
+          <img
+            src="/EyePosture.png"
+            alt="EyePosture Logo"
+            className="w-10 h-10 rounded-xl object-contain shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform duration-300"
+          />
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-cyan-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent light:from-indigo-600 light:to-purple-700">
@@ -45,9 +47,7 @@ export function Navbar({ onOpenAuth }: { onOpenAuth: () => void }) {
             {t('nav_pricing')}
           </a>
           <a
-            href="https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant/releases/latest"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/api/download"
             className="flex items-center gap-1.5 hover:text-cyan-400 dark:hover:text-cyan-400 light:hover:text-indigo-600 transition-colors"
           >
             <Download className="w-4 h-4" />

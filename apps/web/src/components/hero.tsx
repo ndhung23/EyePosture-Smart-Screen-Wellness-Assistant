@@ -36,9 +36,7 @@ export function Hero({ onOpenAuth }: { onOpenAuth: () => void }) {
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
               <a
-                href="https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant/releases/latest"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/api/download"
                 className="w-full sm:w-auto flex items-center justify-center gap-3 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-base shadow-xl shadow-indigo-500/25 hover:shadow-cyan-500/35 transition-all duration-300 hover:scale-[1.02] active:scale-95"
               >
                 <Download className="w-5 h-5" />

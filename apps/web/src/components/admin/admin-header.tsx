@@ -24,9 +24,11 @@ export function AdminHeader() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/25">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
+            <img
+              src="/EyePosture.png"
+              alt="EyePosture Logo"
+              className="w-9 h-9 rounded-xl object-contain shadow-lg shadow-purple-500/25"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-extrabold text-base tracking-tight text-white dark:text-white light:text-slate-900">

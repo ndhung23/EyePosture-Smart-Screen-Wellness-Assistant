@@ -112,9 +112,9 @@ export default function AdminPage() {
         prev.map((u) =>
           u.id === userId
             ? {
-                ...u,
-                subscription: { tier, status: 'ACTIVE', expiresAt: Date.now() + 365 * 86400 * 1000 },
-              }
+              ...u,
+              subscription: { tier, status: 'ACTIVE', expiresAt: Date.now() + 365 * 86400 * 1000 },
+            }
             : u
         )
       );
@@ -171,12 +171,13 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950 text-white">
         <div className="w-full max-w-sm p-8 rounded-3xl bg-slate-900 border border-slate-800 space-y-5 shadow-2xl text-center">
-          <div className="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-400 mx-auto flex items-center justify-center">
-            <Lock className="w-6 h-6" />
-          </div>
+          <img
+            src="/EyePosture.png"
+            alt="EyePosture Logo"
+            className="w-14 h-14 rounded-2xl object-contain mx-auto shadow-xl shadow-cyan-500/20 mb-2"
+          />
           <div>
             <h2 className="text-xl font-extrabold text-white">Xác Thực Quản Trị Viên</h2>
-            <p className="text-xs text-slate-400 mt-1">Cổng truy cập cơ sở dữ liệu Supabase & Quản lý bản quyền</p>
           </div>
 
           {loginError && (
@@ -191,7 +192,7 @@ export default function AdminPage() {
               <input
                 type="text"
                 required
-                placeholder="admin"
+                placeholder="Enter username"
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-400"
@@ -218,9 +219,14 @@ export default function AdminPage() {
               {loginLoading ? 'Đang xác thực...' : 'Đăng Nhập Quản Trị'}
             </button>
 
-            <p className="text-[11px] text-slate-500 text-center">
-              (Mặc định: <strong>admin</strong> / mật khẩu: <strong>1</strong>)
-            </p>
+            <div className="text-center pt-2">
+              <a
+                href="/"
+                className="text-xs text-slate-400 hover:text-cyan-400 transition inline-flex items-center gap-1"
+              >
+                ← Quay lại trang chủ
+              </a>
+            </div>
           </form>
         </div>
       </div>
@@ -247,33 +253,30 @@ export default function AdminPage() {
           <div className="flex items-center gap-2 p-1 rounded-2xl bg-slate-900/60 dark:bg-slate-900/60 light:bg-slate-200 border border-slate-800 dark:border-slate-800 light:border-slate-300 text-xs font-semibold">
             <button
               onClick={() => setActiveTab('USERS')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${
-                activeTab === 'USERS'
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${activeTab === 'USERS'
                   ? 'bg-indigo-600 text-white shadow'
                   : 'text-slate-400 light:text-slate-700 hover:text-white'
-              }`}
+                }`}
             >
               <Users className="w-4 h-4" />
               <span>{t('admin_users_tab')} ({users.length})</span>
             </button>
             <button
               onClick={() => setActiveTab('DEVICES')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${
-                activeTab === 'DEVICES'
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${activeTab === 'DEVICES'
                   ? 'bg-indigo-600 text-white shadow'
                   : 'text-slate-400 light:text-slate-700 hover:text-white'
-              }`}
+                }`}
             >
               <Laptop className="w-4 h-4" />
               <span>{t('admin_devices_tab')} ({devices.length})</span>
             </button>
             <button
               onClick={() => setActiveTab('VOUCHERS')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${
-                activeTab === 'VOUCHERS'
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${activeTab === 'VOUCHERS'
                   ? 'bg-indigo-600 text-white shadow'
                   : 'text-slate-400 light:text-slate-700 hover:text-white'
-              }`}
+                }`}
             >
               <Ticket className="w-4 h-4" />
               <span>{t('admin_vouchers_tab')} ({vouchers.length})</span>

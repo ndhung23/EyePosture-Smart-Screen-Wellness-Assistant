@@ -63,9 +63,9 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
     }
     const finalAmount = getDiscountedPrice(basePrices[tier]);
     const orderCode = `EP${Math.floor(100000 + Math.random() * 900000)}`;
-    const bankAccount = '0339949168';
-    const bankCode = 'MB';
-    const accountName = 'NGUYEN DUY HUNG';
+    const bankAccount = process.env.NEXT_PUBLIC_PAYMENT_BANK_ACCOUNT || '4661398013';
+    const bankCode = process.env.NEXT_PUBLIC_PAYMENT_BANK_CODE || 'BIDV';
+    const accountName = process.env.NEXT_PUBLIC_PAYMENT_BANK_ACCOUNT_NAME || 'NGUYEN DUY HUNG';
     const qrUrl = `https://img.vietqr.io/image/${bankCode}-${bankAccount}-compact2.png?amount=${finalAmount}&addInfo=${orderCode}&accountName=${encodeURIComponent(
       accountName
     )}`;
@@ -154,9 +154,7 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
             </div>
 
             <a
-              href="https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant/releases/latest"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/api/download"
               className="w-full py-3 px-4 rounded-xl border border-slate-700 dark:border-slate-700 light:border-slate-300 text-center font-bold text-xs text-slate-300 dark:text-slate-300 light:text-slate-800 hover:bg-slate-800 light:hover:bg-slate-100 transition"
             >
               {t('pricing_free_btn')}

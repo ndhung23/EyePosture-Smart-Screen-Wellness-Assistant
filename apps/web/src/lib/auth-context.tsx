@@ -46,11 +46,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('eyeposture_token');
-    localStorage.removeItem('eyeposture_user');
+    try {
+      localStorage.removeItem('eyeposture_token');
+      localStorage.removeItem('eyeposture_user');
+    } catch {
+      // Ignore
+    }
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   };
 
-  const isAdmin = Boolean(user?.role === 'ADMIN' || user?.email?.toLowerCase().includes('admin'));
+  const isAdmin = Boolean(user?.role === 'ADMIN');
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, isAdmin }}>

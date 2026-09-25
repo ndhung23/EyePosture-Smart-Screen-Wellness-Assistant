@@ -13,9 +13,11 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-white">
-              <Eye className="w-4 h-4" />
-            </div>
+            <img
+              src="/EyePosture.png"
+              alt="EyePosture Logo"
+              className="w-8 h-8 rounded-lg object-contain shadow-md shadow-cyan-500/10"
+            />
             <div>
               <span className="font-extrabold text-base tracking-tight text-white dark:text-white light:text-slate-900">
                 EyePosture
@@ -28,18 +30,9 @@ export function Footer() {
 
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 dark:text-slate-400 light:text-slate-600">
             <a href="#features" className="hover:text-cyan-400 transition">{t('nav_features')}</a>
+            <a href="#wellness" className="hover:text-cyan-400 transition">{t('nav_wellness')}</a>
             <a href="#pricing" className="hover:text-cyan-400 transition">{t('nav_pricing')}</a>
-            <a
-              href="https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-cyan-400 transition"
-            >
-              GitHub Repository
-            </a>
-            <Link href="/admin" className="hover:text-purple-400 transition">
-              {t('nav_admin')}
-            </Link>
+            <a href="/api/download" className="hover:text-cyan-400 transition">{t('nav_download')}</a>
           </div>
 
           <div className="text-xs text-slate-500 text-center md:text-right">

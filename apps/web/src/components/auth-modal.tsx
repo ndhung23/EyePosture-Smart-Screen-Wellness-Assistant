@@ -118,14 +118,31 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 p-7 text-white shadow-2xl space-y-6">
+      <div className="fixed inset-0" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 p-7 text-white shadow-2xl space-y-5 z-10 max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 transition z-20"
+          aria-label="Close modal"
         >
           <X className="w-5 h-5" />
         </button>
+
+        {/* Brand Header & Logo */}
+        <div className="flex flex-col items-center text-center pt-1 pb-1">
+          <img
+            src="/EyePosture.png"
+            alt="EyePosture Logo"
+            className="w-14 h-14 rounded-2xl object-contain shadow-lg shadow-cyan-500/20 mb-2.5"
+          />
+          <h2 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+            EyePosture AI
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Smart Screen Wellness Assistant
+          </p>
+        </div>
 
         {/* Tab Switcher */}
         <div className="flex p-1 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs font-semibold">
@@ -177,7 +194,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                 <input
                   type="text"
                   required
-                  placeholder="admin hoặc email@domain.com"
+                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
@@ -216,10 +233,6 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             >
               {loading ? '...' : t('auth_login_btn')}
             </button>
-
-            <p className="text-[11px] text-slate-500 text-center">
-              (Gợi ý tài khoản quản trị: <strong>admin</strong> / mật khẩu: <strong>1</strong>)
-            </p>
           </form>
         )}
 

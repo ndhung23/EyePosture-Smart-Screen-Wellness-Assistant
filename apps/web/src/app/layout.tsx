@@ -12,7 +12,13 @@ export const metadata: Metadata = {
   description:
     'Ứng dụng Desktop tự động phân tích khoảng cách, cảnh báo gù lưng, chớp mắt và quy tắc 20-20-20. Xử lý bảo mật 100% On-device.',
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/EyePosture.ico' },
+      { url: '/favicon.ico' },
+      { url: '/EyePosture.png', type: 'image/png' },
+    ],
+    shortcut: '/EyePosture.ico',
+    apple: '/EyePosture.png',
   },
 };
 
