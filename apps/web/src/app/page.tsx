@@ -12,7 +12,7 @@ export default function HomePage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 dark:bg-slate-950 light:bg-slate-50 text-slate-100 dark:text-slate-100 light:text-slate-900 transition-colors">
+    <div className="min-h-screen flex flex-col bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
       <Navbar onOpenAuth={() => setAuthModalOpen(true)} />
       <main className="flex-1">
         <Hero onOpenAuth={() => setAuthModalOpen(true)} />

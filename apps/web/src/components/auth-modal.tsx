@@ -119,11 +119,11 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="fixed inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 p-7 text-white shadow-2xl space-y-5 z-10 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-7 text-slate-900 dark:text-white shadow-2xl space-y-5 z-10 max-h-[90vh] overflow-y-auto transition-colors duration-300">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 transition z-20"
+          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/50 transition z-20"
           aria-label="Close modal"
         >
           <X className="w-5 h-5" />
@@ -136,20 +136,20 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             alt="EyePosture Logo"
             className="w-14 h-14 rounded-2xl object-contain shadow-lg shadow-cyan-500/20 mb-2.5"
           />
-          <h2 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 dark:from-cyan-400 dark:via-indigo-300 dark:to-purple-400 bg-clip-text text-transparent">
             EyePosture AI
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Smart Screen Wellness Assistant
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex p-1 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs font-semibold">
+        <div className="flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-xs font-semibold">
           <button
             onClick={() => { setTab('LOGIN'); setError(null); setSuccess(null); }}
             className={`flex-1 py-2 rounded-xl transition ${
-              tab === 'LOGIN' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              tab === 'LOGIN' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             {t('auth_tab_login')}
@@ -157,7 +157,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           <button
             onClick={() => { setTab('REGISTER'); setError(null); setSuccess(null); }}
             className={`flex-1 py-2 rounded-xl transition ${
-              tab === 'REGISTER' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              tab === 'REGISTER' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             {t('auth_tab_register')}
@@ -165,7 +165,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           <button
             onClick={() => { setTab('FORGOT'); setError(null); setSuccess(null); }}
             className={`flex-1 py-2 rounded-xl transition ${
-              tab === 'FORGOT' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              tab === 'FORGOT' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             {t('auth_tab_forgot')}
@@ -188,40 +188,40 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         {tab === 'LOGIN' && (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">{t('auth_email_label')}</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('auth_email_label')}</label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <input
                   type="text"
                   required
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
                 />
               </div>
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1.5">
-                <label className="text-xs font-medium text-slate-300">{t('auth_pass_label')}</label>
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">{t('auth_pass_label')}</label>
                 <button
                   type="button"
                   onClick={() => setTab('FORGOT')}
-                  className="text-[11px] text-cyan-400 hover:underline"
+                  className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline"
                 >
                   {t('auth_forgot_link')}
                 </button>
               </div>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
                 />
               </div>
             </div>
@@ -240,46 +240,46 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         {tab === 'REGISTER' && (
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">{t('auth_name_label')}</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('auth_name_label')}</label>
               <div className="relative">
-                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <input
                   type="text"
                   required
                   placeholder="Nguyễn Văn A"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">{t('auth_email_label')}</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('auth_email_label')}</label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <input
                   type="email"
                   required
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">{t('auth_pass_label')}</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('auth_pass_label')}</label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
                 />
               </div>
             </div>
@@ -299,21 +299,21 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           <div>
             {forgotStep === 1 ? (
               <form onSubmit={handleRequestOtp} className="space-y-4">
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Nhập email đăng ký tài khoản của bạn để nhận mã xác nhận OTP đặt lại mật khẩu.
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  {t('auth_forgot_desc')}
                 </p>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">{t('auth_email_label')}</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('auth_email_label')}</label>
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                     <input
                       type="email"
                       required
                       placeholder="name@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
                     />
                   </div>
                 </div>
@@ -330,9 +330,9 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             ) : (
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">{t('auth_otp_label')}</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('auth_otp_label')}</label>
                   <div className="relative">
-                    <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                     <input
                       type="text"
                       required
@@ -340,22 +340,22 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                       placeholder="123456"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono tracking-widest transition"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono tracking-widest transition"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">{t('auth_new_pass_label')}</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('auth_new_pass_label')}</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                     <input
                       type="password"
                       required
-                      placeholder="Mật khẩu mới"
+                      placeholder={t('auth_new_pass_ph')}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
                     />
                   </div>
                 </div>
