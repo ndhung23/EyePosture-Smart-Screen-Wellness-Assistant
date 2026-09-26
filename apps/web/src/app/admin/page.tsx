@@ -1,21 +1,37 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { AdminStats } from '@/components/admin/admin-stats';
+import { AnalyticsDashboard } from '@/components/admin/analytics-dashboard';
 import { UsersTable } from '@/components/admin/users-table';
 import { DevicesTable } from '@/components/admin/devices-table';
 import { VoucherManager } from '@/components/admin/voucher-manager';
 import { PricingManager } from '@/components/admin/pricing-manager';
 import { UserProfile, DeviceItem, VoucherItem, SubscriptionTier } from '@/lib/types';
-import { Users, Laptop, Ticket, Lock, RefreshCw, CreditCard } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Users,
+  Laptop,
+  Ticket,
+  CreditCard,
+  RefreshCw,
+  ArrowLeft,
+  X,
+  User as UserIcon,
+  Sparkles
+} from 'lucide-react';
 
 export default function AdminPage() {
   const { user, login, isAdmin } = useAuth();
-  const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'USERS' | 'DEVICES' | 'VOUCHERS' | 'PLANS'>('USERS');
+  const { t, language } = useLanguage();
+  const isVi = language === 'vi';
+
+  const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'USERS' | 'DEVICES' | 'VOUCHERS' | 'PLANS'>('DASHBOARD');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Admin login form states if not logged in as admin
   const [adminEmail, setAdminEmail] = useState('');
@@ -221,12 +237,12 @@ export default function AdminPage() {
             </button>
 
             <div className="text-center pt-2">
-              <a
+              <Link
                 href="/"
                 className="text-xs text-slate-400 hover:text-cyan-400 transition inline-flex items-center gap-1"
               >
                 ← Quay lại trang chủ
-              </a>
+              </Link>
             </div>
           </form>
         </div>
@@ -236,168 +252,323 @@ export default function AdminPage() {
 
   const proCount = users.filter((u) => u.subscription?.tier === 'PRO' || u.subscription?.tier === 'FAMILY').length;
 
-  return (
-    <div className="min-h-screen flex flex-col bg-slate-950 dark:bg-slate-950 light:bg-slate-50 text-slate-100 dark:text-slate-100 light:text-slate-900 transition-colors">
-      <AdminHeader />
+  const getTabTitle = () => {
+    switch (activeTab) {
+      case 'DASHBOARD':
+        return isVi ? 'Dashboard & Thống Kê Phân Tích' : 'Analytics & Revenue Dashboard';
+      case 'USERS':
+        return isVi ? 'Quản Lý Người Dùng' : 'User Management';
+      case 'DEVICES':
+        return isVi ? 'Quản Lý Thiết Bị Kết Nối' : 'Connected Devices';
+      case 'VOUCHERS':
+        return isVi ? 'Quản Lý Voucher Khuyến Mãi' : 'Voucher Management';
+      case 'PLANS':
+        return isVi ? 'Quản Lý Gói & Bảng Giá' : 'Subscription Plans';
+    }
+  };
 
-      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: 2 Cols Sidebar Navigation */}
-          <aside className="lg:col-span-2 space-y-4">
-            <div className="p-3 rounded-2xl bg-slate-900/60 dark:bg-slate-900/60 light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 shadow-sm space-y-1.5">
-              <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 light:text-slate-500">
-                Menu Quản Trị
-              </div>
-
-              <button
-                onClick={() => setActiveTab('USERS')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
-                  activeTab === 'USERS'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
-                    : 'text-slate-400 dark:text-slate-400 light:text-slate-700 hover:text-white hover:bg-slate-800/50 light:hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Users className="w-4 h-4 shrink-0" />
-                  <span>{t('admin_users_tab')}</span>
-                </div>
-                <span
-                  className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-                    activeTab === 'USERS'
-                      ? 'bg-white/20 text-white'
-                      : 'bg-slate-800 dark:bg-slate-800 light:bg-slate-200 text-slate-300 dark:text-slate-300 light:text-slate-700'
-                  }`}
-                >
-                  {users.length}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('DEVICES')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
-                  activeTab === 'DEVICES'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
-                    : 'text-slate-400 dark:text-slate-400 light:text-slate-700 hover:text-white hover:bg-slate-800/50 light:hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Laptop className="w-4 h-4 shrink-0" />
-                  <span>{t('admin_devices_tab')}</span>
-                </div>
-                <span
-                  className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-                    activeTab === 'DEVICES'
-                      ? 'bg-white/20 text-white'
-                      : 'bg-slate-800 dark:bg-slate-800 light:bg-slate-200 text-slate-300 dark:text-slate-300 light:text-slate-700'
-                  }`}
-                >
-                  {devices.length}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('VOUCHERS')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
-                  activeTab === 'VOUCHERS'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
-                    : 'text-slate-400 dark:text-slate-400 light:text-slate-700 hover:text-white hover:bg-slate-800/50 light:hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Ticket className="w-4 h-4 shrink-0" />
-                  <span>{t('admin_vouchers_tab')}</span>
-                </div>
-                <span
-                  className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-                    activeTab === 'VOUCHERS'
-                      ? 'bg-white/20 text-white'
-                      : 'bg-slate-800 dark:bg-slate-800 light:bg-slate-200 text-slate-300 dark:text-slate-300 light:text-slate-700'
-                  }`}
-                >
-                  {vouchers.length}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('PLANS')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
-                  activeTab === 'PLANS'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
-                    : 'text-slate-400 dark:text-slate-400 light:text-slate-700 hover:text-white hover:bg-slate-800/50 light:hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <CreditCard className="w-4 h-4 shrink-0" />
-                  <span>Gói & Bảng giá</span>
-                </div>
-                <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                    activeTab === 'PLANS' ? 'bg-white/20 text-white' : 'bg-amber-500/20 text-amber-300'
-                  }`}
-                >
-                  DB
-                </span>
-              </button>
-            </div>
-
-            {/* Quick Action Sync Button */}
-            <div className="p-3 rounded-2xl bg-slate-900/60 dark:bg-slate-900/60 light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 shadow-sm">
-              <button
-                onClick={() => {
-                  setRefreshing(true);
-                  fetchData();
-                }}
-                disabled={refreshing}
-                className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-700 dark:border-slate-700 light:border-slate-300 text-xs font-semibold text-slate-300 dark:text-slate-300 light:text-slate-700 hover:bg-slate-800/80 light:hover:bg-slate-100 transition disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-                <span>{t('admin_sync_btn')}</span>
-              </button>
-            </div>
-          </aside>
-
-          {/* Right Column: 10 Cols Stats & Content */}
-          <section className="lg:col-span-10 space-y-8">
-            {/* Top Summary Stats */}
-            <AdminStats
-              userCount={users.length}
-              deviceCount={devices.length}
-              proCount={proCount}
-              voucherCount={vouchers.length}
+  // Reusable Sidebar Nav Content
+  const renderSidebarContent = () => (
+    <div className="flex flex-col h-full justify-between p-4 space-y-6">
+      {/* Brand Header & Back to Website */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <img
+              src="/EyePosture.png"
+              alt="EyePosture Logo"
+              className="w-8 h-8 rounded-xl object-contain shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform"
             />
+            <div className="flex flex-col">
+              <span className="font-extrabold text-sm tracking-tight bg-gradient-to-r from-cyan-600 to-indigo-600 dark:from-cyan-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                EyePosture
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">Admin Hub</span>
+            </div>
+          </Link>
 
-            {/* Tab Content */}
-            {loading ? (
-              <div className="py-20 text-center text-slate-500 text-sm">Đang tải dữ liệu từ Supabase...</div>
-            ) : (
-              <div>
-                {activeTab === 'USERS' && (
+          <Link
+            href="/"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            title="Quay lại trang chủ"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {/* Navigation Menu */}
+        <div className="space-y-1.5">
+          <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            Menu Quản Trị
+          </div>
+
+          {/* 1. Dashboard Tab */}
+          <button
+            onClick={() => {
+              setActiveTab('DASHBOARD');
+              setMobileMenuOpen(false);
+            }}
+            className={`btn-tactile w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              activeTab === 'DASHBOARD'
+                ? 'bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 text-white shadow-md shadow-cyan-500/20'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <LayoutDashboard className="w-4 h-4 shrink-0" />
+              <span>{isVi ? 'Dashboard Phân Tích' : 'Analytics Dashboard'}</span>
+            </div>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'DASHBOARD'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
+              }`}
+            >
+              LIVE
+            </span>
+          </button>
+
+          {/* 2. Users Tab */}
+          <button
+            onClick={() => {
+              setActiveTab('USERS');
+              setMobileMenuOpen(false);
+            }}
+            className={`btn-tactile w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              activeTab === 'USERS'
+                ? 'bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/20'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <Users className="w-4 h-4 shrink-0" />
+              <span>{t('admin_users_tab')}</span>
+            </div>
+            <span
+              className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'USERS'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+              }`}
+            >
+              {users.length}
+            </span>
+          </button>
+
+          {/* 3. Devices Tab */}
+          <button
+            onClick={() => {
+              setActiveTab('DEVICES');
+              setMobileMenuOpen(false);
+            }}
+            className={`btn-tactile w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              activeTab === 'DEVICES'
+                ? 'bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/20'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <Laptop className="w-4 h-4 shrink-0" />
+              <span>{t('admin_devices_tab')}</span>
+            </div>
+            <span
+              className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'DEVICES'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+              }`}
+            >
+              {devices.length}
+            </span>
+          </button>
+
+          {/* 4. Vouchers Tab */}
+          <button
+            onClick={() => {
+              setActiveTab('VOUCHERS');
+              setMobileMenuOpen(false);
+            }}
+            className={`btn-tactile w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              activeTab === 'VOUCHERS'
+                ? 'bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/20'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <Ticket className="w-4 h-4 shrink-0" />
+              <span>{t('admin_vouchers_tab')}</span>
+            </div>
+            <span
+              className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'VOUCHERS'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+              }`}
+            >
+              {vouchers.length}
+            </span>
+          </button>
+
+          {/* 5. Plans & Pricing Tab */}
+          <button
+            onClick={() => {
+              setActiveTab('PLANS');
+              setMobileMenuOpen(false);
+            }}
+            className={`btn-tactile w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              activeTab === 'PLANS'
+                ? 'bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/20'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <CreditCard className="w-4 h-4 shrink-0" />
+              <span>Gói & Bảng giá</span>
+            </div>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                activeTab === 'PLANS' ? 'bg-white/20 text-white' : 'bg-amber-500/20 text-amber-500 dark:text-amber-400'
+              }`}
+            >
+              DB
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Sidebar Footer Controls */}
+      <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+        {/* Quick Sync Button */}
+        <button
+          onClick={() => {
+            setRefreshing(true);
+            fetchData();
+          }}
+          disabled={refreshing}
+          className="btn-tactile w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 transition active:scale-95 disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 ${refreshing ? 'animate-spin' : ''}`} />
+          <span>{t('admin_sync_btn')}</span>
+        </button>
+
+        {/* Current Admin Account Card */}
+        {user && (
+          <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <UserIcon className="w-4 h-4" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                {user.name || 'Admin'}
+              </span>
+              <span className="text-[10px] text-slate-400 truncate font-mono">
+                {user.email}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen flex bg-[#f8fafc] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+      {/* 1. LEFT SIDEBAR: Bám sát hẳn mép trái màn hình (Full-height sticky sidebar) */}
+      <aside className="w-64 xl:w-72 shrink-0 min-h-screen border-r border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl sticky top-0 h-screen z-20 overflow-y-auto hidden lg:block">
+        {renderSidebarContent()}
+      </aside>
+
+      {/* Mobile Drawer Menu (Sliding Overlay) */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+          <div className="fixed inset-y-0 left-0 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl z-10 animate-in slide-in-from-left duration-300">
+            {renderSidebarContent()}
+          </div>
+        </div>
+      )}
+
+      {/* 2. RIGHT AREA: Chiếm toàn bộ phần còn lại (flex-1 min-w-0) */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen overflow-x-hidden">
+        {/* Top Header Bar */}
+        <AdminHeader
+          activeTabTitle={getTabTitle()}
+          onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+        />
+
+        {/* Main Content Body */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
+          {loading ? (
+            <div className="py-24 text-center text-slate-500 text-sm flex flex-col items-center justify-center gap-3">
+              <RefreshCw className="w-6 h-6 animate-spin text-cyan-500" />
+              <span>Đang đồng bộ dữ liệu thời gian thực từ Supabase...</span>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* TAB 1: DASHBOARD & BIỂU ĐỒ PHÂN TÍCH DOANH THU / NGƯỜI DÙNG */}
+              {activeTab === 'DASHBOARD' && (
+                <AnalyticsDashboard
+                  users={users}
+                  devices={devices}
+                  vouchers={vouchers}
+                />
+              )}
+
+              {/* TAB 2: QUẢN LÝ NGƯỜI DÙNG */}
+              {activeTab === 'USERS' && (
+                <div className="space-y-8">
+                  <AdminStats
+                    userCount={users.length}
+                    deviceCount={devices.length}
+                    proCount={proCount}
+                    voucherCount={vouchers.length}
+                  />
                   <UsersTable
                     users={users}
                     onToggleBlock={handleToggleBlockUser}
                     onUpgradeTier={handleUpgradeUser}
                   />
-                )}
+                </div>
+              )}
 
-                {activeTab === 'DEVICES' && (
+              {/* TAB 3: QUẢN LÝ THIẾT BỊ */}
+              {activeTab === 'DEVICES' && (
+                <div className="space-y-8">
+                  <AdminStats
+                    userCount={users.length}
+                    deviceCount={devices.length}
+                    proCount={proCount}
+                    voucherCount={vouchers.length}
+                  />
                   <DevicesTable devices={devices} onToggleBlock={handleToggleBlockDevice} />
-                )}
+                </div>
+              )}
 
-                {activeTab === 'VOUCHERS' && (
+              {/* TAB 4: QUẢN LÝ VOUCHER */}
+              {activeTab === 'VOUCHERS' && (
+                <div className="space-y-8">
+                  <AdminStats
+                    userCount={users.length}
+                    deviceCount={devices.length}
+                    proCount={proCount}
+                    voucherCount={vouchers.length}
+                  />
                   <VoucherManager
                     vouchers={vouchers}
                     onCreateVoucher={handleCreateVoucher}
                     onToggleVoucher={handleToggleVoucher}
                     onDeleteVoucher={handleDeleteVoucher}
                   />
-                )}
+                </div>
+              )}
 
-                {activeTab === 'PLANS' && <PricingManager />}
-              </div>
-            )}
-          </section>
-        </div>
-      </main>
+              {/* TAB 5: GÓI & BẢNG GIÁ */}
+              {activeTab === 'PLANS' && <PricingManager />}
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

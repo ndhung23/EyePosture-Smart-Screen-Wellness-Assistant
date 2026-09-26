@@ -2,58 +2,57 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck, ArrowLeft, LogOut } from 'lucide-react';
+import { ArrowLeft, LogOut, Sparkles, Menu } from 'lucide-react';
 import { ThemeToggle } from '../theme-toggle';
 import { LanguageToggle } from '../language-toggle';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
 
-export function AdminHeader() {
+interface AdminHeaderProps {
+  activeTabTitle?: string;
+  onToggleMobileMenu?: () => void;
+}
+
+export function AdminHeader({ activeTabTitle, onToggleMobileMenu }: AdminHeaderProps) {
   const { logout } = useAuth();
   const { t } = useLanguage();
 
   return (
-    <header className="sticky top-0 z-30 w-full backdrop-blur-xl bg-slate-950/80 dark:bg-slate-950/80 light:bg-white/90 border-b border-slate-800 dark:border-slate-800 light:border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-30 w-full backdrop-blur-xl bg-white/90 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
+      <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Left: Mobile hamburger & Current Page Title */}
         <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="p-2 rounded-xl text-slate-400 hover:text-white dark:hover:text-white light:hover:text-slate-900 hover:bg-slate-800/60 dark:hover:bg-slate-800/60 light:hover:bg-slate-100 transition"
-            title="Quay lại trang chủ"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+          {onToggleMobileMenu && (
+            <button
+              onClick={onToggleMobileMenu}
+              className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              aria-label="Toggle Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
+
           <div className="flex items-center gap-2.5">
-            <img
-              src="/EyePosture.png"
-              alt="EyePosture Logo"
-              className="w-9 h-9 rounded-xl object-contain shadow-lg shadow-purple-500/25"
-            />
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-base tracking-tight text-white dark:text-white light:text-slate-900">
-                  {t('admin_title')}
-                </h1>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                  Supabase Live
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 dark:text-slate-400 light:text-slate-500">
-                {t('admin_subtitle')}
-              </p>
-            </div>
+            <h1 className="font-extrabold text-base sm:text-lg tracking-tight text-slate-900 dark:text-white">
+              {activeTabTitle || t('admin_title')}
+            </h1>
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+              Supabase Live
+            </span>
           </div>
         </div>
 
+        {/* Right: Controls & Logout */}
         <div className="flex items-center gap-2.5">
           <LanguageToggle />
           <ThemeToggle />
           <button
             onClick={logout}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700/80 dark:border-slate-700/80 light:border-slate-300 bg-slate-900/60 dark:bg-slate-900/60 light:bg-slate-100 text-xs font-semibold text-slate-300 dark:text-slate-300 light:text-slate-700 hover:text-rose-400 transition"
+            className="btn-tactile flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-900/60 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-rose-500 hover:border-rose-300 dark:hover:border-rose-500/40 transition active:scale-95"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>{t('nav_logout')}</span>
+            <span className="hidden sm:inline">{t('nav_logout')}</span>
           </button>
         </div>
       </div>
