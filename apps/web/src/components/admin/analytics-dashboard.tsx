@@ -49,27 +49,36 @@ export function AnalyticsDashboard({ users, devices, vouchers }: AnalyticsDashbo
     });
   }, [users, tierFilter, statusFilter]);
 
-  // Key KPI Computations
+  // Key KPI Computations - Real Data from DB
   const stats = useMemo(() => {
-    const totalUsers = users.length || 1;
+    const totalUsers = users.length || 0;
     const proUsers = users.filter((u) => u.subscription?.tier === 'PRO');
     const familyUsers = users.filter((u) => u.subscription?.tier === 'FAMILY');
     const freeUsers = users.filter((u) => !u.subscription?.tier || u.subscription?.tier === 'FREE');
 
-    const proRevenue = proUsers.length * 199000;
-    const familyRevenue = familyUsers.length * 299000;
-    const totalRevenue = proRevenue + familyRevenue;
+    // DOANH THU THỰC TẾ: Tổng số tiền từ các hóa đơn đã thanh toán thành công
+    const totalRevenue = users.reduce((sum, u) => sum + (u.totalSpent || 0), 0);
 
-    // Monthly Recurring Revenue estimate
-    const mrr = proUsers.length * 19000 + familyUsers.length * 49000;
+    // Tính doanh thu theo từng gói từ orders thực tế đã thanh toán (PAID)
+    let proRevenue = 0;
+    let familyRevenue = 0;
+    users.forEach((u) => {
+      (u.orders || []).forEach((o) => {
+        if (o.status === 'PAID') {
+          if (o.tier === 'PRO') proRevenue += o.amount;
+          else if (o.tier === 'FAMILY') familyRevenue += o.amount;
+        }
+      });
+    });
+
+    const paidUsersCount = users.filter((u) => (u.totalSpent || 0) > 0).length;
+    const conversionRate = totalUsers > 0 ? Math.round((paidUsersCount / totalUsers) * 1000) / 10 : 0;
+    const arpu = paidUsersCount > 0 ? Math.round(totalRevenue / paidUsersCount) : 0;
+    const mrr = totalRevenue > 0 ? Math.round(totalRevenue / 12) : 0;
     const arr = totalRevenue;
 
-    const paidCount = proUsers.length + familyUsers.length;
-    const conversionRate = Math.round((paidCount / totalUsers) * 1000) / 10;
-    const arpu = paidCount > 0 ? Math.round(totalRevenue / paidCount) : 0;
-
     return {
-      totalUsers: users.length,
+      totalUsers,
       proCount: proUsers.length,
       familyCount: familyUsers.length,
       freeCount: freeUsers.length,
@@ -78,67 +87,108 @@ export function AnalyticsDashboard({ users, devices, vouchers }: AnalyticsDashbo
       familyRevenue,
       mrr,
       arr,
+      paidUsersCount,
       conversionRate,
       arpu,
     };
   }, [users]);
 
-  // Timeline Data Points for Interactive Chart based on Date Range
+  // Timeline Data Points based on Real User Registrations & Real Orders
   const timelineData = useMemo(() => {
-    let points: { label: string; revenue: number; users: number; pro: number; family: number }[] = [];
+    // Generate dates based on selected range
+    const now = new Date();
+    const nowTs = now.getTime();
+
+    // Helper: count users registered before or on a given timestamp
+    const countUsersBefore = (ts: number, tier?: SubscriptionTier) => {
+      return users.filter((u) => {
+        const uTime = u.createdAt ? new Date(u.createdAt).getTime() : 0;
+        if (uTime > ts) return false;
+        if (tier && u.subscription?.tier !== tier) return false;
+        return true;
+      }).length;
+    };
+
+    // Helper: sum revenue paid before or on a given timestamp
+    const sumRevenueBefore = (ts: number, tier?: SubscriptionTier) => {
+      let sum = 0;
+      users.forEach((u) => {
+        (u.orders || []).forEach((o) => {
+          if (o.status === 'PAID') {
+            const oTime = o.paidAt ? new Date(o.paidAt).getTime() : new Date(o.createdAt).getTime();
+            if (oTime <= ts) {
+              if (!tier || o.tier === tier) {
+                sum += o.amount;
+              }
+            }
+          }
+        });
+      });
+      return sum;
+    };
+
+    let dateList: { label: string; ts: number }[] = [];
 
     if (dateRange === '7D') {
-      points = [
-        { label: 'T2 (20/09)', revenue: 199000, users: 4, pro: 1, family: 0 },
-        { label: 'T3 (21/09)', revenue: 398000, users: 6, pro: 2, family: 0 },
-        { label: 'T4 (22/09)', revenue: 299000, users: 5, pro: 0, family: 1 },
-        { label: 'T5 (23/09)', revenue: 498000, users: 8, pro: 1, family: 1 },
-        { label: 'T6 (24/09)', revenue: 697000, users: 9, pro: 2, family: 1 },
-        { label: 'T7 (25/09)', revenue: 896000, users: 12, pro: 3, family: 1 },
-        { label: 'CN (26/09)', revenue: stats.totalRevenue > 0 ? Math.round(stats.totalRevenue * 0.28) : 995000, users: 15, pro: 4, family: 1 },
-      ];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(nowTs - i * 86400 * 1000);
+        d.setHours(23, 59, 59, 999);
+        const dayLabel = `T${d.getDay() === 0 ? 'CN' : d.getDay() + 1} (${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')})`;
+        dateList.push({ label: dayLabel, ts: d.getTime() });
+      }
     } else if (dateRange === '30D') {
-      points = [
-        { label: '01/09', revenue: 398000, users: 5, pro: 2, family: 0 },
-        { label: '06/09', revenue: 697000, users: 9, pro: 2, family: 1 },
-        { label: '12/09', revenue: 1195000, users: 14, pro: 4, family: 1 },
-        { label: '18/09', revenue: 1893000, users: 20, pro: 6, family: 2 },
-        { label: '22/09', revenue: 2690000, users: 26, pro: 8, family: 3 },
-        { label: '26/09', revenue: stats.totalRevenue || 3385000, users: stats.totalUsers || 33, pro: stats.proCount || 11, family: stats.familyCount || 4 },
-      ];
+      const step = 5;
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(nowTs - i * step * 86400 * 1000);
+        d.setHours(23, 59, 59, 999);
+        const dayLabel = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+        dateList.push({ label: dayLabel, ts: d.getTime() });
+      }
     } else if (dateRange === '90D') {
-      points = [
-        { label: 'Tháng 7', revenue: 1194000, users: 12, pro: 4, family: 1 },
-        { label: 'Tháng 8', revenue: 2191000, users: 22, pro: 7, family: 2 },
-        { label: 'Tháng 9', revenue: stats.totalRevenue || 3385000, users: stats.totalUsers || 33, pro: stats.proCount || 11, family: stats.familyCount || 4 },
-      ];
+      for (let i = 2; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+        dateList.push({ label: `Tháng ${d.getMonth() + 1}`, ts: Math.min(endOfMonth.getTime(), nowTs) });
+      }
     } else {
-      points = [
-        { label: 'Q1', revenue: 896000, users: 8, pro: 3, family: 1 },
-        { label: 'Q2', revenue: 1792000, users: 17, pro: 6, family: 2 },
-        { label: 'Q3', revenue: stats.totalRevenue || 3385000, users: stats.totalUsers || 33, pro: stats.proCount || 11, family: stats.familyCount || 4 },
-      ];
+      // 1Y - 4 quarters
+      const curQuarter = Math.floor(now.getMonth() / 3) + 1;
+      for (let q = 1; q <= 4; q++) {
+        const qEndMonth = q * 3;
+        const d = new Date(now.getFullYear(), qEndMonth, 0, 23, 59, 59, 999);
+        dateList.push({ label: `Q${q}`, ts: Math.min(d.getTime(), nowTs) });
+      }
     }
 
-    // Apply Tier filter adjustments
-    return points.map((p) => {
-      let rev = p.revenue;
-      let uCount = p.users;
-      if (tierFilter === 'PRO') {
-        rev = p.pro * 199000;
-        uCount = p.pro;
-      } else if (tierFilter === 'FAMILY') {
-        rev = p.family * 299000;
-        uCount = p.family;
-      }
-      return { ...p, revenue: rev, users: uCount };
+    return dateList.map(({ label, ts }) => {
+      const totalU = countUsersBefore(ts);
+      const proU = countUsersBefore(ts, 'PRO');
+      const famU = countUsersBefore(ts, 'FAMILY');
+      const rev = sumRevenueBefore(ts, tierFilter === 'ALL' ? undefined : tierFilter);
+
+      let filteredU = totalU;
+      if (tierFilter === 'PRO') filteredU = proU;
+      else if (tierFilter === 'FAMILY') filteredU = famU;
+      else if (tierFilter === 'FREE') filteredU = countUsersBefore(ts, 'FREE');
+
+      return {
+        label,
+        revenue: rev,
+        users: filteredU,
+        pro: proU,
+        family: famU,
+      };
     });
-  }, [dateRange, stats, tierFilter]);
+  }, [dateRange, users, tierFilter]);
 
   // SVG Chart Dimensions & Math
   const maxVal = useMemo(() => {
     const vals = timelineData.map((d) => (chartMetric === 'REVENUE' ? d.revenue : d.users));
-    return Math.max(...vals, chartMetric === 'REVENUE' ? 1000000 : 10) * 1.15;
+    const highest = Math.max(...vals, 0);
+    if (chartMetric === 'REVENUE') {
+      return highest > 0 ? highest * 1.2 : 100000;
+    }
+    return Math.max(highest, 3) * 1.2;
   }, [timelineData, chartMetric]);
 
   const svgWidth = 800;
@@ -285,10 +335,15 @@ export function AnalyticsDashboard({ users, devices, vouchers }: AnalyticsDashbo
               {stats.totalRevenue.toLocaleString('vi-VN')}đ
             </span>
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-            <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>+28.4%</span>
-            <span className="text-[11px] text-slate-400 font-normal">{isVi ? 'so với tháng trước' : 'vs last month'}</span>
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+            {stats.totalRevenue > 0 ? (
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                <ArrowUpRight className="w-3.5 h-3.5" />
+                Giao dịch đã xác nhận
+              </span>
+            ) : (
+              <span className="text-[11px] text-slate-400">Chưa phát sinh giao dịch thanh toán</span>
+            )}
           </div>
         </div>
 
@@ -310,7 +365,7 @@ export function AnalyticsDashboard({ users, devices, vouchers }: AnalyticsDashbo
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-cyan-600 dark:text-cyan-400 font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>ARR: {(stats.mrr * 12).toLocaleString('vi-VN')}đ</span>
+            <span>ARR: {(stats.arr).toLocaleString('vi-VN')}đ</span>
           </div>
         </div>
 
@@ -329,11 +384,11 @@ export function AnalyticsDashboard({ users, devices, vouchers }: AnalyticsDashbo
               {stats.conversionRate}%
             </span>
             <span className="text-xs text-slate-400">
-              ({stats.proCount + stats.familyCount}/{stats.totalUsers})
+              ({stats.paidUsersCount}/{stats.totalUsers} {isVi ? 'đã trả phí' : 'paid'})
             </span>
           </div>
           <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            <span>{stats.proCount} Pro • {stats.familyCount} Family</span>
+            <span>{stats.familyCount} Family ({isVi ? 'Đặc quyền VIP' : 'VIP grants'})</span>
           </div>
         </div>
 
@@ -353,8 +408,8 @@ export function AnalyticsDashboard({ users, devices, vouchers }: AnalyticsDashbo
             </span>
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-            <span>{isVi ? 'Giá trị vòng đời cao' : 'High LTV index'}</span>
+            <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" />
+            <span>{stats.paidUsersCount > 0 ? (isVi ? 'Giá trị vòng đời cao' : 'High LTV index') : (isVi ? 'Theo dõi giao dịch thực' : 'Real-time billing')}</span>
           </div>
         </div>
       </div>
@@ -403,6 +458,18 @@ export function AnalyticsDashboard({ users, devices, vouchers }: AnalyticsDashbo
             </button>
           </div>
         </div>
+
+        {/* Realtime Alert when 0 revenue */}
+        {chartMetric === 'REVENUE' && stats.totalRevenue === 0 && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs flex items-center gap-2.5">
+            <Clock className="w-4 h-4 shrink-0" />
+            <span>
+              {isVi
+                ? 'Hệ thống ghi nhận 0 ₫ doanh thu thực tế từ cổng thanh toán. Hai tài khoản (admin & test@gmail.com) hiện đang sử dụng gói FAMILY theo diện cấp quyền quản trị/dùng thử nội bộ, chưa phát sinh giao dịch thanh toán.'
+                : 'Zero billing revenue recorded. Both accounts (admin & test@gmail.com) are currently active via internal VIP grants.'}
+            </span>
+          </div>
+        )}
 
         {/* Dynamic SVG Area Graph with Crosshair */}
         <div className="relative w-full overflow-hidden pt-4 pb-2">

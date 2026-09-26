@@ -1,6 +1,16 @@
 export type SubscriptionTier = 'FREE' | 'PRO' | 'FAMILY';
 export type SubscriptionStatus = 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
 
+export interface UserOrderItem {
+  orderCode: string;
+  tier: 'PRO' | 'FAMILY';
+  interval: 'month' | 'year' | 'lifetime';
+  amount: number;
+  status: 'PENDING' | 'PAID' | 'EXPIRED';
+  createdAt: string;
+  paidAt?: string | null;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -12,9 +22,15 @@ export interface UserProfile {
     tier: SubscriptionTier;
     status: SubscriptionStatus;
     expiresAt: number | null;
+    createdAt?: string;
+    updatedAt?: string;
   };
   deviceCount?: number;
+  devices?: DeviceItem[];
+  totalSpent?: number;
+  orders?: UserOrderItem[];
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface DeviceItem {

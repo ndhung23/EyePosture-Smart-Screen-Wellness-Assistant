@@ -114,12 +114,78 @@ export class EmailService {
       return { success: true, message: 'Mã xác thực đã được gửi đến email của bạn.' };
     } catch (err: any) {
       console.error('[EmailService] Failed to send email via SMTP:', err);
-      // Fallback: If SMTP credentials fail (e.g. wrong password), return simulated OTP so user testing isn't blocked
       return {
         success: true,
         simulated: true,
         message: `Mã xác thực: ${code} (SMTP máy chủ đang bận hoặc chưa đúng cấu hình).`,
       };
+    }
+  }
+
+  public static async sendPaymentSuccessEmail(params: {
+    toEmail: string;
+    userName?: string;
+    orderCode: string;
+    tier: string;
+    amount: number;
+    expiresAt: number;
+  }): Promise<boolean> {
+    const { toEmail, userName, orderCode, tier, amount, expiresAt } = params;
+    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpPort = Number(process.env.SMTP_PORT || 465);
+    const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
+    const smtpUser = process.env.SMTP_USER || '';
+    const smtpPass = process.env.SMTP_PASS || '';
+    const smtpFrom = process.env.SMTP_FROM || `"EyePosture Assistant" <${smtpUser || 'support@eyeposture.com'}>`;
+
+    if (!smtpUser || !smtpPass || smtpPass === 'your_app_password_here') {
+      console.log(`[EmailService] SIMULATED PAYMENT EMAIL to ${toEmail}: Đơn hàng ${orderCode} thành công (${amount}đ)`);
+      return true;
+    }
+
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpSecure,
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+
+      const formattedDate = new Date(expiresAt).toLocaleDateString('vi-VN');
+      const tierText = tier === 'FAMILY' ? 'Gói Gia đình (Family VIP)' : 'Gói Cá nhân (Pro VIP)';
+
+      await transporter.sendMail({
+        from: smtpFrom,
+        to: toEmail,
+        subject: `[EyePosture] Xác nhận thanh toán thành công - Kích hoạt ${tierText}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+            <div style="background: #0f172a; padding: 24px; text-align: center;">
+              <h1 style="color: #2dd4bf; margin: 0; font-size: 22px;">EyePosture Assistant</h1>
+              <p style="color: #94a3b8; margin: 6px 0 0; font-size: 13px;">Xác nhận thanh toán đơn hàng #${orderCode}</p>
+            </div>
+            <div style="padding: 28px;">
+              <h2 style="color: #0f172a; font-size: 18px;">Xin chào ${userName || toEmail},</h2>
+              <p style="color: #475569; font-size: 14px; line-height: 1.6;">
+                Hệ thống đã nhận được khoản thanh toán <strong>${amount.toLocaleString('vi-VN')} đ</strong> của bạn và tự động kích hoạt thành công <strong>${tierText}</strong>.
+              </p>
+              <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin: 20px 0; font-size: 14px; color: #334155;">
+                <p style="margin: 4px 0;"><strong>Mã đơn hàng:</strong> #${orderCode}</p>
+                <p style="margin: 4px 0;"><strong>Gói:</strong> ${tierText}</p>
+                <p style="margin: 4px 0;"><strong>Thời hạn:</strong> Đến ngày ${formattedDate}</p>
+              </div>
+              <p style="color: #64748b; font-size: 13px;">
+                Bạn có thể mở ứng dụng EyePosture Desktop trên máy tính và đăng nhập để trải nghiệm toàn bộ tính năng cao cấp ngay bây giờ.
+              </p>
+            </div>
+          </div>
+        `,
+      });
+      console.log(`[EmailService] Đã gửi email kích hoạt tới ${toEmail}`);
+      return true;
+    } catch (err) {
+      console.error('[EmailService] Lỗi gửi email thanh toán:', err);
+      return false;
     }
   }
 }

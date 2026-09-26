@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Check, Sparkles, Tag, ArrowRight, QrCode, X, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Check, Sparkles, Tag, ArrowRight, QrCode, X, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
 
 export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { t, language } = useLanguage();
   const [interval, setInterval] = useState<'month' | 'year'>('year');
   const [voucherCode, setVoucherCode] = useState('');
@@ -14,7 +14,14 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
   const [voucherMessage, setVoucherMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [checkingVoucher, setCheckingVoucher] = useState(false);
   const [showVoucherInput, setShowVoucherInput] = useState(false);
-  const [checkoutModal, setCheckoutModal] = useState<{ tier: string; amount: number; orderCode: string; qrUrl: string } | null>(null);
+  const [checkoutModal, setCheckoutModal] = useState<{
+    tier: string;
+    amount: number;
+    orderCode: string;
+    qrUrl: string;
+    status: 'CREATING' | 'PENDING' | 'PAID';
+  } | null>(null);
+  const [creatingOrder, setCreatingOrder] = useState(false);
 
   const [dbPlans, setDbPlans] = useState<Record<string, number>>({
     PRO_month: 19000,
@@ -37,6 +44,41 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
       })
       .catch(() => {});
   }, []);
+
+  // Polling kiểm tra trạng thái thanh toán từ SePay Webhook
+  useEffect(() => {
+    if (!checkoutModal || checkoutModal.status !== 'PENDING') return;
+
+    const pollTimer = window.setInterval(async () => {
+      try {
+        const res = await fetch(`/api/pricing/order?orderCode=${encodeURIComponent(checkoutModal.orderCode)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'PAID') {
+            setCheckoutModal((prev) => (prev ? { ...prev, status: 'PAID' } : null));
+
+            // Tự động nâng quyền của user trong local state
+            updateUser({
+              subscription: {
+                tier: checkoutModal.tier as any,
+                status: 'ACTIVE',
+                expiresAt: Date.now() + (interval === 'year' ? 365 : 30) * 86400 * 1000,
+              },
+            });
+
+            // Tự động đóng modal sau 4 giây
+            setTimeout(() => {
+              setCheckoutModal(null);
+            }, 4500);
+          }
+        }
+      } catch (err) {
+        // Silent poll error
+      }
+    }, 2500);
+
+    return () => clearInterval(pollTimer);
+  }, [checkoutModal?.orderCode, checkoutModal?.status, interval, checkoutModal?.tier, updateUser]);
 
   const basePrices = {
     PRO: dbPlans[`PRO_${interval}`] || (interval === 'year' ? 199000 : 19000),
@@ -79,13 +121,13 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
     }
   };
 
-  const handleCheckout = (tier: 'PRO' | 'FAMILY') => {
+  const handleCheckout = async (tier: 'PRO' | 'FAMILY') => {
     if (!user) {
       onOpenAuth();
       return;
     }
     const finalAmount = getDiscountedPrice(basePrices[tier]);
-    const orderCode = `EP${Date.now().toString().slice(-6)}`;
+    const orderCode = `EP${Math.floor(100000 + Math.random() * 900000)}`;
     const bankAccount = process.env.NEXT_PUBLIC_PAYMENT_BANK_ACCOUNT || '4661398013';
     const bankCode = process.env.NEXT_PUBLIC_PAYMENT_BANK_CODE || 'BIDV';
     const accountName = process.env.NEXT_PUBLIC_PAYMENT_BANK_ACCOUNT_NAME || 'NGUYEN DUY HUNG';
@@ -93,11 +135,31 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
       accountName
     )}`;
 
+    setCreatingOrder(true);
+    try {
+      await fetch('/api/pricing/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderCode,
+          userId: user.id,
+          tier,
+          interval,
+          amount: finalAmount,
+        }),
+      });
+    } catch (err) {
+      console.error('Lỗi khi lưu đơn hàng:', err);
+    } finally {
+      setCreatingOrder(false);
+    }
+
     setCheckoutModal({
       tier,
       amount: finalAmount,
       orderCode,
       qrUrl,
+      status: 'PENDING',
     });
   };
 
@@ -390,8 +452,11 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
       {/* ============================================================ */}
       {/* CHECKOUT VIETQR MODAL                                         */}
       {/* ============================================================ */}
+      {/* ============================================================ */}
+      {/* CHECKOUT VIETQR MODAL (AUTOMATED SEPAY INTEGRATION)          */}
+      {/* ============================================================ */}
       {checkoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
           <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-6 text-slate-900 dark:text-white shadow-2xl space-y-5">
             <button
               onClick={() => setCheckoutModal(null)}
@@ -400,55 +465,107 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
-                <QrCode className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-lg text-slate-900 dark:text-white">{t('pricing_vietqr_title')}</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{t('pricing_vietqr_desc')}</p>
-              </div>
-            </div>
+            {checkoutModal.status === 'PAID' ? (
+              <div className="py-6 flex flex-col items-center justify-center text-center space-y-4">
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-500/40 flex items-center justify-center text-emerald-500 animate-bounce">
+                    <CheckCircle2 className="w-12 h-12" />
+                  </div>
+                  <div className="absolute inset-0 rounded-full bg-emerald-500/30 blur-xl -z-10" />
+                </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 dark:border-transparent flex flex-col items-center justify-center">
-              <img
-                src={checkoutModal.qrUrl}
-                alt="VietQR Code"
-                className="w-64 h-64 object-contain rounded-lg"
-              />
-              <span className="text-[11px] text-slate-600 mt-2 font-medium">
-                {t('pricing_modal_scan_hint')}
-              </span>
-            </div>
+                <div className="space-y-1">
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white">
+                    Thanh Toán Thành Công!
+                  </h3>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                    Gói {checkoutModal.tier} VIP đã được kích hoạt tức thì
+                  </p>
+                </div>
 
-            <div className="space-y-2 text-xs bg-slate-50 dark:bg-slate-950/80 p-3.5 rounded-xl border border-slate-200 dark:border-white/10 font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">{t('pricing_modal_tier')}</span>
-                <span className="font-bold text-cyan-600 dark:text-cyan-400">{checkoutModal.tier}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">{t('pricing_modal_amount')}</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                  {checkoutModal.amount.toLocaleString('vi-VN')} đ
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-slate-400">{t('pricing_modal_note')}</span>
-                <span className="font-bold text-amber-600 dark:text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
-                  {checkoutModal.orderCode}
-                </span>
-              </div>
-            </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400 max-w-xs leading-relaxed">
+                  Email xác nhận cùng biên nhận thanh toán đã được gửi tới tài khoản của bạn. Bạn có thể mở ứng dụng EyePosture Desktop để trải nghiệm ngay!
+                </p>
 
-            <button
-              onClick={() => {
-                alert(t('pricing_modal_alert'));
-                setCheckoutModal(null);
-              }}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition"
-            >
-              {t('pricing_vietqr_done')}
-            </button>
+                <div className="w-full pt-3">
+                  <button
+                    onClick={() => setCheckoutModal(null)}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 active:scale-95 transition"
+                  >
+                    Hoàn tất & Đóng
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                    <QrCode className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg text-slate-900 dark:text-white">{t('pricing_vietqr_title')}</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('pricing_vietqr_desc')}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 dark:border-transparent flex flex-col items-center justify-center relative">
+                  <img
+                    src={checkoutModal.qrUrl}
+                    alt="VietQR Code"
+                    className="w-64 h-64 object-contain rounded-lg"
+                  />
+                  <span className="text-[11px] text-slate-600 mt-2 font-medium">
+                    {t('pricing_modal_scan_hint')}
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-xs bg-slate-50 dark:bg-slate-950/80 p-3.5 rounded-xl border border-slate-200 dark:border-white/10 font-mono">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">{t('pricing_modal_tier')}</span>
+                    <span className="font-bold text-cyan-600 dark:text-cyan-400">{checkoutModal.tier} VIP</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">{t('pricing_modal_amount')}</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                      {checkoutModal.amount.toLocaleString('vi-VN')} đ
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">{t('pricing_modal_note')}</span>
+                    <span className="font-bold text-amber-600 dark:text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
+                      {checkoutModal.orderCode}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Realtime Listening Status Banner */}
+                <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-cyan-300 text-xs">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-cyan-500" />
+                  <span className="text-[11px] font-medium">
+                    Đang tự động lắng nghe giao dịch chuyển khoản...
+                  </span>
+                </div>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`/api/pricing/order?orderCode=${encodeURIComponent(checkoutModal.orderCode)}`);
+                      if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'PAID') {
+                          setCheckoutModal((prev) => (prev ? { ...prev, status: 'PAID' } : null));
+                          return;
+                        }
+                      }
+                    } catch {}
+                    alert('Hệ thống chưa nhận được thông tin chuyển khoản từ ngân hàng. Nếu bạn đã quét mã và chuyển tiền, vui lòng đợi 5-15 giây để SePay đồng bộ tự động!');
+                  }}
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition active:scale-95"
+                >
+                  Kiểm tra giao dịch ngay
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

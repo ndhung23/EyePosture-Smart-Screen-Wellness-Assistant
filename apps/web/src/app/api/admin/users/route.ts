@@ -4,26 +4,69 @@ import { getAdminSupabase } from '@/lib/supabase';
 export async function GET() {
   const supabase = getAdminSupabase();
   try {
-    const [usersRes, subsRes, devsRes] = await Promise.all([
+    const [usersRes, subsRes, devsRes, ordersRes] = await Promise.all([
       supabase.from('users').select('*').order('created_at', { ascending: false }),
       supabase.from('subscriptions').select('*'),
-      supabase.from('devices').select('user_id'),
+      supabase.from('devices').select('*'),
+      supabase.from('orders').select('*').order('created_at', { ascending: false }),
     ]);
 
     const users = usersRes.data || [];
     const subs = subsRes.data || [];
     const devs = devsRes.data || [];
+    const orders = ordersRes.data || [];
 
     const subMap = new Map<string, any>();
     for (const s of subs) subMap.set(s.user_id, s);
 
-    const devCountMap = new Map<string, number>();
+    const devsMap = new Map<string, any[]>();
     for (const d of devs) {
-      if (d.user_id) devCountMap.set(d.user_id, (devCountMap.get(d.user_id) || 0) + 1);
+      if (d.user_id) {
+        const list = devsMap.get(d.user_id) || [];
+        list.push({
+          id: d.id,
+          userId: d.user_id,
+          deviceName: d.device_name || 'Thiết bị chưa đặt tên',
+          deviceFingerprint: d.device_fingerprint || '',
+          os: d.os || 'Unknown OS',
+          appVersion: d.app_version || '1.0.0',
+          status: d.is_blocked ? 'BLOCKED' : (d.status || 'ACTIVE'),
+          isBlocked: Boolean(d.is_blocked),
+          lastActiveAt: d.last_active_at || d.created_at,
+          createdAt: d.created_at,
+        });
+        devsMap.set(d.user_id, list);
+      }
+    }
+
+    const ordersMap = new Map<string, any[]>();
+    const spentMap = new Map<string, number>();
+    for (const o of orders) {
+      if (o.user_id) {
+        const list = ordersMap.get(o.user_id) || [];
+        list.push({
+          orderCode: o.order_code,
+          tier: o.tier,
+          interval: o.interval,
+          amount: Number(o.amount) || 0,
+          status: o.status,
+          createdAt: o.created_at,
+          paidAt: o.paid_at,
+        });
+        ordersMap.set(o.user_id, list);
+
+        if (o.status === 'PAID') {
+          spentMap.set(o.user_id, (spentMap.get(o.user_id) || 0) + (Number(o.amount) || 0));
+        }
+      }
     }
 
     const formatted = users.map((u) => {
       const sub = subMap.get(u.id);
+      const userDevs = devsMap.get(u.id) || [];
+      const userOrders = ordersMap.get(u.id) || [];
+      const actualPaid = spentMap.get(u.id) || 0;
+
       return {
         id: u.id,
         email: u.email,
@@ -32,10 +75,20 @@ export async function GET() {
         isBlocked: Boolean(u.is_blocked),
         status: u.is_blocked ? 'BLOCKED' : 'ACTIVE',
         subscription: sub
-          ? { tier: sub.tier, status: sub.status, expiresAt: Number(sub.expires_at) }
+          ? {
+              tier: sub.tier,
+              status: sub.status,
+              expiresAt: Number(sub.expires_at),
+              createdAt: sub.created_at,
+              updatedAt: sub.updated_at,
+            }
           : { tier: 'FREE', status: 'ACTIVE', expiresAt: null },
-        deviceCount: devCountMap.get(u.id) || 0,
+        deviceCount: userDevs.length,
+        devices: userDevs,
+        totalSpent: actualPaid,
+        orders: userOrders,
         createdAt: u.created_at,
+        updatedAt: u.updated_at,
       };
     });
 

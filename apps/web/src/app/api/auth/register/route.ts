@@ -19,8 +19,13 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    if (cleanEmail === 'admin') {
-      return NextResponse.json({ error: 'Tên người dùng admin đã được bảo lưu' }, { status: 409 });
+    const reservedAdminEmails = (process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (reservedAdminEmails.includes(cleanEmail)) {
+      return NextResponse.json({ error: 'Email này đã được bảo lưu' }, { status: 409 });
     }
 
     const supabase = getAdminSupabase();

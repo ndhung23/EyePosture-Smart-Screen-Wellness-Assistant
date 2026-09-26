@@ -34,10 +34,14 @@ export function getAdminUserData(): User & { passwordHash: string; salt: string 
 
 export function isAdminIdentifier(email: string): boolean {
   const clean = (email || '').trim().toLowerCase();
+  const envAdmins = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
   return (
-    clean === 'admin' ||
+    envAdmins.includes(clean) ||
     clean === 'admin@eyeposture.com' ||
-    clean === 'admin@gmail.com' ||
     clean === 'administrator'
   );
 }

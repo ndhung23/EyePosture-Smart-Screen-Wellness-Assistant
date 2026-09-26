@@ -23,6 +23,7 @@ import { handleAdminRoutes } from './admin/admin-handlers.js';
 import { handlePasswordResetRoutes } from './auth/password-reset-handlers.js';
 import { handleAuthRoutes } from './auth/auth-handlers.js';
 import { handleVoucherRoutes } from './admin/voucher-handlers.js';
+import { EmailService } from './services/email-service.js';
 import { SupabaseService } from './supabase-client.js';
 import {
   seedAdminAccount,
@@ -451,8 +452,8 @@ export class EyePostureApiServer {
       return;
     }
 
-    // 8. POST /api/v1/webhooks/sepay (SePay Automated Bank Transfer Webhook)
-    if (pathname === '/api/v1/webhooks/sepay' && method === 'POST') {
+    // 8. POST /api/v1/webhooks/sepay or /api/v1/billing/webhook/sepay (SePay Webhook)
+    if ((pathname === '/api/v1/webhooks/sepay' || pathname === '/api/v1/billing/webhook/sepay') && method === 'POST') {
       const authHeader = (req.headers.authorization as string) || (req.headers['apikey'] as string);
       if (!this.sepayProvider.verifyApiKey(authHeader)) {
         this.sendJson(res, 401, { error: 'Unauthorized: Invalid SePay API key' });
@@ -526,6 +527,20 @@ export class EyePostureApiServer {
             status: 'ACTIVE',
             expiresAt: Date.now() + durationMs,
           });
+        }
+      }
+
+      if (matchedUserId) {
+        const u = this.users.get(matchedUserId) || (this.supabase.isAvailable() ? await this.supabase.findUserById(matchedUserId) : null);
+        if (u?.email) {
+          EmailService.sendPaymentSuccessEmail({
+            toEmail: u.email,
+            userName: u.name,
+            orderCode: extractedOrderCode || `EP${Date.now()}`,
+            tier: targetTier,
+            amount: body.transferAmount,
+            expiresAt: Date.now() + 30 * 86400 * 1000,
+          }).catch(() => {});
         }
       }
 
