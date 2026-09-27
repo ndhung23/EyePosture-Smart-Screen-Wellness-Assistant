@@ -75,7 +75,9 @@ export function AffiliatePortal({ onOpenAuth }: { onOpenAuth: () => void }) {
     }
   }, [user]);
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://eyeposture.com';
+  const origin = typeof window !== 'undefined' && window.location.origin
+    ? window.location.origin
+    : (process.env.NEXT_PUBLIC_APP_URL || 'https://eyeposture.vercel.app');
   const affiliateUrl = account ? `${origin}/?ref=${account.affiliateCode}` : '';
 
   const handleCopyLink = () => {

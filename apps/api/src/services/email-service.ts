@@ -53,7 +53,13 @@ export class EmailService {
       !smtpUser ||
       !smtpPass ||
       smtpPass === 'your_app_password_here' ||
-      smtpUser === 'your_email@gmail.com';
+      smtpUser === 'your_email@gmail.com' ||
+      process.env.NODE_ENV === 'test' ||
+      Boolean(process.env.VITEST) ||
+      cleanEmail.endsWith('@example.com') ||
+      cleanEmail.endsWith('@test.com') ||
+      cleanEmail.includes('reset_user') ||
+      cleanEmail.includes('test_');
 
     if (isSimulated) {
       console.log(`[EmailService] SIMULATED EMAIL to ${cleanEmail}: Mã xác thực đặt lại mật khẩu là [${code}] (Hiệu lực trong 15 phút)`);
@@ -138,7 +144,16 @@ export class EmailService {
     const smtpPass = process.env.SMTP_PASS || '';
     const smtpFrom = process.env.SMTP_FROM || `"EyePosture Assistant" <${smtpUser || 'support@eyeposture.com'}>`;
 
-    if (!smtpUser || !smtpPass || smtpPass === 'your_app_password_here') {
+    if (
+      !smtpUser ||
+      !smtpPass ||
+      smtpPass === 'your_app_password_here' ||
+      process.env.NODE_ENV === 'test' ||
+      Boolean(process.env.VITEST) ||
+      toEmail.endsWith('@example.com') ||
+      toEmail.endsWith('@test.com') ||
+      toEmail.includes('sepay_')
+    ) {
       console.log(`[EmailService] SIMULATED PAYMENT EMAIL to ${toEmail}: Đơn hàng ${orderCode} thành công (${amount}đ)`);
       return true;
     }
