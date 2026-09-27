@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "id": "e6355886-94d5-456d-866e-97c015bc7346",
+    "userId": "5854b88a-cde1-4b5a-b85f-0dd552e25b74",
+    "deviceFingerprint": "hw_macbook_01",
+    "deviceName": "Hung Laptop",
+    "os": "macOS",
+    "appVersion": "1.0.0",
+    "status": "ACTIVE",
+    "isBlocked": false,
+    "lastActiveAt": "2026-09-27T13:21:22.472Z",
+    "createdAt": "2026-09-27T13:21:22.472Z"
+  },
+  {
+    "id": "6d8923b0-0be1-44e7-bde7-63fbb1ce6489",
+    "userId": "5854b88a-cde1-4b5a-b85f-0dd552e25b74",
+    "deviceName": "Hung Laptop",
+    "deviceFingerprint": "hw_macbook_01",
+    "os": "macOS",
+    "appVersion": "1.0.0",
+    "status": "ACTIVE",
+    "isBlocked": false,
+    "lastActiveAt": "2026-09-27T13:21:22.473+00:00",
+    "createdAt": "2026-09-27T13:21:26.010156+00:00"
+  }
+]
