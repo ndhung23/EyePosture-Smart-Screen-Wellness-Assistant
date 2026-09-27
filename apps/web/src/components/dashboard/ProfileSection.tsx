@@ -246,51 +246,51 @@ export function ProfileSection() {
       {/* 2. Subscription Status & License Card */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Subscription Plan Status */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white border border-slate-800 shadow-xl flex flex-col justify-between">
+        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950 text-slate-900 dark:text-white border border-amber-300/70 dark:border-slate-800 shadow-md flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-xl bg-amber-400/20 text-amber-400">
+                <div className="p-2.5 rounded-xl bg-amber-400/20 text-amber-600 dark:text-amber-400">
                   <Crown className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 uppercase tracking-wider">{isVi ? 'Gói Dịch Vụ Của Bạn' : 'Your License'}</span>
-                  <h3 className="text-2xl font-black text-amber-400">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{isVi ? 'Gói Dịch Vụ Của Bạn' : 'Your License'}</span>
+                  <h3 className="text-2xl font-black text-amber-600 dark:text-amber-400">
                     {tier === 'FAMILY' ? 'FAMILY VIP' : tier === 'PRO' ? 'PRO VIP' : 'FREE TIER'}
                   </h3>
                 </div>
               </div>
-              <span className="px-2.5 py-1 rounded-full text-xs font-extrabold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <span className="px-2.5 py-1 rounded-full text-xs font-extrabold uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                 ACTIVE
               </span>
             </div>
 
-            <div className="mt-6 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-300">
+            <div className="mt-6 p-4 rounded-2xl bg-white/80 dark:bg-slate-950/60 border border-amber-200/80 dark:border-slate-800 space-y-2 shadow-sm">
+              <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
                 <span>{isVi ? 'Thời hạn bản quyền:' : 'Expires at:'}</span>
-                <span className="font-bold text-white flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                   <span>{expiryText}</span>
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs text-slate-300">
+              <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
                 <span>{isVi ? 'Quyền lợi AI On-Device:' : 'AI Processing:'}</span>
-                <span className="font-bold text-emerald-400">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
                   {tier === 'FREE' ? (isVi ? '2 tiếng/ngày' : '2 hours/day') : (isVi ? 'Không giới hạn 24/7' : 'Unlimited 24/7')}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-slate-800 flex items-center justify-between gap-4">
+          <div className="mt-8 pt-6 border-t border-amber-200/80 dark:border-slate-800 flex items-center justify-between gap-4">
             <a
               href="/#pricing"
-              className="px-5 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 hover:from-amber-300 hover:to-orange-400 active:scale-95 transition-all flex items-center gap-1.5"
+              className="px-5 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 hover:from-amber-300 hover:to-orange-400 active:scale-95 transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/20"
             >
               <Sparkles className="w-4 h-4" />
               <span>{tier === 'FREE' ? (isVi ? 'Nâng Cấp VIP Ngay' : 'Upgrade VIP') : (isVi ? 'Gia Hạn Bản Quyền' : 'Renew')}</span>
             </a>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
               {isVi ? 'Thanh toán tự động qua SePay' : 'Automated QR SePay'}
             </span>
           </div>

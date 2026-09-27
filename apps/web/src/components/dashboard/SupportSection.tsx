@@ -114,18 +114,18 @@ export function SupportSection() {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* 1. Official Support Channel Banner */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white border border-indigo-500/30 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-50 via-cyan-50/50 to-white dark:from-indigo-900 dark:via-slate-900 dark:to-slate-950 text-slate-900 dark:text-white border border-indigo-200/80 dark:border-indigo-500/30 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-semibold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 text-xs font-semibold">
             <Clock className="w-3.5 h-3.5" />
             <span>{isVi ? 'Phản Hồi Trong 2 - 4 Giờ Làm Việc' : 'Response within 2 - 4 hours'}</span>
           </div>
 
           <div>
-            <h3 className="text-xl sm:text-2xl font-bold tracking-tight">
+            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               {isVi ? 'Kênh Hỗ Trợ Khách Hàng & Đối Tác' : 'Official Customer & Partner Support'}
             </h3>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-xl">
               {isVi
                 ? 'Đội ngũ kỹ sư và chăm sóc khách hàng EyePosture luôn sẵn sàng hỗ trợ bạn về bản quyền, cài đặt phần mềm, lỗi camera hoặc hợp tác tiếp thị.'
                 : 'Our engineering & support team is ready to assist with licensing, desktop installation, camera AI, or affiliate partnerships.'}
@@ -133,22 +133,22 @@ export function SupportSection() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <div className="px-4 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-sm font-mono text-cyan-400 flex items-center gap-2 select-all">
-              <Mail className="w-4 h-4 text-slate-400" />
+            <div className="px-4 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-300 dark:border-slate-800 text-sm font-mono text-cyan-700 dark:text-cyan-400 flex items-center gap-2 select-all shadow-sm">
+              <Mail className="w-4 h-4 text-slate-500 dark:text-slate-400" />
               <span>{SUPPORT_EMAIL}</span>
             </div>
 
             <button
               onClick={handleCopyEmail}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition flex items-center gap-1.5 active:scale-95"
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-800 dark:text-white border border-slate-300 dark:border-slate-700 transition flex items-center gap-1.5 active:scale-95 shadow-sm"
             >
-              {copiedEmail ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              {copiedEmail ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
               <span>{copiedEmail ? (isVi ? 'Đã sao chép' : 'Copied') : (isVi ? 'Sao Chép Email' : 'Copy Email')}</span>
             </button>
 
             <a
               href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`[EyePosture Support] Yêu cầu hỗ trợ từ ${user?.email || 'Người dùng'}`)}`}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-xs font-bold text-white transition flex items-center gap-1.5 shadow-md shadow-cyan-500/20 active:scale-95"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-xs font-bold text-white transition flex items-center gap-1.5 shadow-md shadow-cyan-600/20 active:scale-95"
             >
               <Send className="w-3.5 h-3.5" />
               <span>{isVi ? 'Gửi Email Trực Tiếp' : 'Send Direct Email'}</span>
