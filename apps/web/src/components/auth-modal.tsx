@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, Lock, Mail, User, KeyRound, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
@@ -8,6 +9,7 @@ import { useLanguage } from '@/lib/language-context';
 export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { login } = useAuth();
   const { t } = useLanguage();
+  const router = useRouter();
   const [tab, setTab] = useState<'LOGIN' | 'REGISTER' | 'FORGOT'>('LOGIN');
 
   // Form states
@@ -39,6 +41,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
       login(data.token, data.user);
       onClose();
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -61,6 +64,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
       login(data.token, data.user);
       onClose();
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);
     } finally {

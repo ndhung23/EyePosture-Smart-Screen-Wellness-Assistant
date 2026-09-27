@@ -94,19 +94,25 @@ export function Navbar({ onOpenAuth }: { onOpenAuth: () => void }) {
                   {t('nav_admin')}
                 </Link>
               )}
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-800 text-sm hover:border-slate-400 dark:hover:border-slate-700 transition-colors duration-200">
-                <UserIcon className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-800 text-sm hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all duration-200 group"
+              >
+                <UserIcon className="w-4 h-4 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform" />
                 <span className="font-medium text-slate-800 dark:text-slate-200 max-w-[120px] truncate">
                   {user.name || user.email}
                 </span>
-                <button
-                  onClick={logout}
-                  title={t('nav_logout')}
-                  className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-200"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
-              </div>
+                <span className="hidden md:inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+                  Dashboard
+                </span>
+              </Link>
+              <button
+                onClick={logout}
+                title={t('nav_logout')}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-200"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             </div>
           ) : (
             <button
@@ -163,6 +169,16 @@ export function Navbar({ onOpenAuth }: { onOpenAuth: () => void }) {
               HOT
             </span>
           </Link>
+          {user && (
+            <Link
+              href="/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between py-2 text-cyan-600 dark:text-cyan-400 hover:translate-x-1.5 transition-all duration-200 font-semibold"
+            >
+              <span>User Dashboard</span>
+              <UserIcon className="w-4 h-4" />
+            </Link>
+          )}
           {isAdmin && (
             <Link
               href="/admin"
