@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, Sparkles, Tag, ArrowRight, QrCode, X, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react';
+import { Check, Sparkles, Tag, ArrowRight, QrCode, X, ChevronDown, Loader2, CheckCircle2, Crown, Users } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
 
 export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
   const { user, updateUser } = useAuth();
   const { t, language } = useLanguage();
-  const [interval, setInterval] = useState<'month' | 'year'>('year');
+  const isVi = language === 'vi';
+  const [interval, setInterval] = useState<'month' | 'year' | 'lifetime'>('year');
   const [voucherCode, setVoucherCode] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; discountPercent: number } | null>(null);
   const [voucherMessage, setVoucherMessage] = useState<{ text: string; isError: boolean } | null>(null);
@@ -26,8 +27,10 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
   const [dbPlans, setDbPlans] = useState<Record<string, number>>({
     PRO_month: 19000,
     PRO_year: 199000,
+    PRO_lifetime: 299000,
     FAMILY_month: 49000,
     FAMILY_year: 299000,
+    FAMILY_lifetime: 499000,
   });
 
   useEffect(() => {
@@ -97,7 +100,7 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
               subscription: {
                 tier: checkoutModal.tier as any,
                 status: 'ACTIVE',
-                expiresAt: Date.now() + (interval === 'year' ? 365 : 30) * 86400 * 1000,
+                expiresAt: Date.now() + (interval === 'lifetime' ? 36500 : interval === 'year' ? 365 : 30) * 86400 * 1000,
               },
             });
 
@@ -116,9 +119,20 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
   }, [checkoutModal?.orderCode, checkoutModal?.status, interval, checkoutModal?.tier, updateUser]);
 
   const basePrices = {
-    PRO: dbPlans[`PRO_${interval}`] || (interval === 'year' ? 199000 : 19000),
-    FAMILY: dbPlans[`FAMILY_${interval}`] || (interval === 'year' ? 299000 : 49000),
+    PRO: dbPlans[`PRO_${interval}`] || (interval === 'lifetime' ? 299000 : interval === 'year' ? 199000 : 19000),
+    FAMILY: dbPlans[`FAMILY_${interval}`] || (interval === 'lifetime' ? 499000 : interval === 'year' ? 299000 : 49000),
   };
+
+  const originalPrices = {
+    PRO: interval === 'lifetime' ? 699000 : interval === 'year' ? 399000 : 39000,
+    FAMILY: interval === 'lifetime' ? 999000 : interval === 'year' ? 599000 : 99000,
+  };
+
+  const unitText = interval === 'lifetime'
+    ? (isVi ? ' trọn đời' : ' lifetime')
+    : interval === 'year'
+    ? (isVi ? ' / năm' : ' / year')
+    : (isVi ? ' / tháng' : ' / month');
 
   const getDiscountedPrice = (amount: number) => {
     if (!appliedVoucher) return amount;
@@ -207,137 +221,196 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+        <div className="text-center max-w-3xl mx-auto mb-12 space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300 text-xs font-mono font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
-            <span>{t('pricing_tag')}</span>
+            <span>{isVi ? 'BẢNG GIÁ MINH BẠCH' : 'TRANSPARENT PRICING'}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-            <span>{language === 'vi' ? 'Đầu Tư Cho Đôi Mắt Và ' : 'Invest in Your Eyes & '}</span>
-            <span className="bg-gradient-to-r from-cyan-600 via-teal-500 to-indigo-600 dark:from-cyan-400 dark:via-teal-300 dark:to-indigo-400 bg-clip-text text-transparent">
-              {language === 'vi' ? 'Sức Khỏe Lâu Dài' : 'Lifelong Health'}
+            <span>{isVi ? 'Gói Dịch Vụ & ' : 'Plans & '}</span>
+            <span className="bg-gradient-to-r from-teal-600 via-cyan-600 to-indigo-600 dark:from-teal-400 dark:via-cyan-300 dark:to-indigo-400 bg-clip-text text-transparent">
+              {isVi ? 'Giấy Phép Bản Quyền' : 'Software Licensing'}
             </span>
           </h2>
 
-          <p className="text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            {t('pricing_subtitle')}
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+            {isVi
+              ? 'Bản quyền phần mềm thanh toán linh hoạt qua cổng SePay Webhook (VietQR) và thẻ quốc tế.'
+              : 'Flexible licensing powered by automated bank webhook QR payments and cards.'}
           </p>
 
-          {/* Luxury Billing Interval Switcher */}
+          {/* Luxury 3-State Billing Interval Switcher */}
           <div className="inline-flex items-center p-1.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-300 dark:border-white/10 backdrop-blur-xl mt-6 shadow-sm">
             <button
               onClick={() => setInterval('month')}
               className={`btn-tactile px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 active:scale-95 ${
                 interval === 'month'
-                  ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md shadow-cyan-500/20'
+                  ? 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-500/20'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              {t('pricing_monthly')}
+              {isVi ? '1 Tháng' : '1 Month'}
             </button>
             <button
               onClick={() => setInterval('year')}
-              className={`btn-tactile flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 active:scale-95 ${
+              className={`btn-tactile flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 active:scale-95 ${
                 interval === 'year'
-                  ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md shadow-cyan-500/20'
+                  ? 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-500/20'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <span>{t('pricing_yearly')}</span>
-              <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold uppercase">
-                {t('pricing_save_20')}
+              <span>{isVi ? '1 Năm' : '1 Year'}</span>
+              <span className="px-1.5 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[10px] font-extrabold uppercase shadow-sm">
+                {isVi ? 'TIẾT KIỆM' : 'SAVE'}
+              </span>
+            </button>
+            <button
+              onClick={() => setInterval('lifetime')}
+              className={`btn-tactile flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 active:scale-95 ${
+                interval === 'lifetime'
+                  ? 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-500/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>{isVi ? 'Trọn đời' : 'Lifetime'}</span>
+              <span className="px-1.5 py-0.5 rounded-md bg-purple-500 text-white text-[10px] font-extrabold uppercase shadow-sm">
+                {isVi ? 'MUA 1 LẦN' : 'ONE-TIME'}
               </span>
             </button>
           </div>
         </div>
+
+        {/* Current Active Plan Banner if logged in with PRO/FAMILY */}
+        {user?.subscription?.status === 'ACTIVE' && user.subscription.tier !== 'FREE' && (
+          <div className="max-w-4xl mx-auto mb-10 p-5 rounded-3xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-400/40 flex items-center justify-between gap-4 shadow-sm animate-in fade-in">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shadow-md shadow-amber-400/20 shrink-0">
+                <Crown className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase font-extrabold tracking-wider text-amber-700 dark:text-amber-400">
+                    {isVi ? 'GÓI HIỆN TẠI' : 'CURRENT PLAN'}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-amber-400 text-slate-950">
+                    👑 {user.subscription.tier} VIP
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                  {isVi
+                    ? `Bản quyền ${user.subscription.tier === 'FAMILY' ? 'Gia đình (Family)' : 'Cá nhân (Pro)'} đã được xác thực mã hóa an toàn với đầy đủ các mô hình góc nghiêng & khoảng cách mắt.`
+                    : `Your ${user.subscription.tier} VIP license is cryptographically verified with full posture & eye models.`}
+                </p>
+              </div>
+            </div>
+            <a
+              href="/dashboard"
+              className="hidden sm:inline-flex px-4 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 transition active:scale-95 shrink-0"
+            >
+              {isVi ? 'Xem Dashboard' : 'View Dashboard'}
+            </a>
+          </div>
+        )}
 
         {/* Pricing Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto">
           {/* ============================================================ */}
           {/* CARD 1: FREE PLAN                                            */}
           {/* ============================================================ */}
-          <div className="rounded-[28px] p-8 bg-white/90 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 backdrop-blur-xl flex flex-col justify-between hover-card-glow hover:-translate-y-2 hover:shadow-2xl hover:border-cyan-500/30 transition-all duration-300 ease-out shadow-lg shadow-slate-200/50 dark:shadow-xl">
+          <div className="rounded-[28px] p-7 sm:p-8 bg-white/95 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 backdrop-blur-xl flex flex-col justify-between hover-card-glow hover:-translate-y-2 hover:shadow-2xl hover:border-cyan-500/30 transition-all duration-300 ease-out shadow-lg shadow-slate-200/50 dark:shadow-xl">
             <div>
-              <div className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">
-                {t('pricing_free_tier')}
+              <div className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5">
+                {isVi ? 'CƠ BẢN' : 'STANDARD'}
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-                {t('pricing_free_name')}
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+                {isVi ? 'Gói Miễn phí (Free)' : 'Free Plan'}
               </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">
+                {isVi ? 'Bộ đếm 20-20-20 & nhắc uống nước' : 'Essential habit reminders'}
+              </p>
 
               <div className="mb-6 flex items-baseline gap-1.5">
                 <span className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white">0đ</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">/{language === 'vi' ? 'vĩnh viễn' : 'forever'}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">/{isVi ? 'vĩnh viễn' : 'forever'}</span>
               </div>
-
-              <p className="text-xs text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-                {t('pricing_free_desc')}
-              </p>
 
               <ul className="space-y-3.5 text-xs text-slate-700 dark:text-slate-300 mb-8 border-t border-slate-200 dark:border-white/5 pt-6">
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
-                  <span>{t('pricing_feat_free_1')}</span>
+                  <Check className="w-4 h-4 text-teal-500 dark:text-teal-400 shrink-0" />
+                  <span>{isVi ? 'Bộ đếm chu kỳ nghỉ mắt 20-20-20' : '20-20-20 Eye break timer'}</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
-                  <span>{t('pricing_feat_free_2')}</span>
+                  <Check className="w-4 h-4 text-teal-500 dark:text-teal-400 shrink-0" />
+                  <span>{isVi ? 'Nhắc nhở uống nước công thái học' : 'Hydration reminders'}</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
-                  <span>{t('pricing_feat_free_3')}</span>
+                  <Check className="w-4 h-4 text-teal-500 dark:text-teal-400 shrink-0" />
+                  <span>{isVi ? 'Theo dõi thời gian dùng màn hình cơ bản' : 'Screen time tracking'}</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <Check className="w-4 h-4 text-teal-500 dark:text-teal-400 shrink-0" />
+                  <span>{isVi ? 'Xử lý 100% On-device bảo mật' : '100% On-device privacy'}</span>
                 </li>
               </ul>
             </div>
 
             <a
               href="/api/download"
-              className="btn-tactile w-full py-3.5 px-4 rounded-xl border border-slate-300 dark:border-white/10 hover:border-cyan-500/40 text-center font-bold text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 bg-slate-50 dark:bg-white/5 transition-all duration-200 active:scale-95"
+              className="btn-tactile w-full py-3.5 px-4 rounded-xl border border-slate-300 dark:border-white/10 hover:border-teal-500/40 text-center font-bold text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 bg-slate-50 dark:bg-white/5 transition-all duration-200 active:scale-95"
             >
-              {t('pricing_free_btn')}
+              {isVi ? 'Tải Bản Cài Miễn Phí' : 'Download Free App'}
             </a>
           </div>
 
           {/* ============================================================ */}
-          {/* CARD 2: PRO PLAN (HIGHLIGHTED WITH MOVING GRADIENT BORDER)    */}
+          {/* CARD 2: PRO PLAN                                             */}
           {/* ============================================================ */}
-          <div className="relative rounded-[32px] p-[2px] overflow-hidden lg:-translate-y-4 hover:-translate-y-6 transition-transform duration-300 ease-out shadow-xl dark:shadow-[0_0_60px_rgba(6,182,212,0.2)] hover:shadow-2xl hover:shadow-cyan-500/20">
+          <div className="relative rounded-[32px] p-[2px] overflow-hidden lg:-translate-y-4 hover:-translate-y-6 transition-transform duration-300 ease-out shadow-xl dark:shadow-[0_0_60px_rgba(20,184,166,0.2)] hover:shadow-2xl hover:shadow-teal-500/20">
             {/* Animated Rotating Conic LED Border */}
-            <div className="absolute inset-[-150%] bg-[conic-gradient(from_0deg,#06b6d4,#38bdf8,#6366f1,#a855f7,#ec4899,#06b6d4)] animate-spin-slow pointer-events-none" />
+            <div className="absolute inset-[-150%] bg-[conic-gradient(from_0deg,#14b8a6,#06b6d4,#6366f1,#a855f7,#14b8a6)] animate-spin-slow pointer-events-none" />
 
             {/* Inner Pro Card Container */}
-            <div className="relative h-full rounded-[30px] bg-white dark:bg-slate-950/95 backdrop-blur-2xl p-8 flex flex-col justify-between border border-cyan-400/40 dark:border-cyan-500/30">
-              {/* Floating Top Badge */}
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 text-white text-[11px] font-extrabold uppercase tracking-wider shadow-md shadow-cyan-500/25 flex items-center gap-1.5 animate-pulse-glow">
-                <Sparkles className="w-3 h-3" />
-                <span>{t('pricing_pro_badge')}</span>
+            <div className="relative h-full rounded-[30px] bg-white dark:bg-slate-900 p-7 sm:p-8 flex flex-col justify-between border border-teal-400/40 dark:border-teal-500/30">
+              {/* Floating Top-Right Badge: CÁ NHÂN */}
+              <div className="absolute top-0 right-0 bg-teal-500 text-slate-950 text-[10px] uppercase tracking-wider font-extrabold px-3.5 py-1 rounded-bl-xl shadow-sm">
+                {isVi ? 'Cá nhân' : 'Personal'}
               </div>
 
               <div>
-                <div className="text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest mb-2 mt-1">
-                  {t('pricing_pro_tier')}
+                <div className="text-xs font-mono font-bold text-teal-600 dark:text-teal-400 uppercase tracking-widest mb-1.5 mt-1">
+                  {isVi ? 'CHUYÊN NGHIỆP' : 'PRO VIP'}
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-                  {t('pricing_pro_name')}
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <span>{isVi ? 'Gói Cá nhân (Pro)' : 'Personal Plan (Pro)'}</span>
+                  <Crown className="w-5 h-5 text-teal-500 dark:text-teal-400" />
                 </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">
+                  {isVi ? 'Dành cho 1 người dùng cá nhân' : 'For 1 individual workstation user'}
+                </p>
 
                 {/* Ultra High-Contrast Price */}
                 <div className="mb-6">
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white drop-shadow-sm">
+                    <span className="text-4xl sm:text-5xl font-black tracking-tight text-teal-600 dark:text-teal-400 drop-shadow-sm">
                       {getDiscountedPrice(basePrices.PRO).toLocaleString('vi-VN')}đ
                     </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                      /{interval === 'year' ? (language === 'vi' ? 'năm' : 'year') : (language === 'vi' ? 'tháng' : 'month')}
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      {unitText}
                     </span>
                   </div>
 
+                  {originalPrices.PRO > basePrices.PRO && !appliedVoucher && (
+                    <div className="text-xs text-slate-400 line-through mt-1 font-medium">
+                      {isVi ? 'Giá gốc:' : 'Regular:'} {originalPrices.PRO.toLocaleString('vi-VN')}đ
+                    </div>
+                  )}
+
                   {appliedVoucher && (
-                    <div className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1.5 flex items-center gap-1">
+                    <div className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1 flex items-center gap-1">
                       <Tag className="w-3.5 h-3.5" />
                       <span>
-                        Giá gốc: <del className="text-slate-400 dark:text-slate-500">{basePrices.PRO.toLocaleString('vi-VN')}đ</del> (-{appliedVoucher.discountPercent}%)
+                        {isVi ? 'Giá gốc:' : 'Regular:'} <del className="text-slate-400">{basePrices.PRO.toLocaleString('vi-VN')}đ</del> (-{appliedVoucher.discountPercent}%)
                       </span>
                     </div>
                   )}
@@ -346,83 +419,145 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
                 {/* Feature Checklist */}
                 <ul className="space-y-3.5 text-xs text-slate-700 dark:text-slate-200 mb-8 border-t border-slate-200 dark:border-white/10 pt-6">
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
-                    <span className="font-semibold text-slate-900 dark:text-white">{t('pricing_feat_pro_1')}</span>
+                    <Check className="w-4 h-4 text-teal-500 dark:text-teal-400 shrink-0" />
+                    <span className="font-semibold text-slate-900 dark:text-white">
+                      {isVi ? '1 tài khoản cho 1 người dùng' : '1 account for 1 user'}
+                    </span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
-                    <span>{t('pricing_feat_pro_2')}</span>
+                    <Check className="w-4 h-4 text-teal-500 dark:text-teal-400 shrink-0" />
+                    <span>{isVi ? 'Ước tính góc nghiêng tư thế bằng thị giác máy tính' : 'Continuous posture angle estimation'}</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
-                    <span>{t('pricing_feat_pro_3')}</span>
+                    <Check className="w-4 h-4 text-teal-500 dark:text-teal-400 shrink-0" />
+                    <span>{isVi ? 'Giám sát khoảng cách mắt công thái học chuẩn' : 'Smart eye distance monitor'}</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-cyan-500 dark:text-cyan-400 shrink-0" />
-                    <span>{t('pricing_feat_pro_4')}</span>
+                    <Check className="w-4 h-4 text-teal-500 dark:text-teal-400 shrink-0" />
+                    <span>{isVi ? 'Cảnh báo thích ứng chống mỏi mắt thông minh' : 'Anti-fatigue adaptive alerts'}</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-teal-500 dark:text-teal-400 shrink-0" />
+                    <span>{isVi ? 'Báo cáo thống kê xu hướng tuần & tháng' : 'Weekly & monthly trend analytics'}</span>
                   </li>
                 </ul>
               </div>
 
-              {/* Shimmer Checkout CTA */}
-              <button
-                onClick={() => handleCheckout('PRO')}
-                className="btn-tactile relative overflow-hidden group w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-center font-bold text-sm text-white shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/45 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 border border-cyan-400/40"
-              >
-                <div className="absolute inset-0 -translate-x-full group-hover:animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
-                <span>{t('pricing_pro_btn')}</span>
-                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1.5" />
-              </button>
+              {/* Action Button */}
+              {user?.subscription?.tier === 'PRO' && user?.subscription?.status === 'ACTIVE' ? (
+                <div className="w-full py-3.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-700 dark:text-teal-400 font-bold text-xs text-center">
+                  {isVi ? 'Bản quyền Pro đang kích hoạt' : 'Pro License Active'}
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleCheckout('PRO')}
+                  disabled={creatingOrder}
+                  className="btn-tactile relative overflow-hidden group w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-teal-500 via-cyan-500 to-indigo-600 hover:from-teal-400 hover:to-indigo-500 text-center font-bold text-sm text-slate-950 dark:text-white shadow-xl shadow-teal-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 border border-teal-400/40"
+                >
+                  <QrCode className="w-4 h-4 shrink-0" />
+                  <span>
+                    {isVi
+                      ? `Nâng Cấp Cá Nhân (${getDiscountedPrice(basePrices.PRO).toLocaleString('vi-VN')}đ)`
+                      : `Upgrade Personal (${getDiscountedPrice(basePrices.PRO).toLocaleString('vi-VN')}đ)`}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
 
           {/* ============================================================ */}
           {/* CARD 3: FAMILY PLAN                                          */}
           {/* ============================================================ */}
-          <div className="rounded-[28px] p-8 bg-white/90 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 backdrop-blur-xl flex flex-col justify-between hover-card-glow hover:-translate-y-2 hover:shadow-2xl hover:border-purple-400/50 transition-all duration-300 ease-out shadow-lg shadow-slate-200/50 dark:shadow-xl">
+          <div className="relative rounded-[28px] p-7 sm:p-8 bg-white/95 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 backdrop-blur-xl flex flex-col justify-between hover-card-glow hover:-translate-y-2 hover:shadow-2xl hover:border-indigo-400/50 transition-all duration-300 ease-out shadow-lg shadow-slate-200/50 dark:shadow-xl overflow-hidden">
+            {/* Top-Right Badge: 4 USERS */}
+            <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] uppercase tracking-wider font-extrabold px-3.5 py-1 rounded-bl-xl shadow-sm flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              <span>{isVi ? '4 Người dùng' : '4 Users'}</span>
+            </div>
+
             <div>
-              <div className="text-xs font-mono font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-2">
-                {t('pricing_family_tier')}
+              <div className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-1.5">
+                {isVi ? 'GIA ĐÌNH' : 'FAMILY VIP'}
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-                {t('pricing_family_name')}
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span>{isVi ? 'Gói Gia đình (Family)' : 'Family Plan'}</span>
+                <Users className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
               </h3>
-
-              <div className="mb-6 flex items-baseline gap-1.5">
-                <span className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white">
-                  {getDiscountedPrice(basePrices.FAMILY).toLocaleString('vi-VN')}đ
-                </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                  /{interval === 'year' ? (language === 'vi' ? 'năm' : 'year') : (language === 'vi' ? 'tháng' : 'month')}
-                </span>
-              </div>
-
-              <p className="text-xs text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-                {t('pricing_family_desc')}
+              <p className="text-xs text-indigo-600 dark:text-indigo-300 font-semibold mt-1 mb-5">
+                {isVi ? '1 tài khoản được 4 người dùng' : '1 account supports 4 users'}
               </p>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-4xl sm:text-5xl font-black tracking-tight text-indigo-600 dark:text-indigo-400">
+                    {getDiscountedPrice(basePrices.FAMILY).toLocaleString('vi-VN')}đ
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    {unitText}
+                  </span>
+                </div>
+
+                {originalPrices.FAMILY > basePrices.FAMILY && !appliedVoucher && (
+                  <div className="text-xs text-slate-400 line-through mt-1 font-medium">
+                    {isVi ? 'Giá gốc:' : 'Regular:'} {originalPrices.FAMILY.toLocaleString('vi-VN')}đ
+                  </div>
+                )}
+
+                {appliedVoucher && (
+                  <div className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1 flex items-center gap-1">
+                    <Tag className="w-3.5 h-3.5" />
+                    <span>
+                      {isVi ? 'Giá gốc:' : 'Regular:'} <del className="text-slate-400">{basePrices.FAMILY.toLocaleString('vi-VN')}đ</del> (-{appliedVoucher.discountPercent}%)
+                    </span>
+                  </div>
+                )}
+              </div>
 
               <ul className="space-y-3.5 text-xs text-slate-700 dark:text-slate-300 mb-8 border-t border-slate-200 dark:border-white/5 pt-6">
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-purple-500 dark:text-purple-400 shrink-0" />
-                  <span className="font-semibold text-slate-900 dark:text-white">{t('pricing_feat_family_1')}</span>
+                  <Check className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {isVi ? '⭐ 1 tài khoản được 4 người dùng' : '⭐ 1 account supports 4 users'}
+                  </span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-purple-500 dark:text-purple-400 shrink-0" />
-                  <span>{t('pricing_feat_family_2')}</span>
+                  <Check className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                  <span>{isVi ? 'Đầy đủ tất cả tính năng Chuyên nghiệp (Pro)' : 'All Pro features included'}</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-purple-500 dark:text-purple-400 shrink-0" />
-                  <span>{t('pricing_feat_family_3')}</span>
+                  <Check className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                  <span>{isVi ? 'Hồ sơ người lớn & trẻ em không giới hạn' : 'Unlimited adult & child profiles'}</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <Check className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                  <span>{isVi ? 'Kiểm soát phụ huynh & giới hạn giờ màn hình' : 'Parental screen limiters'}</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <Check className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                  <span>{isVi ? 'Đồng bộ hồ sơ trên tối đa 4 thiết bị' : 'Sync profiles across up to 4 devices'}</span>
                 </li>
               </ul>
             </div>
 
-            <button
-              onClick={() => handleCheckout('FAMILY')}
-              className="btn-tactile w-full py-3.5 px-4 rounded-xl border border-purple-400 dark:border-purple-500/40 hover:border-purple-600 dark:hover:border-purple-500/70 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-center font-bold text-xs text-purple-700 dark:text-purple-300 transition-all duration-200 active:scale-95"
-            >
-              {t('pricing_family_btn')}
-            </button>
+            {/* Action Button */}
+            {user?.subscription?.tier === 'FAMILY' && user?.subscription?.status === 'ACTIVE' ? (
+              <div className="w-full py-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-700 dark:text-indigo-400 font-bold text-xs text-center">
+                {isVi ? 'Bản quyền Family đang kích hoạt' : 'Family License Active'}
+              </div>
+            ) : (
+              <button
+                onClick={() => handleCheckout('FAMILY')}
+                disabled={creatingOrder}
+                className="btn-tactile w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all duration-200 active:scale-95 shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+              >
+                <QrCode className="w-4 h-4 shrink-0" />
+                <span>
+                  {isVi
+                    ? `Chọn Gói Gia Đình (${getDiscountedPrice(basePrices.FAMILY).toLocaleString('vi-VN')}đ)`
+                    : `Select Family (${getDiscountedPrice(basePrices.FAMILY).toLocaleString('vi-VN')}đ)`}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -559,6 +694,12 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">{t('pricing_modal_tier')}</span>
                     <span className="font-bold text-cyan-600 dark:text-cyan-400">{checkoutModal.tier} VIP</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">{isVi ? 'Thời hạn:' : 'Duration:'}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {interval === 'lifetime' ? (isVi ? 'Trọn đời (Lifetime)' : 'Lifetime') : interval === 'year' ? (isVi ? '1 Năm' : '1 Year') : (isVi ? '1 Tháng' : '1 Month')}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-slate-400">{t('pricing_modal_amount')}</span>

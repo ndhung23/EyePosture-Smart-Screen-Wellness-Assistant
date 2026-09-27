@@ -38,20 +38,6 @@ export function Navbar({ onOpenAuth }: { onOpenAuth: () => void }) {
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
           <a
-            href="#features"
-            className="relative py-1 text-slate-600 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors duration-200 group/link"
-          >
-            <span>{t('nav_features')}</span>
-            <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-gradient-to-r from-cyan-500 to-indigo-500 group-hover/link:w-full transition-all duration-300 ease-out rounded-full" />
-          </a>
-          <a
-            href="#wellness"
-            className="relative py-1 text-slate-600 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors duration-200 group/link"
-          >
-            <span>{t('nav_wellness')}</span>
-            <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-gradient-to-r from-cyan-500 to-indigo-500 group-hover/link:w-full transition-all duration-300 ease-out rounded-full" />
-          </a>
-          <a
             href="#pricing"
             className="relative py-1 text-slate-600 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors duration-200 group/link"
           >

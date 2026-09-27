@@ -182,10 +182,10 @@ export async function POST(req: NextRequest) {
     // 5. Tính toán thời hạn gói bản quyền
     const interval = matchedOrder.interval || 'year';
     let durationDays = 30; // tháng
-    if (interval === 'year' || transferAmount >= 199000) {
-      durationDays = 365;
-    } else if (interval === 'lifetime' || transferAmount >= 299000) {
+    if (interval === 'lifetime' || transferAmount >= 499000) {
       durationDays = 36500; // Trọn đời (~100 năm)
+    } else if (interval === 'year' || transferAmount >= 199000) {
+      durationDays = 365;
     }
 
     const expiresAt = Date.now() + durationDays * 24 * 60 * 60 * 1000;
