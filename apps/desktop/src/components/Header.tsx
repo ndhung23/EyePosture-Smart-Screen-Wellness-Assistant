@@ -1,4 +1,4 @@
-import { BatteryCharging, Battery, AlertCircle, X, User as UserIcon, LogOut, ArrowUpCircle, Crown, Sparkles } from 'lucide-react';
+import { BatteryCharging, Battery, AlertCircle, X, User as UserIcon, LogOut, ArrowUpCircle, Crown, Sparkles, Clock } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
 
@@ -17,11 +17,26 @@ export const Header: React.FC = () => {
     logout,
     language,
     effectiveTheme,
+    freeCameraSecondsRemaining,
+    isFreeCameraExpired,
+    openTrialExpiredModal,
   } = useApp();
 
   const isVi = language === 'vi';
   const isLight = effectiveTheme === 'light';
   const tier = (currentUser?.subscription?.tier || subscriptionTier || 'FREE').toUpperCase();
+  const isProOrFamily = tier === 'PRO' || tier === 'FAMILY';
+
+  const formatRemainingTime = (seconds: number) => {
+    if (seconds <= 0) return '0p';
+    const mins = Math.ceil(seconds / 60);
+    if (mins >= 60) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return m > 0 ? `${h}h ${m}p` : `${h}h`;
+    }
+    return `${mins}p`;
+  };
 
   return (
     <header className="px-8 py-5 border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md flex flex-col gap-3">
@@ -33,11 +48,19 @@ export const Header: React.FC = () => {
           </h2>
           <p className={`text-xs mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
             {!currentUser
-              ? isVi
-                ? 'Chế độ Khách (Chưa kích hoạt camera AI)'
-                : 'Guest Mode (AI Camera Inactive)'
+              ? isMonitoring
+                ? isVi
+                  ? 'Đang giám sát (Khách: Dùng thử 2h/ngày)'
+                  : 'Monitoring Active (Guest: Trial 2h/day)'
+                : isVi
+                ? 'Chế độ Khách (Giám sát camera TẮT)'
+                : 'Guest Mode (Camera Inactive)'
               : isMonitoring
-              ? t('dashboard.cameraActive')
+              ? isProOrFamily
+                ? t('dashboard.cameraActive')
+                : isVi
+                ? 'Đang giám sát (Gói Free: 2h/ngày)'
+                : 'Monitoring Active (Free: 2h/day)'
               : t('dashboard.cameraPaused')}
           </p>
         </div>
@@ -172,27 +195,53 @@ export const Header: React.FC = () => {
             </div>
           )}
 
+          {/* Trial / Free Camera Daily 2h Countdown Badge */}
+          {!isProOrFamily && (
+            <button
+              onClick={openTrialExpiredModal}
+              title={
+                isVi
+                  ? 'Gói Miễn phí & Khách: Giới hạn 2 giờ camera mỗi ngày. Nhấn để nâng cấp không giới hạn.'
+                  : 'Free & Guest: 2 hours of camera daily. Click to upgrade.'
+              }
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all active:scale-95 ${
+                isFreeCameraExpired
+                  ? 'bg-rose-500/15 border-rose-500/50 text-rose-300 hover:bg-rose-500/25 animate-pulse'
+                  : isLight
+                  ? 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100 shadow-sm'
+                  : 'bg-amber-500/10 border-amber-500/40 text-amber-300 hover:bg-amber-500/20'
+              }`}
+            >
+              <Clock className={`w-3.5 h-3.5 ${isFreeCameraExpired ? 'text-rose-400' : 'text-amber-400'}`} />
+              <span>
+                {isFreeCameraExpired
+                  ? isVi
+                    ? 'Hết 2h camera'
+                    : '2h Expired'
+                  : isVi
+                  ? `Còn ${formatRemainingTime(freeCameraSecondsRemaining)}`
+                  : `${formatRemainingTime(freeCameraSecondsRemaining)} left`}
+              </span>
+            </button>
+          )}
+
           {/* Monitoring Active / Pause Toggle Button */}
           <button
             onClick={() => {
-              if (!currentUser) {
-                openAuthModal('login');
-                return;
-              }
               toggleMonitoring();
             }}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
-              isMonitoring && currentUser
+              isMonitoring
                 ? 'bg-teal-500/15 border-teal-500/40 text-teal-300 hover:bg-teal-500/25'
                 : 'bg-rose-500/15 border-rose-500/40 text-rose-300 hover:bg-rose-500/25'
             }`}
           >
             <span
               className={`w-2 h-2 rounded-full ${
-                isMonitoring && currentUser ? 'bg-teal-400 animate-pulse' : 'bg-rose-400'
+                isMonitoring ? 'bg-teal-400 animate-pulse' : 'bg-rose-400'
               }`}
             />
-            <span>{isMonitoring && currentUser ? t('header.monitoringOn') : t('header.monitoringOff')}</span>
+            <span>{isMonitoring ? t('header.monitoringOn') : t('header.monitoringOff')}</span>
           </button>
         </div>
       </div>

@@ -38,6 +38,7 @@ export const vi = {
     breaks: 'Nghỉ ngơi mắt',
     screenTime: 'Thời gian sử dụng',
     statistics: 'Thống kê',
+    todo: 'Công việc hàng ngày',
     profiles: 'Hồ sơ người dùng',
     settings: 'Cài đặt',
     subscription: 'Gói đăng ký',

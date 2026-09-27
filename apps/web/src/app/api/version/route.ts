@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const latestVersion = process.env.LATEST_APP_VERSION || '1.0.1';
+  const latestVersion = process.env.LATEST_APP_VERSION || '1.2.0';
   const downloadUrl =
     process.env.WINDOWS_DOWNLOAD_URL ||
     'https://github.com/ndhung23/EyePosture-Smart-Screen-Wellness-Assistant/releases/latest/download/EyePosture-Setup.exe';
 
   const releaseNotes =
     process.env.RELEASE_NOTES ||
-    'Bản cập nhật v1.0.1:\n• Tối ưu hệ thống kết nối máy chủ đám mây Vercel & Supabase.\n• Khắc phục lỗi xác thực khi đăng nhập tài khoản.\n• Tự động kích hoạt gói bản quyền Family / Pro ngay sau khi đăng nhập.\n• Cải thiện độ mượt và hiệu năng nhận diện tư thế qua AI camera.';
+    'Bản cập nhật v1.2.0:\n• Cơ chế Bảo Mật Mật Khẩu tài khoản (tùy chọn bật/tắt để khóa thoát app, tắt camera, cài đặt).\n• Khắc phục triệt để tính năng Khởi động cùng Windows.\n• Bổ sung tính năng Todo List quản lý công việc hàng ngày.\n• Bổ sung Thống kê chi tiết số lần cảnh báo & nhắc nhở (khoảng cách, tư thế gù lưng, 20-20-20).\n• Cho phép dùng thử 2 tiếng/ngày tính năng Giám sát camera AI cho tài khoản Free và khách vãng lai.\n• Tích hợp hệ thống Affiliate tiếp thị liên kết 40% chuẩn SaaS trực tuyến trên Website.';
 
   return NextResponse.json(
     {

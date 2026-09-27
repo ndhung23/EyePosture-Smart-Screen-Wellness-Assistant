@@ -51,7 +51,26 @@ export async function GET(req: NextRequest) {
     const clean = code.trim().toUpperCase();
     const found = vouchers.find((v) => v.code === clean);
     if (!found) {
-      return NextResponse.json({ valid: false, error: 'Mã voucher không tồn tại' }, { status: 404 });
+      // Kiểm tra xem có phải mã giới thiệu Affiliate không
+      try {
+        const affFile = path.join(process.cwd(), 'data', 'affiliate.json');
+        if (fs.existsSync(affFile)) {
+          const affDb = JSON.parse(fs.readFileSync(affFile, 'utf8'));
+          const ownerId = affDb.codeToUserId ? affDb.codeToUserId[clean] : null;
+          if (ownerId && affDb.accounts && affDb.accounts[ownerId]) {
+            const affAcc = affDb.accounts[ownerId];
+            return NextResponse.json({
+              valid: true,
+              code: clean,
+              discountPercent: affAcc.buyerDiscountPercent || 10,
+              isAffiliate: true,
+              affiliateCode: clean,
+            });
+          }
+        }
+      } catch (e) {}
+
+      return NextResponse.json({ valid: false, error: 'Mã voucher hoặc mã giới thiệu không tồn tại' }, { status: 404 });
     }
     if (!found.isActive) {
       return NextResponse.json({ valid: false, error: 'Mã voucher đang tạm dừng' }, { status: 400 });

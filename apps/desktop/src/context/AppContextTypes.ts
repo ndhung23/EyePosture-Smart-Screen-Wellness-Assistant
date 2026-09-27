@@ -102,4 +102,11 @@ export interface AppContextValue {
   activeCalibration: CalibrationData | null;
   startPostureCalibration: () => Promise<CalibrationData | null>;
   triggerOverlayAlert: (type?: string, title?: string, message?: string) => void;
+  freeCameraSecondsToday: number;
+  freeCameraLimitSeconds: number;
+  isFreeCameraExpired: boolean;
+  freeCameraSecondsRemaining: number;
+  isTrialExpiredModalOpen: boolean;
+  openTrialExpiredModal: () => void;
+  closeTrialExpiredModal: () => void;
 }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Check, Crown, QrCode, Copy, CheckCircle2, X, RefreshCw, Users, ShieldCheck, Zap } from 'lucide-react';
+import { Sparkles, Check, Crown, QrCode, Copy, CheckCircle2, X, RefreshCw, Users, ShieldCheck, Zap, Tag } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { AuthService } from '../services/AuthService.js';
+import { DesktopAffiliateService } from '../services/AffiliateService.js';
 import { t, getLanguage } from '@eyeposture/i18n';
 
 export type PlanKey =
@@ -117,6 +118,15 @@ export const SubscriptionPage: React.FC = () => {
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>('PRO_MONTH');
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [affiliateCodeInput, setAffiliateCodeInput] = useState<string>('');
+  const [appliedAffiliate, setAppliedAffiliate] = useState<{
+    code: string;
+    discountPercent: number;
+    discountAmount: number;
+    finalAmount: number;
+  } | null>(null);
+  const [affiliateMsg, setAffiliateMsg] = useState<{ text: string; isError: boolean } | null>(null);
+  const [isValidatingCode, setIsValidatingCode] = useState<boolean>(false);
   const [activeOrder, setActiveOrder] = useState<{
     orderCode: string;
     qrUrl: string;
@@ -172,32 +182,35 @@ export const SubscriptionPage: React.FC = () => {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const handleSelectPlan = async (tier: 'PRO' | 'FAMILY', interval: BillingInterval) => {
+  const createCheckoutOrder = async (
+    tier: 'PRO' | 'FAMILY',
+    interval: BillingInterval,
+    affCode?: string,
+    amountOverride?: number
+  ) => {
     const key = `${tier}_${interval.toUpperCase()}` as PlanKey;
-    setSelectedPlan(key);
+    const baseAmount = (plansState[key] || PLAN_DETAILS[key]).amountVnd;
+    const amount = amountOverride !== undefined ? amountOverride : (appliedAffiliate ? appliedAffiliate.finalAmount : baseAmount);
 
-    if (!currentUser || !authToken) {
-      openAuthModal('login');
-      return;
-    }
-
-    setShowQrModal(true);
     setIsLoadingOrder(true);
     setPaymentSuccess(false);
 
     try {
+      const payload = {
+        provider: 'sepay',
+        tier,
+        interval,
+        amount,
+        affiliateCode: affCode || appliedAffiliate?.code || undefined,
+      };
+
       const res = await fetch('http://localhost:8080/api/v1/subscription/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({
-          provider: 'sepay',
-          tier,
-          interval,
-          amount: (plansState[key] || PLAN_DETAILS[key]).amountVnd,
-        }),
+        body: JSON.stringify(payload),
       }).catch(() =>
         fetch('https://eyeposture.vercel.app/api/v1/subscription/checkout', {
           method: 'POST',
@@ -205,12 +218,7 @@ export const SubscriptionPage: React.FC = () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${authToken}`,
           },
-          body: JSON.stringify({
-            provider: 'sepay',
-            tier,
-            interval,
-            amount: (plansState[key] || PLAN_DETAILS[key]).amountVnd,
-          }),
+          body: JSON.stringify(payload),
         })
       );
 
@@ -223,6 +231,56 @@ export const SubscriptionPage: React.FC = () => {
     } finally {
       setIsLoadingOrder(false);
     }
+  };
+
+  const handleApplyAffiliateCode = async (codeOverride?: string) => {
+    const code = (codeOverride !== undefined ? codeOverride : affiliateCodeInput).trim().toUpperCase();
+    if (!code) return;
+    setIsValidatingCode(true);
+    setAffiliateMsg(null);
+    try {
+      const plan = plansState[selectedPlan] || PLAN_DETAILS[selectedPlan];
+      const res = await DesktopAffiliateService.validateCode(code, plan.interval, plan.amountVnd);
+      if (res.valid && res.finalAmount !== undefined) {
+        setAppliedAffiliate({
+          code: res.code || code,
+          discountPercent: res.discountPercent || 10,
+          discountAmount: res.discountAmount || 0,
+          finalAmount: res.finalAmount,
+        });
+        setAffiliateMsg({
+          text: isVi
+            ? `Áp dụng thành công! Giảm ${res.discountPercent}% cho đơn hàng (-${(res.discountAmount || 0).toLocaleString('vi-VN')}đ)`
+            : `Success! ${res.discountPercent}% discount applied (-${(res.discountAmount || 0).toLocaleString('vi-VN')}đ)`,
+          isError: false,
+        });
+        if (showQrModal && currentUser && authToken) {
+          const plan = plansState[selectedPlan] || PLAN_DETAILS[selectedPlan];
+          createCheckoutOrder(plan.tier, plan.interval, res.code || code, res.finalAmount);
+        }
+      } else {
+        setAppliedAffiliate(null);
+        setAffiliateMsg({
+          text: res.error || (isVi ? 'Mã giới thiệu không hợp lệ' : 'Invalid referral code'),
+          isError: true,
+        });
+      }
+    } finally {
+      setIsValidatingCode(false);
+    }
+  };
+
+  const handleSelectPlan = async (tier: 'PRO' | 'FAMILY', interval: BillingInterval) => {
+    const key = `${tier}_${interval.toUpperCase()}` as PlanKey;
+    setSelectedPlan(key);
+
+    if (!currentUser || !authToken) {
+      openAuthModal('login');
+      return;
+    }
+
+    setShowQrModal(true);
+    createCheckoutOrder(tier, interval);
   };
 
   // Realtime Auto-Polling for SePay payment confirmation
@@ -638,6 +696,43 @@ export const SubscriptionPage: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Affiliate / Promo Discount Voucher Input */}
+            <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-300 font-semibold flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{isVi ? 'Mã giới thiệu Affiliate / Voucher giảm giá' : 'Referral / Promo Code'}</span>
+                </span>
+                {appliedAffiliate && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    -{appliedAffiliate.discountPercent}% OFF
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={affiliateCodeInput}
+                  onChange={(e) => setAffiliateCodeInput(e.target.value.toUpperCase())}
+                  placeholder={isVi ? 'Nhập mã giới thiệu (ví dụ: HUNG30, WELCOME20)' : 'Enter referral code'}
+                  className="flex-1 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-100 uppercase font-mono focus:outline-none focus:border-teal-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleApplyAffiliateCode()}
+                  disabled={isValidatingCode || !affiliateCodeInput.trim()}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700 text-xs font-bold active:scale-95 transition"
+                >
+                  {isValidatingCode ? '...' : isVi ? 'Áp dụng' : 'Apply'}
+                </button>
+              </div>
+              {affiliateMsg && (
+                <p className={`text-[11px] ${affiliateMsg.isError ? 'text-rose-400' : 'text-emerald-400 font-medium'}`}>
+                  {affiliateMsg.text}
+                </p>
+              )}
+            </div>
 
             {/* QR & Bank Info Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">

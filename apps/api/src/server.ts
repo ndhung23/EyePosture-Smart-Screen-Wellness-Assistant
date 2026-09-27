@@ -24,6 +24,7 @@ import { handlePasswordResetRoutes } from './auth/password-reset-handlers.js';
 import { handleAuthRoutes } from './auth/auth-handlers.js';
 import { handleVoucherRoutes } from './admin/voucher-handlers.js';
 import { EmailService } from './services/email-service.js';
+import { AffiliateService } from './services/AffiliateService.js';
 import { SupabaseService } from './supabase-client.js';
 import {
   seedAdminAccount,
@@ -508,6 +509,9 @@ export class EyePostureApiServer {
               status: 'ACTIVE',
               expiresAt: Date.now() + durationMs,
             });
+            if ((order as any)?.affiliateCode) {
+              AffiliateService.getInstance().recordOrderCommission(order.order_code, (order as any).affiliateCode, matchedUserId, targetTier, order.interval || 'year', body.transferAmount);
+            }
           }
         }
       }
@@ -551,6 +555,12 @@ export class EyePostureApiServer {
     // Authenticated endpoints below:
     const bearer = this.extractBearerToken(req);
     const authResult = bearer ? this.verifyJwt(bearer) : { valid: false };
+
+    const affRes = await AffiliateService.getInstance().handleHttpRoute(
+      pathname, method || 'GET', method === 'POST' ? await this.parseBody(req) : null,
+      authResult, authResult.userId ? this.users.get(authResult.userId) : null
+    );
+    if (affRes.handled) { this.sendJson(res, affRes.status, affRes.data); return; }
 
     // 3. GET /api/v1/me
     if (pathname === '/api/v1/me' && method === 'GET') {
@@ -785,30 +795,21 @@ export class EyePostureApiServer {
       const body = await this.parseBody(req);
       const tier = (body.tier || 'PRO') as 'PRO' | 'FAMILY';
       const interval = (body.interval || 'month') as 'month' | 'year' | 'lifetime';
-      const amount = body.amount || (SePayBillingProvider.PRICES_VND[tier]?.[interval] ?? 19000);
+      let amount = body.amount || (SePayBillingProvider.PRICES_VND[tier]?.[interval] ?? 19000);
+      const affCode = body.affiliateCode ? String(body.affiliateCode).trim().toUpperCase() : undefined;
+      if (affCode) {
+        const val = AffiliateService.getInstance().validateCode(affCode, interval, amount);
+        if (val.valid && val.finalAmount) amount = val.finalAmount;
+      }
       const randomSuffix = Math.floor(100 + Math.random() * 900);
       const orderCode = `EP${Date.now().toString().slice(-6)}${randomSuffix}`;
       const transferContent = `EYEPOSTURE ${authResult.userId} ${orderCode}`;
-
-      const orderRecord = { order_code: orderCode, user_id: authResult.userId, tier, interval, amount, status: 'PENDING' as const };
+      const orderRecord = { order_code: orderCode, user_id: authResult.userId, tier, interval, amount, affiliateCode: affCode, status: 'PENDING' as const };
       this.orders.set(orderCode, orderRecord);
-      if (this.supabase.isAvailable()) {
-        await this.supabase.createOrder(orderRecord);
-      }
-
-      const qrUrl = this.sepayProvider.generateVietQrUrl({
-        amount,
-        content: transferContent,
-      });
-
+      if (this.supabase.isAvailable()) await this.supabase.createOrder(orderRecord);
+      const qrUrl = this.sepayProvider.generateVietQrUrl({ amount, content: transferContent });
       this.sendJson(res, 200, {
-        provider: 'sepay',
-        orderCode,
-        qrUrl,
-        checkoutUrl: qrUrl,
-        sessionId: orderCode,
-        amount,
-        transferContent,
+        provider: 'sepay', orderCode, qrUrl, checkoutUrl: qrUrl, sessionId: orderCode, amount, transferContent,
         accountNumber: process.env.PAYMENT_BANK_ACCOUNT || '4661398013',
         bankName: process.env.PAYMENT_BANK_CODE || 'BIDV',
         accountHolder: process.env.PAYMENT_BANK_ACCOUNT_NAME || 'NGUYEN DUY HUNG',
@@ -954,36 +955,22 @@ export class EyePostureApiServer {
 
   public close(): Promise<void> {
     return new Promise((resolve) => {
-      if (this.server) {
-        this.server.close(() => resolve());
-      } else {
-        resolve();
-      }
+      if (this.server) this.server.close(() => resolve());
+      else resolve();
     });
   }
 }
 
 // Serverless function handler for Vercel / Cloud Functions
 let serverlessInstance: EyePostureApiServer | null = null;
-
 export function handleServerless(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  if (!serverlessInstance) {
-    serverlessInstance = new EyePostureApiServer();
-  }
+  if (!serverlessInstance) serverlessInstance = new EyePostureApiServer();
   return serverlessInstance.handleRequest(req, res);
 }
 
-// Guarantee both CommonJS and ES Module interop for Vercel / serverless runtimes
-(handleServerless as any).default = handleServerless;
-(handleServerless as any).handleServerless = handleServerless;
-(handleServerless as any).EyePostureApiServer = EyePostureApiServer;
-
-const modRef = typeof (globalThis as any).module !== 'undefined' ? (globalThis as any).module : null;
-if (modRef && modRef.exports) {
-  modRef.exports = handleServerless;
-  modRef.exports.default = handleServerless;
-  modRef.exports.handleServerless = handleServerless;
-  modRef.exports.EyePostureApiServer = EyePostureApiServer;
+// Guarantee CommonJS and ES Module interop
+Object.assign(handleServerless, { default: handleServerless, handleServerless, EyePostureApiServer });
+if (typeof module !== 'undefined' && (module as any).exports) {
+  (module as any).exports = handleServerless;
 }
-
 export default handleServerless;

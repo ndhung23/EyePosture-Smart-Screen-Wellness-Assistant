@@ -355,6 +355,39 @@ ipcMain.handle('app:get-version', () => {
   return app.getVersion() || '1.0.0';
 });
 
+ipcMain.handle('app:get-startup', () => {
+  try {
+    const settings = app.getLoginItemSettings();
+    return settings.openAtLogin;
+  } catch (err) {
+    console.warn('[Startup] Failed to get login item settings:', err);
+    return false;
+  }
+});
+
+ipcMain.handle('app:set-startup', (_event, openAtLogin: boolean) => {
+  try {
+    if (app.isPackaged) {
+      app.setLoginItemSettings({
+        openAtLogin: Boolean(openAtLogin),
+        openAsHidden: true,
+      });
+    } else {
+      app.setLoginItemSettings({
+        openAtLogin: Boolean(openAtLogin),
+        path: process.execPath,
+        args: [path.resolve(process.argv[1]), '--hidden'],
+      });
+    }
+    const current = app.getLoginItemSettings();
+    console.log(`[Startup] setLoginItemSettings(${openAtLogin}) => openAtLogin: ${current.openAtLogin}`);
+    return { success: true, openAtLogin: current.openAtLogin };
+  } catch (err: any) {
+    console.error('[Startup] Failed to set login item settings:', err);
+    return { success: false, error: err.message };
+  }
+});
+
 ipcMain.handle('shell:open-external', (_event, targetUrl: string) => {
   if (targetUrl && (targetUrl.startsWith('https://') || targetUrl.startsWith('http://'))) {
     shell.openExternal(targetUrl);

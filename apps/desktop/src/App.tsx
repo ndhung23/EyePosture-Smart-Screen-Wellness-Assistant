@@ -5,6 +5,7 @@ import { Header } from './components/Header.js';
 import { BreakModal } from './components/BreakModal.js';
 import { PasswordPromptModal } from './components/PasswordPromptModal.js';
 import { AuthModal } from './components/AuthModal.js';
+import { TrialExpiredModal } from './components/TrialExpiredModal.js';
 import { PerformancePanel } from './components/PerformancePanel.js';
 import { UpdateModal } from './components/UpdateModal.js';
 import { AccountProfileModal } from './components/AccountProfileModal.js';
@@ -13,6 +14,7 @@ import { DashboardPage } from './pages/DashboardPage.js';
 import { MonitorPage } from './pages/MonitorPage.js';
 import { BreaksPage } from './pages/BreaksPage.js';
 import { ScreenTimePage } from './pages/ScreenTimePage.js';
+import { TodoPage } from './pages/TodoPage.js';
 import { StatisticsPage } from './pages/StatisticsPage.js';
 import { ProfilesPage } from './pages/ProfilesPage.js';
 import { SettingsPage } from './pages/SettingsPage.js';
@@ -70,6 +72,8 @@ const MainContent: React.FC = () => {
         return <BreaksPage />;
       case 'screenTime':
         return <ScreenTimePage />;
+      case 'todo':
+        return <TodoPage />;
       case 'statistics':
         return <StatisticsPage />;
       case 'profiles':
@@ -102,6 +106,7 @@ const MainContent: React.FC = () => {
       <BreakModal />
       <PasswordPromptModal />
       <AuthModal />
+      <TrialExpiredModal />
       <PerformancePanel />
       <UpdateModal autoCheckOnMount={true} />
       <AccountProfileModal onNavigateToSubscription={() => setCurrentPage('subscription')} />

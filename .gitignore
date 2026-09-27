@@ -50,3 +50,12 @@ Thumbs.db
 *.sw?
 data/users.json
 Data/users.json
+
+# Local Data Cache
+apps/web/data/
+
+# AI Agent Workspace metadata
+.agentkit/
+.agents/
+.claude/
+.sdd/

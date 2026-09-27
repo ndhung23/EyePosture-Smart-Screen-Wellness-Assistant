@@ -14,6 +14,7 @@ import {
   Lock,
   Crown,
   User as UserIcon,
+  Clock,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
@@ -38,175 +39,53 @@ export const MonitorPage: React.FC = () => {
     currentUser,
     subscriptionTier,
     openAuthModal,
+    freeCameraSecondsRemaining,
+    isFreeCameraExpired,
+    openTrialExpiredModal,
+    language,
   } = useApp();
 
+  const isVi = language === 'vi';
   const isProOrFamily = subscriptionTier === 'PRO' || subscriptionTier === 'FAMILY';
 
   const [isCalibOpen, setIsCalibOpen] = useState<boolean>(false);
-  const [guestSimulatorMode, setGuestSimulatorMode] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // If user is not logged in and not in guest simulator demo, stop camera
+  const formatRemainingTime = (seconds: number) => {
+    if (seconds <= 0) return '0p';
+    const mins = Math.ceil(seconds / 60);
+    if (mins >= 60) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return m > 0 ? `${h}h ${m}p` : `${h}h`;
+    }
+    return `${mins}p`;
+  };
+
+  // If free trial expired and not pro/family, stop camera
   useEffect(() => {
-    if (!currentUser && cameraStream) {
+    if (!isProOrFamily && isFreeCameraExpired && cameraStream) {
       stopCamera();
     }
-  }, [currentUser, cameraStream, stopCamera]);
+  }, [isProOrFamily, isFreeCameraExpired, cameraStream, stopCamera]);
 
-  // Auto-start camera when entering MonitorPage if logged in and camera not running
+  // Auto-start camera when entering MonitorPage if not expired and camera not running
   useEffect(() => {
-    if (currentUser && !cameraStream && !useSimulatedCamera && !cameraError) {
+    const canUseCamera = isProOrFamily || !isFreeCameraExpired;
+    if (canUseCamera && !cameraStream && !useSimulatedCamera && !cameraError) {
       startCamera();
     }
-  }, [currentUser, cameraStream, useSimulatedCamera, cameraError, startCamera]);
+  }, [isProOrFamily, isFreeCameraExpired, cameraStream, useSimulatedCamera, cameraError, startCamera]);
 
   // Bind live camera stream to HTMLVideoElement
   useEffect(() => {
-    if (videoRef.current && cameraStream && !useSimulatedCamera && currentUser) {
+    if (videoRef.current && cameraStream && !useSimulatedCamera) {
       videoRef.current.srcObject = cameraStream;
       videoRef.current.play().catch((err) => {
         console.warn('Video stream autoplay failed:', err);
       });
     }
-  }, [cameraStream, useSimulatedCamera, currentUser]);
-
-  // 1. GATEKEEPER LOCK SCREEN FOR GUEST / NOT LOGGED IN
-  if (!currentUser && !guestSimulatorMode) {
-    return (
-      <div className="p-8 space-y-8 max-w-4xl mx-auto pb-16 animate-in fade-in duration-300">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display font-bold text-2xl text-slate-100 flex items-center gap-2.5">
-              <span>{t('monitor.title')}</span>
-              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                <Lock className="w-3.5 h-3.5" />
-                Yêu cầu Đăng nhập
-              </span>
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              {t('monitor.subtitle')}
-            </p>
-          </div>
-          <button
-            onClick={() => openAuthModal('login')}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition-all"
-          >
-            <Lock className="w-4 h-4" />
-            <span>Đăng nhập ngay</span>
-          </button>
-        </div>
-
-        {/* Hero Lock Gatekeeper Box */}
-        <div className="glass-card p-8 md:p-12 relative overflow-hidden border-teal-500/40 bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-slate-950/95 shadow-2xl flex flex-col items-center text-center">
-          {/* Decorative neon background blur */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          {/* Central Pulsing Lock Icon */}
-          <div className="relative mb-6">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-teal-500/20 via-cyan-500/20 to-indigo-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300 shadow-xl shadow-teal-500/10">
-              <Camera className="w-10 h-10" />
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shadow-md shadow-amber-500/30">
-              <Lock className="w-4 h-4" />
-            </div>
-          </div>
-
-          <span className="text-[11px] font-black tracking-widest text-teal-400 uppercase mb-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20">
-            TÍNH NĂNG CÔNG THÁI HỌC AI ĐỘC QUYỀN
-          </span>
-          <h3 className="font-display font-black text-2xl md:text-3xl text-slate-100 max-w-xl leading-tight">
-            Đăng Nhập Để Kích Hoạt Giám Sát Camera & Nhận Diện Tư Thế AI
-          </h3>
-          <p className="text-sm text-slate-300 mt-3 max-w-xl leading-relaxed">
-            Hệ thống thị giác máy tính độc quyền của EyePosture sử dụng trí tuệ nhân tạo để phân tích tư thế ngồi, khoảng cách mắt đến màn hình và tần số chớp mắt trong thời gian thực.
-          </p>
-
-          {/* 4 Feature Highlights Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 w-full max-w-2xl text-left">
-            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-start gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-300 shrink-0 mt-0.5">
-                <ScanFace className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-100">Nhận diện tư thế & Gù lưng</h4>
-                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                  Cảnh báo ngay lập tức khi bạn gập cổ, chùng lưng hoặc ngồi xiêu vẹo gây hại cột sống.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-start gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-300 shrink-0 mt-0.5">
-                <Target className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-100">Đo khoảng cách mắt an toàn</h4>
-                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                  Tự động ước tính khoảng cách mắt chuẩn 50–70cm, phòng ngừa suy giảm thị lực và tăng độ cận.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-start gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0 mt-0.5">
-                <Eye className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-100">Chống mỏi mắt ErgoBlink</h4>
-                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                  Theo dõi chớp mắt, giảm thiểu hội chứng khô giác mạc và căng thẳng thần kinh thị giác.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-start gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-300 shrink-0 mt-0.5">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-100">Bảo mật 100% On-Device</h4>
-                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                  Toàn bộ khung hình camera được tính toán cục bộ, cam kết không ghi hình hay gửi dữ liệu ra ngoài.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Action CTAs */}
-          <div className="flex flex-col sm:flex-row items-center gap-3.5 mt-8 w-full max-w-md">
-            <button
-              onClick={() => openAuthModal('login')}
-              className="w-full py-3.5 px-6 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-xl shadow-teal-500/25 active:scale-95 transition-all flex items-center justify-center gap-2"
-            >
-              <UserIcon className="w-4 h-4" />
-              <span>Đăng nhập tài khoản ngay</span>
-            </button>
-            <button
-              onClick={() => openAuthModal('register')}
-              className="w-full py-3.5 px-6 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 font-bold text-xs active:scale-95 transition-all"
-            >
-              <span>Tạo tài khoản mới</span>
-            </button>
-          </div>
-
-          {/* Guest Simulator Option */}
-          <div className="mt-6 pt-5 border-t border-slate-800/80 w-full max-w-md flex items-center justify-center gap-2 text-xs text-slate-400">
-            <span>Muốn xem thử giao diện hoạt động?</span>
-            <button
-              onClick={() => {
-                setGuestSimulatorMode(true);
-                setUseSimulatedCamera(true);
-              }}
-              className="text-teal-400 hover:underline font-semibold"
-            >
-              Mở chế độ Giả lập (Simulator Demo)
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  }, [cameraStream, useSimulatedCamera]);
 
   return (
     <div className="p-8 space-y-8 max-w-6xl mx-auto pb-16">
@@ -237,62 +116,98 @@ export const MonitorPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tier Warning / Guest Banner */}
-      {!currentUser ? (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-teal-950/40 to-slate-900 border border-teal-500/30 flex items-center justify-between shadow-lg">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-teal-300 shrink-0">
-              <Lock className="w-5 h-5" />
+      {/* Tier & 2-Hour Daily Camera Limit Banner */}
+      {!isProOrFamily ? (
+        isFreeCameraExpired ? (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-950/80 via-slate-900 to-rose-950/80 border border-rose-500/50 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0">
+                <Clock className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-rose-200 flex items-center gap-1.5">
+                  <span>{isVi ? 'Đã hết 2 giờ dùng thử camera hôm nay (120/120 phút)' : 'Daily 2-hour camera limit reached (120/120 min)'}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/30 text-rose-300 border border-rose-500/40 uppercase font-black">
+                    {isVi ? 'HẾT HẠN DÙNG THỬ' : 'EXPIRED'}
+                  </span>
+                </p>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  {currentUser
+                    ? (isVi
+                        ? 'Tài khoản Miễn phí (Free) được dùng 2 giờ camera mỗi ngày. Vui lòng nâng cấp gói PRO hoặc FAMILY để tiếp tục giám sát không giới hạn.'
+                        : 'Free accounts get 2 hours of camera daily. Upgrade to PRO or FAMILY for 24/7 unlimited monitoring.')
+                    : (isVi
+                        ? 'Chế độ Khách được dùng thử 2 giờ camera mỗi ngày. Vui lòng đăng nhập và nâng cấp PRO hoặc FAMILY để giám sát không giới hạn.'
+                        : 'Guest mode gets 2 hours of camera trial daily. Sign in and upgrade to PRO/FAMILY for unlimited monitoring.')}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-                <span>Chế độ Khách (Giả lập Demo)</span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">CAMERA THỰC TẾ ĐANG KHÓA</span>
-              </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Bạn đang xem thử giao diện mô phỏng thuật toán AI. Đăng nhập tài khoản để mở khóa camera webcam thật.
-              </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setUseSimulatedCamera(true)}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold"
+              >
+                {isVi ? 'Dùng Giả lập' : 'Use Simulator'}
+              </button>
+              {!currentUser && (
+                <button
+                  onClick={() => openAuthModal('login')}
+                  className="px-3.5 py-2 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-300 text-xs font-semibold"
+                >
+                  {isVi ? 'Đăng nhập' : 'Sign In'}
+                </button>
+              )}
+              <button
+                onClick={openTrialExpiredModal}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 active:scale-95 transition-all"
+              >
+                <Crown className="w-4 h-4" />
+                <span>{isVi ? 'Nâng cấp ngay' : 'Upgrade Now'}</span>
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setGuestSimulatorMode(false)}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
-            >
-              Thoát giả lập
-            </button>
-            <button
-              onClick={() => openAuthModal('login')}
-              className="px-4 py-2 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-md shadow-teal-500/20 active:scale-95 transition-all whitespace-nowrap"
-            >
-              Đăng nhập ngay
-            </button>
-          </div>
-        </div>
-      ) : !isProOrFamily ? (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-amber-950/20 to-slate-900 border border-amber-500/30 flex items-center justify-between shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0">
-              <Crown className="w-5 h-5" />
+        ) : (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-amber-950/20 to-slate-900 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0">
+                <Clock className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-amber-200 flex items-center gap-1.5">
+                  <span>{currentUser ? (isVi ? 'Tài khoản Miễn phí (Free Edition)' : 'Free Account') : (isVi ? 'Chế độ Khách Vãng lai' : 'Guest Mode')}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                    {isVi ? '2 GIỜ/NGÀY' : '2H/DAY'}
+                  </span>
+                  <span className="text-[11px] font-mono font-semibold text-teal-400 ml-1">
+                    ({isVi ? `Còn ${formatRemainingTime(freeCameraSecondsRemaining)} hôm nay` : `${formatRemainingTime(freeCameraSecondsRemaining)} left today`})
+                  </span>
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {isVi
+                    ? 'Bạn có 2 tiếng sử dụng camera giám sát AI mỗi ngày. Nâng cấp lên gói PRO hoặc FAMILY để mở khóa giám sát không giới hạn 24/7.'
+                    : 'You have 2 hours of AI camera monitoring daily. Upgrade to PRO or FAMILY for 24/7 unlimited access.'}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-bold text-amber-200 flex items-center gap-1.5">
-                <span>Tài khoản Miễn phí (Free Edition)</span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">CƠ BẢN</span>
-              </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Nâng cấp lên PRO hoặc FAMILY để mở khóa Phân tích Góc nghiêng 3D y khoa & Phân tích chớp mắt nâng cao.
-              </p>
+            <div className="flex items-center gap-2 shrink-0">
+              {!currentUser && (
+                <button
+                  onClick={() => openAuthModal('login')}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold"
+                >
+                  {isVi ? 'Đăng nhập' : 'Sign In'}
+                </button>
+              )}
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('eyeposture:navigate', { detail: 'subscription' }))}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all whitespace-nowrap"
+              >
+                <Crown className="w-4 h-4" />
+                <span>{isVi ? 'Nâng PRO' : 'Go PRO'}</span>
+              </button>
             </div>
           </div>
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('eyeposture:navigate', { detail: 'subscription' }))}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all whitespace-nowrap ml-3"
-          >
-            <Crown className="w-4 h-4" />
-            <span>Nâng PRO</span>
-          </button>
-        </div>
+        )
       ) : null}
 
       {/* Privacy Notice Banner */}
@@ -339,22 +254,22 @@ export const MonitorPage: React.FC = () => {
           <div className="flex items-center gap-2 bg-slate-900/60 p-1 rounded-xl border border-slate-800">
             <button
               onClick={() => {
-                if (!currentUser) {
-                  openAuthModal('login');
+                if (!isProOrFamily && isFreeCameraExpired) {
+                  openTrialExpiredModal();
                   return;
                 }
                 setUseSimulatedCamera(false);
                 if (!cameraStream) startCamera();
               }}
               className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
-                !useSimulatedCamera && currentUser
+                !useSimulatedCamera
                   ? 'bg-teal-500 text-slate-950 font-bold shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              {!currentUser && <Lock className="w-3 h-3 text-amber-400" />}
+              {!isProOrFamily && isFreeCameraExpired && <Lock className="w-3 h-3 text-rose-400" />}
               <Camera className="w-3.5 h-3.5" />
-              <span>{t('monitor.liveWebcam')} {!currentUser ? '(Khóa)' : ''}</span>
+              <span>{t('monitor.liveWebcam')} {!isProOrFamily && isFreeCameraExpired ? (isVi ? '(Hết 2h)' : '(Expired)') : ''}</span>
             </button>
             <button
               onClick={() => setUseSimulatedCamera(true)}
@@ -374,7 +289,39 @@ export const MonitorPage: React.FC = () => {
             {/* 1. REAL WEBCAM MODE */}
             {!useSimulatedCamera && (
               <>
-                {cameraStream ? (
+                {!isProOrFamily && isFreeCameraExpired ? (
+                  <div className="text-center p-8 space-y-4 max-w-md mx-auto">
+                    <div className="w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 mx-auto shadow-xl">
+                      <Clock className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold text-slate-100">
+                        {isVi ? 'Đã hết 2 giờ dùng thử camera hôm nay' : 'Daily 2-hour camera trial expired'}
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                        {isVi
+                          ? 'Bạn đã sử dụng hết 120 phút giám sát camera trong ngày. Hãy nâng cấp lên gói PRO hoặc FAMILY để tiếp tục giám sát không giới hạn 24/7.'
+                          : 'You have used your 120 minutes of camera monitoring today. Upgrade to PRO or FAMILY for 24/7 unlimited monitoring.'}
+                      </p>
+                    </div>
+                    <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                      <button
+                        onClick={openTrialExpiredModal}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <Crown className="w-4 h-4" />
+                        <span>{isVi ? 'Nâng cấp gói ngay' : 'Upgrade Plan'}</span>
+                      </button>
+                      <button
+                        onClick={() => setUseSimulatedCamera(true)}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>{isVi ? 'Xem Giả lập' : 'View Simulator'}</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : cameraStream ? (
                   <div className="relative w-full h-full">
                     {/* Live Video Element */}
                     <video

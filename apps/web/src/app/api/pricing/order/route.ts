@@ -37,6 +37,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Lưu thông tin affiliate của đơn hàng nếu có
+    if (body.affiliateCode) {
+      try {
+        const fs = await import('fs');
+        const path = await import('path');
+        const mappingFile = path.join(process.cwd(), 'data', 'order_affiliates.json');
+        const dir = path.dirname(mappingFile);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        let mapping: Record<string, any> = {};
+        if (fs.existsSync(mappingFile)) {
+          mapping = JSON.parse(fs.readFileSync(mappingFile, 'utf8'));
+        }
+        mapping[newOrder.order_code] = {
+          affiliateCode: String(body.affiliateCode).trim().toUpperCase(),
+          userId,
+          tier,
+          interval,
+          amount: Number(amount),
+          createdAt: new Date().toISOString(),
+        };
+        fs.writeFileSync(mappingFile, JSON.stringify(mapping, null, 2), 'utf8');
+      } catch (err) {
+        console.error('[Order API] Lỗi lưu affiliate mapping:', err);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Đơn hàng đã được khởi tạo',

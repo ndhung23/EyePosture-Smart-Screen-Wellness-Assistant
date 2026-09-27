@@ -43,6 +43,41 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
         }
       })
       .catch(() => {});
+
+    // Kiểm tra mã giới thiệu Affiliate từ URL hoặc localStorage
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const refParam = urlParams.get('ref') || urlParams.get('affiliate');
+      const targetRef = refParam || localStorage.getItem('eyeposture_ref');
+
+      if (targetRef) {
+        const cleanRef = targetRef.trim().toUpperCase();
+        localStorage.setItem('eyeposture_ref', cleanRef);
+        setVoucherCode(cleanRef);
+        setShowVoucherInput(true);
+
+        if (refParam) {
+          fetch('/api/affiliate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'track_click', code: cleanRef }),
+          }).catch(() => {});
+        }
+
+        fetch(`/api/vouchers?code=${encodeURIComponent(cleanRef)}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.valid) {
+              setAppliedVoucher({ code: data.code, discountPercent: data.discountPercent });
+              setVoucherMessage({
+                text: `Mã giới thiệu "${data.code}" hợp lệ! Giảm ngay ${data.discountPercent}% cho đơn hàng`,
+                isError: false,
+              });
+            }
+          })
+          .catch(() => {});
+      }
+    } catch {}
   }, []);
 
   // Polling kiểm tra trạng thái thanh toán từ SePay Webhook
@@ -146,6 +181,7 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
           tier,
           interval,
           amount: finalAmount,
+          affiliateCode: appliedVoucher?.code || (typeof window !== 'undefined' ? localStorage.getItem('eyeposture_ref') : undefined) || undefined,
         }),
       });
     } catch (err) {

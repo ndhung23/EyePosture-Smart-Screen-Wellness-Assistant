@@ -58,6 +58,16 @@ export function Navbar({ onOpenAuth }: { onOpenAuth: () => void }) {
             <span>{t('nav_pricing')}</span>
             <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-gradient-to-r from-cyan-500 to-indigo-500 group-hover/link:w-full transition-all duration-300 ease-out rounded-full" />
           </a>
+          <Link
+            href="/affiliate"
+            className="relative py-1 flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-amber-500 dark:hover:text-amber-400 transition-colors duration-200 group/link"
+          >
+            <span className="font-medium">{t('nav_affiliate')}</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm shadow-amber-500/20 animate-pulse">
+              HOT
+            </span>
+            <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-gradient-to-r from-amber-500 to-orange-500 group-hover/link:w-full transition-all duration-300 ease-out rounded-full" />
+          </Link>
           <a
             href="/api/download"
             className="relative py-1 flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors duration-200 group/link"
@@ -143,6 +153,16 @@ export function Navbar({ onOpenAuth }: { onOpenAuth: () => void }) {
           >
             {t('nav_pricing')}
           </a>
+          <Link
+            href="/affiliate"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center justify-between py-2 text-amber-600 dark:text-amber-400 hover:translate-x-1.5 transition-all duration-200 font-semibold"
+          >
+            <span>{t('nav_affiliate')}</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm shadow-amber-500/20">
+              HOT
+            </span>
+          </Link>
           {isAdmin && (
             <Link
               href="/admin"

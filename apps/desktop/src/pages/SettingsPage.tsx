@@ -224,12 +224,16 @@ export const SettingsPage: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={settings.general.startWithWindows}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const checked = e.target.checked;
                     updateSettings({
                       ...settings,
-                      general: { ...settings.general, startWithWindows: e.target.checked },
-                    })
-                  }
+                      general: { ...settings.general, startWithWindows: checked },
+                    });
+                    if (typeof (window as any).electronApi?.setStartup === 'function') {
+                      (window as any).electronApi.setStartup(checked);
+                    }
+                  }}
                   className="w-5 h-5 rounded bg-slate-800 border-slate-700 text-teal-500 focus:ring-0 cursor-pointer"
                 />
               </div>

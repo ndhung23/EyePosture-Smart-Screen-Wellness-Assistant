@@ -211,13 +211,72 @@ export async function POST(req: NextRequest) {
       console.log(`[SePay Webhook] Đã kích hoạt gói ${targetTier} cho User: ${matchedOrder.user_id}`);
     }
 
-    // 7. Lấy thông tin email và gửi thư xác nhận thanh toán thành công
+    // Lấy thông tin user thanh toán
     const { data: userData } = await supabase
       .from('users')
       .select('email, name')
       .eq('id', matchedOrder.user_id)
       .maybeSingle();
 
+    // 6.1 Ghi nhận hoa hồng Affiliate nếu đơn hàng có mã giới thiệu
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const mappingFile = path.join(process.cwd(), 'data', 'order_affiliates.json');
+      const affFile = path.join(process.cwd(), 'data', 'affiliate.json');
+
+      if (fs.existsSync(mappingFile) && fs.existsSync(affFile)) {
+        const mapping = JSON.parse(fs.readFileSync(mappingFile, 'utf8'));
+        const orderAff = mapping[matchedOrder.order_code];
+
+        if (orderAff && orderAff.affiliateCode) {
+          const affDb = JSON.parse(fs.readFileSync(affFile, 'utf8'));
+          const ownerId = affDb.codeToUserId ? affDb.codeToUserId[orderAff.affiliateCode] : null;
+
+          if (ownerId && affDb.accounts && affDb.accounts[ownerId]) {
+            const acc = affDb.accounts[ownerId];
+            let commRate = acc.commissionPercentYearly || 30;
+            if (interval === 'lifetime' || transferAmount >= 299000) {
+              commRate = acc.commissionPercentLifetime || 35;
+            } else if (interval === 'month' || transferAmount <= 50000) {
+              commRate = acc.commissionPercentMonthly || 20;
+            }
+
+            const commissionAmount = Math.round(transferAmount * (commRate / 100));
+            acc.totalConversions = (acc.totalConversions || 0) + 1;
+            acc.totalEarnedVnd = (acc.totalEarnedVnd || 0) + commissionAmount;
+            acc.currentBalanceVnd = (acc.currentBalanceVnd || 0) + commissionAmount;
+
+            const referralRecord = {
+              id: `ref_${Date.now()}`,
+              affiliateCode: orderAff.affiliateCode,
+              referrerUserId: ownerId,
+              buyerUserId: matchedOrder.user_id,
+              buyerName: userData?.name || userData?.email || 'Khách hàng',
+              orderCode: matchedOrder.order_code,
+              planTier: targetTier,
+              planInterval: interval,
+              originalAmount: orderAff.amount || transferAmount,
+              discountAmount: 0,
+              finalAmount: transferAmount,
+              commissionPercent: commRate,
+              commissionAmount,
+              status: 'APPROVED',
+              createdAt: new Date().toISOString(),
+            };
+
+            if (!affDb.referrals) affDb.referrals = [];
+            affDb.referrals.unshift(referralRecord);
+            fs.writeFileSync(affFile, JSON.stringify(affDb, null, 2), 'utf8');
+            console.log(`[SePay Webhook] Đã ghi nhận hoa hồng ${commissionAmount} VNĐ (${commRate}%) cho Affiliate ${acc.affiliateCode}`);
+          }
+        }
+      }
+    } catch (affErr) {
+      console.error('[SePay Webhook] Lỗi ghi nhận hoa hồng affiliate:', affErr);
+    }
+
+    // 7. Gửi thư xác nhận thanh toán thành công
     if (userData?.email) {
       console.log(`[SePay Webhook] Bắt đầu gửi email thông báo tới: ${userData.email}`);
       await sendPaymentSuccessEmail({

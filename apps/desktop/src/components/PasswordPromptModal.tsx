@@ -145,15 +145,15 @@ export const PasswordPromptModal: React.FC = () => {
       const res = await AuthService.resetPassword(targetEmail, otpCode, newPassword);
       if (res.success) {
         const hashed = await hashPassword(newPassword);
+        localStorage.setItem(`eyeposture_pwd_${targetEmail}`, hashed);
         if (settings) {
           updateSecuritySettings({
             ...settings.security,
             enabled: true,
-            passwordHash: hashed,
             recoveryEmail: targetEmail,
           });
         }
-        setSuccessMessage('Mật khẩu đã được đặt lại thành công!');
+        setSuccessMessage('Mật khẩu tài khoản đã được đặt lại thành công!');
         setTimeout(() => {
           const callback = passwordModalConfig.onSuccess;
           closePasswordModal();
@@ -172,10 +172,10 @@ export const PasswordPromptModal: React.FC = () => {
   };
 
   const getTitle = () => {
-    if (mode === 'forgot') return 'Khôi phục mật khẩu';
-    if (isQuitAction) return t('security.promptTitleQuit');
+    if (mode === 'forgot') return 'Khôi phục mật khẩu tài khoản';
+    if (isQuitAction) return 'Xác nhận Thoát ứng dụng';
     if (isSettingsAction) return 'Khóa Bảo Mật Cài Đặt';
-    return t('security.promptTitlePause');
+    return 'Xác nhận Tắt Camera';
   };
 
   const getSubtitle = () => {
@@ -183,13 +183,14 @@ export const PasswordPromptModal: React.FC = () => {
       if (forgotStep === 'request') {
         return existingEmail
           ? `Mã xác nhận 6 số sẽ được gửi tới email ${existingEmail}`
-          : 'Tài khoản chưa đăng ký email. Vui lòng nhập email để nhận mã xác thực đặt lại mật khẩu.';
+          : 'Vui lòng nhập email tài khoản để nhận mã OTP đặt lại mật khẩu.';
       }
-      return 'Nhập mã xác thực đã gửi đến email của bạn và đặt mật khẩu mới.';
+      return 'Nhập mã xác thực đã gửi đến email của bạn và đặt lại mật khẩu mới cho tài khoản.';
     }
-    if (isQuitAction) return t('security.promptDescQuit');
-    if (isSettingsAction) return 'Vui lòng nhập đúng mật khẩu đã đặt để mở giao diện Cài đặt.';
-    return t('security.promptDescPause');
+    const accEmail = existingEmail ? ` (${existingEmail})` : '';
+    if (isQuitAction) return `Vui lòng nhập mật khẩu tài khoản${accEmail} để xác nhận thoát ứng dụng.`;
+    if (isSettingsAction) return `Vui lòng nhập mật khẩu tài khoản${accEmail} để mở giao diện Cài đặt.`;
+    return `Vui lòng nhập mật khẩu tài khoản${accEmail} để xác nhận tắt camera và dừng giám sát.`;
   };
 
   return (
@@ -281,7 +282,7 @@ export const PasswordPromptModal: React.FC = () => {
               <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <KeyRound className="w-3.5 h-3.5 text-purple-400" />
-                  <span>{t('security.currentPassword')}</span>
+                  <span>Mật khẩu tài khoản ({existingEmail || 'của bạn'}):</span>
                 </span>
                 <button
                   type="button"
@@ -307,13 +308,7 @@ export const PasswordPromptModal: React.FC = () => {
                     if (e.key === 'Enter') handleSubmitVerify();
                     if (e.key === 'Escape') closePasswordModal();
                   }}
-                  placeholder={
-                    isSettingsAction
-                      ? 'Nhập mật khẩu mở khóa Cài đặt...'
-                      : isQuitAction
-                      ? 'Nhập mật khẩu để thoát ứng dụng...'
-                      : (t('security.enterCurrentPassword') || 'Nhập mật khẩu bảo mật...')
-                  }
+                  placeholder="Nhập mật khẩu tài khoản để xác nhận..."
                   className="w-full px-4 py-2.5 pr-11 rounded-xl bg-slate-800/80 border border-slate-700/80 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 transition-all"
                 />
                 <button

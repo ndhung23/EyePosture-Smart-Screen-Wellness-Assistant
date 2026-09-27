@@ -36,6 +36,8 @@ contextBridge.exposeInMainWorld('electronApi', {
     ipcRenderer.on('alert:hide', () => callback());
   },
   getAppVersion: () => ipcRenderer.invoke('app:get-version'),
+  getStartup: () => ipcRenderer.invoke('app:get-startup'),
+  setStartup: (openAtLogin: boolean) => ipcRenderer.invoke('app:set-startup', openAtLogin),
   openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),
   downloadAndInstallUpdate: (url: string) => ipcRenderer.invoke('updater:download-and-install', url),
   onUpdateDownloadProgress: (callback: (progress: { percent: number; receivedBytes: number; totalBytes: number }) => void) => {

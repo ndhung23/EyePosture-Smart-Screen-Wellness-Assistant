@@ -31,6 +31,8 @@ import { t, setLanguage, getLanguage, LanguageCode } from '@eyeposture/i18n';
 import { FaceLandmarkerService } from '../services/FaceLandmarkerService.js';
 import { AuthService } from '../services/AuthService.js';
 import { useCameraManager } from '../hooks/useCameraManager.js';
+import { applyThemeToDOM, triggerOverlayAlert, syncElectronStartup, createFallbackBaseline } from './AppContextHelpers.js';
+import { AlertHistoryService } from '../services/AlertHistoryService.js';
 
 import { AppContextValue, SimulationMode } from './AppContextTypes.js';
 
@@ -51,40 +53,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('FREE');
   const [isBreakActive, setIsBreakActive] = useState<boolean>(false);
   const [activeReminders, setActiveReminders] = useState<ReminderEvent[]>([]);
-  const [passwordModalConfig, setPasswordModalConfig] = useState<{
-    isOpen: boolean;
-    action: 'PAUSE_MONITORING' | 'QUIT_APP' | 'ACCESS_SETTINGS';
-    onSuccess?: () => void;
-  } | null>(null);
+  const [passwordModalConfig, setPasswordModalConfig] = useState<{ isOpen: boolean; action: 'PAUSE_MONITORING' | 'QUIT_APP' | 'ACCESS_SETTINGS'; onSuccess?: () => void } | null>(null);
   const [isSettingsUnlocked, setIsSettingsUnlocked] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<{
-    id: string;
-    email: string;
-    name: string;
-    role?: string;
-    createdAt?: string;
-    subscription?: {
-      tier: SubscriptionTier;
-      status: string;
-      expiresAt: number | null;
-    };
-  } | null>(null);
+  const [currentUser, setCurrentUser] = useState<AppContextValue['currentUser']>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
-
-  const applyThemeToDOM = (resolvedTheme: 'dark' | 'light') => {
-    if (typeof document === 'undefined') return;
-    const root = document.documentElement;
-    if (resolvedTheme === 'light') {
-      root.classList.remove('dark', 'theme-dark');
-      root.classList.add('light', 'theme-light');
-    } else {
-      root.classList.remove('light', 'theme-light');
-      root.classList.add('dark', 'theme-dark');
+  const [isTrialExpiredModalOpen, setIsTrialExpiredModalOpen] = useState<boolean>(false);
+  const [freeCameraSecondsToday, setFreeCameraSecondsToday] = useState<number>(() => {
+    try {
+      const todayKey = 'eyeposture_camera_usage_' + new Date().toISOString().slice(0, 10);
+      return parseInt(localStorage.getItem(todayKey) || '0', 10);
+    } catch {
+      return 0;
     }
-  };
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -234,6 +218,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setLanguage(userSettings.general.language);
       setLangState(userSettings.general.language);
       (window as any).electronApi?.setTrayLanguage?.(userSettings.general.language);
+      syncElectronStartup(userSettings.general?.startWithWindows ?? false);
       const savedTheme = typeof localStorage !== 'undefined' ? (localStorage.getItem('eyeposture_theme') as AppTheme) : null;
       const initialTheme = savedTheme || userSettings.general.theme || 'light';
       setThemeState(initialTheme);
@@ -278,6 +263,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (event.state === 'ACTIVE_WARNING') {
           const title = t(event.titleKey as any) || event.titleKey;
           const message = t(event.messageKey as any) || event.messageKey;
+          AlertHistoryService.recordAlert(event, title, message, currentProf?.id || 'default');
+          if (event.type === 'POSTURE') {
+            setDailyStats((prev) => ({ ...prev, postureWarningsCount: prev.postureWarningsCount + 1 }));
+          } else if (event.type === 'DISTANCE') {
+            setDailyStats((prev) => ({ ...prev, distanceWarningsCount: prev.distanceWarningsCount + 1 }));
+          }
           (window as any).electronApi?.showOverlayAlert?.({
             type: event.type,
             title,
@@ -378,26 +369,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return next;
       });
 
+      // 1.1 Advance free camera usage if FREE or Guest
+      const currentTier = (currentUser?.subscription?.tier || subscriptionTier || 'FREE').toUpperCase();
+      const isUnlimitedTier = currentTier === 'PRO' || currentTier === 'FAMILY';
+      if (!isUnlimitedTier) {
+        setFreeCameraSecondsToday((prev) => {
+          const next = prev + 1;
+          try {
+            const todayKey = 'eyeposture_camera_usage_' + new Date().toISOString().slice(0, 10);
+            localStorage.setItem(todayKey, String(next));
+          } catch {}
+          if (next >= 7200) {
+            setIsMonitoring(false);
+            stopCamera();
+            setIsTrialExpiredModalOpen(true);
+            triggerOverlayAlert(
+              'BREAK',
+              'Hết hạn dùng thử camera hôm nay!',
+              'Bạn đã sử dụng hết 2 tiếng giám sát camera miễn phí hôm nay. Vui lòng nâng cấp lên PRO hoặc FAMILY để tiếp tục.'
+            );
+          }
+          return next;
+        });
+      }
+
       // 2. Tick Reminder Engine
       reminderEngineRef.current?.tick(1);
 
       // 3. Update Progress Meters
       if (reminderEngineRef.current) {
         const bProg = reminderEngineRef.current.getBreakTimer().getProgress();
-        setBreakProgress({
-          remainingSeconds: bProg.remainingSeconds,
-          percentComplete: bProg.percentComplete,
-        });
-
+        setBreakProgress({ remainingSeconds: bProg.remainingSeconds, percentComplete: bProg.percentComplete });
         const hProg = reminderEngineRef.current.getHydrationTimer().getProgress();
-        setHydrationProgress({
-          glassesToday: hProg.glassesToday,
-          dailyGoalGlasses: hProg.dailyGoalGlasses,
-          percentComplete: hProg.percentComplete,
-        });
-
-        const gov = reminderEngineRef.current.getResourceGovernor().getStatus();
-        setGovernorStatus(gov);
+        setHydrationProgress({ glassesToday: hProg.glassesToday, dailyGoalGlasses: hProg.dailyGoalGlasses, percentComplete: hProg.percentComplete });
+        setGovernorStatus(reminderEngineRef.current.getResourceGovernor().getStatus());
       }
     }, 1000);
 
@@ -413,29 +418,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const cvTimer = setInterval(() => {
       let sampleLandmarks: KeyFacialLandmarks | null = null;
       if (useSimulatedCamera) {
-        switch (simulationMode) {
-          case 'SLOUCH':
-            sampleLandmarks = SyntheticVisionHarness.createSlouchedLandmarks();
-            break;
-          case 'TOO_CLOSE':
-            sampleLandmarks = SyntheticVisionHarness.createTooCloseLandmarks();
-            break;
-          case 'TILT':
-            sampleLandmarks = SyntheticVisionHarness.createHeadTiltedLandmarks();
-            break;
-          case 'PROLONGED_STARE':
-            sampleLandmarks = SyntheticVisionHarness.createProlongedStareLandmarks();
-            break;
-          case 'BLINKING':
-            sampleLandmarks = Math.random() > 0.4
-              ? SyntheticVisionHarness.createUprightLandmarks()
-              : SyntheticVisionHarness.createBlinkingLandmarks();
-            break;
-          case 'UPRIGHT':
-          default:
-            sampleLandmarks = SyntheticVisionHarness.createUprightLandmarks();
-            break;
-        }
+        if (simulationMode === 'SLOUCH') sampleLandmarks = SyntheticVisionHarness.createSlouchedLandmarks();
+        else if (simulationMode === 'TOO_CLOSE') sampleLandmarks = SyntheticVisionHarness.createTooCloseLandmarks();
+        else if (simulationMode === 'TILT') sampleLandmarks = SyntheticVisionHarness.createHeadTiltedLandmarks();
+        else if (simulationMode === 'PROLONGED_STARE') sampleLandmarks = SyntheticVisionHarness.createProlongedStareLandmarks();
+        else if (simulationMode === 'BLINKING') sampleLandmarks = Math.random() > 0.4 ? SyntheticVisionHarness.createUprightLandmarks() : SyntheticVisionHarness.createBlinkingLandmarks();
+        else sampleLandmarks = SyntheticVisionHarness.createUprightLandmarks();
       } else {
         const v = hiddenVideoRef.current;
         if (v && v.srcObject) {
@@ -464,10 +452,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [isMonitoring, governorStatus.targetFps, useSimulatedCamera, simulationMode]);
 
   const verifyPassword = async (password: string): Promise<boolean> => {
-    const currentHash = settingsRef.current?.security?.passwordHash;
-    if (!currentHash) return true;
-    const inputHash = await hashPassword(password);
-    return inputHash === currentHash;
+    const email = currentUser?.email || settingsRef.current?.security?.recoveryEmail;
+    if (!email) {
+      const legacyHash = settingsRef.current?.security?.passwordHash;
+      if (!legacyHash) return true;
+      const inputHash = await hashPassword(password);
+      return inputHash === legacyHash;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Thử xác thực trực tiếp qua AuthService (gọi API backend bằng mật khẩu tài khoản)
+    try {
+      const res = await AuthService.login(cleanEmail, password);
+      if (res.success) {
+        const h = await hashPassword(password);
+        localStorage.setItem(`eyeposture_pwd_${cleanEmail}`, h);
+        return true;
+      }
+      if (
+        res.error &&
+        (res.error.toLowerCase().includes('mật khẩu') ||
+          res.error.toLowerCase().includes('không chính xác') ||
+          res.error.toLowerCase().includes('invalid') ||
+          res.error.toLowerCase().includes('credentials') ||
+          res.error.toLowerCase().includes('không tồn tại'))
+      ) {
+        return false;
+      }
+    } catch {
+      // Lỗi mạng hoặc server không phản hồi -> kiểm tra offline cache
+    }
+
+    // 2. Offline fallback: Kiểm tra bằng hash mật khẩu tài khoản đã lưu
+    const offlineHash = localStorage.getItem(`eyeposture_pwd_${cleanEmail}`);
+    if (offlineHash) {
+      const inputHash = await hashPassword(password);
+      return inputHash === offlineHash;
+    }
+
+    // 3. Fallback cho admin offline
+    if (
+      (cleanEmail === 'admin' || cleanEmail === 'admin@eyeposture.com') &&
+      (password === '1' || password === 'admin123' || password === 'admin')
+    ) {
+      return true;
+    }
+
+    const legacyHash = settingsRef.current?.security?.passwordHash;
+    if (legacyHash) {
+      const inputHash = await hashPassword(password);
+      return inputHash === legacyHash;
+    }
+
+    return false;
   };
 
   const closePasswordModal = () => {
@@ -480,7 +518,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const requestQuitApp = () => {
     const sec = settingsRef.current?.security;
-    if (sec?.enabled && sec?.requireOnQuit && sec?.passwordHash) {
+    if (sec?.enabled) {
       setPasswordModalConfig({
         isOpen: true,
         action: 'QUIT_APP',
@@ -496,17 +534,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const requestToggleMonitoring = (forceTarget?: boolean) => {
     const nextState = forceTarget !== undefined ? forceTarget : !isMonitoringRef.current;
     if (nextState) {
-      if (!currentUser) {
-        openAuthModal('login');
+      const currentTier = (currentUser?.subscription?.tier || subscriptionTier || 'FREE').toUpperCase();
+      const isUnlimitedTier = currentTier === 'PRO' || currentTier === 'FAMILY';
+      if (!isUnlimitedTier && freeCameraSecondsToday >= 7200) {
+        setIsTrialExpiredModalOpen(true);
+        triggerOverlayAlert(
+          'BREAK',
+          'Hết hạn dùng thử camera hôm nay!',
+          'Bạn đã dùng hết 2 tiếng giám sát camera miễn phí hôm nay. Vui lòng nâng cấp gói để tiếp tục không giới hạn!'
+        );
         return;
       }
+
       setIsMonitoring(true);
       if (!cameraStream) startCamera();
       return;
     }
 
     const sec = settingsRef.current?.security;
-    if (sec?.enabled && sec?.requireOnPause && sec?.passwordHash) {
+    if (sec?.enabled) {
       setPasswordModalConfig({
         isOpen: true,
         action: 'PAUSE_MONITORING',
@@ -525,7 +571,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const requestAccessSettings = (onSuccess: () => void) => {
     const sec = settingsRef.current?.security;
-    if (sec?.enabled && sec?.passwordHash && !isSettingsUnlocked) {
+    if (sec?.enabled && !isSettingsUnlocked) {
       setPasswordModalConfig({
         isOpen: true,
         action: 'ACCESS_SETTINGS',
@@ -605,6 +651,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (profSettings.general?.theme) {
         setThemeState(profSettings.general.theme);
       }
+      if (profSettings.general?.startWithWindows !== undefined) {
+        syncElectronStartup(profSettings.general.startWithWindows);
+      }
       reminderEngineRef.current?.updateSettings(profSettings);
     }
   };
@@ -634,6 +683,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSettings(newSettings);
     if (newSettings.general?.theme && newSettings.general.theme !== theme) {
       setThemeState(newSettings.general.theme);
+    }
+    if (newSettings.general?.startWithWindows !== undefined) {
+      syncElectronStartup(newSettings.general.startWithWindows);
     }
     if (newSettings.blink && !newSettings.blink.enabled) {
       setActiveReminders((prev) => prev.filter((r) => r.type !== 'BLINK_REMINDER'));
@@ -711,6 +763,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     localStorage.setItem('eyeposture_auth_token', token);
     localStorage.setItem('eyeposture_auth_user', JSON.stringify(user));
+    try {
+      const h = await hashPassword(password);
+      localStorage.setItem(`eyeposture_pwd_${(user.email || email).toLowerCase()}`, h);
+    } catch {}
     await syncEntitlements(token);
     setIsMonitoring(true);
     startCamera();
@@ -728,6 +784,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     localStorage.setItem('eyeposture_auth_token', token);
     localStorage.setItem('eyeposture_auth_user', JSON.stringify(user));
+    try {
+      const h = await hashPassword(password);
+      localStorage.setItem(`eyeposture_pwd_${(user.email || email).toLowerCase()}`, h);
+    } catch {}
     await syncEntitlements(token);
     setIsMonitoring(true);
     startCamera();
@@ -779,17 +839,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       reposRef.current.driver.exec('DELETE FROM posture_events; DELETE FROM distance_events; DELETE FROM daily_statistics;');
       runner.runMigrations();
     }
-    setDailyStats({
-      date: new Date().toISOString().slice(0, 10),
-      profileId: activeProfile?.id ?? 'default',
-      totalScreenTimeMinutes: 0,
-      postureWarningsCount: 0,
-      distanceWarningsCount: 0,
-      eyeBreaksCompleted: 0,
-      eyeBreaksSkipped: 0,
-      waterGlassesDrank: 0,
-      wellnessScore: 100,
-    });
+    setDailyStats({ date: new Date().toISOString().slice(0, 10), profileId: activeProfile?.id ?? 'default', totalScreenTimeMinutes: 0, postureWarningsCount: 0, distanceWarningsCount: 0, eyeBreaksCompleted: 0, eyeBreaksSkipped: 0, waterGlassesDrank: 0, wellnessScore: 100 });
   };
 
   const startPostureCalibration = async (): Promise<CalibrationData | null> => {
@@ -805,17 +855,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const currentCamId = selectedCameraId || 'default';
         let baseline = visionEngineRef.current.finalizeCalibration(currentCamId);
 
-        // Robust fallback baseline if lighting or frame drop resulted in too few samples
         if (!baseline) {
-          baseline = {
-            baselineFaceDistanceRatio: liveAnalysis.distanceRatio > 0 ? 0.185 * liveAnalysis.distanceRatio : 0.185,
-            baselineFaceWidth: 0.22,
-            baselinePitch: liveAnalysis.headAngles?.pitch ?? 8,
-            baselineRoll: liveAnalysis.headAngles?.roll ?? 0,
-            baselineY: 0.52,
-            cameraDeviceId: currentCamId,
-            calibratedAt: new Date().toISOString(),
-          };
+          baseline = createFallbackBaseline(currentCamId, liveAnalysis.distanceRatio, liveAnalysis.headAngles);
           visionEngineRef.current.setCalibration(baseline);
         }
 
@@ -827,27 +868,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         resolve(baseline);
       }, 2500);
-    });
-  };
-
-  const triggerOverlayAlert = (type: string = 'DISTANCE', title?: string, message?: string) => {
-    let defTitle = 'Cảnh báo khoảng cách màn hình';
-    let defMsg = 'Bạn đang ngồi quá gần màn hình (<45cm). Vui lòng lùi lại!';
-    if (type.includes('POSTURE')) {
-      defTitle = 'Cảnh báo tư thế ngồi';
-      defMsg = 'Phát hiện gù lưng hoặc cúi đầu quá thấp. Hãy ngồi thẳng lưng!';
-    } else if (type.includes('BLINK')) {
-      defTitle = 'Nhắc nhở chớp mắt';
-      defMsg = 'Hãy chớp mắt vài lần để duy trì độ ẩm giác mạc!';
-    } else if (type.includes('BREAK')) {
-      defTitle = 'Đã đến giờ nghỉ mắt!';
-      defMsg = 'Quy tắc 20-20-20: Hãy nhìn xa 20 feet trong 20 giây.';
-    }
-    (window as any).electronApi?.showOverlayAlert?.({
-      type,
-      title: title || defTitle,
-      message: message || defMsg,
-      durationMs: 4500,
     });
   };
 
@@ -943,6 +963,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activeCalibration,
         startPostureCalibration,
         triggerOverlayAlert,
+        freeCameraSecondsToday,
+        freeCameraLimitSeconds: 7200,
+        isFreeCameraExpired: !((currentUser?.subscription?.tier || subscriptionTier || '').toUpperCase() === 'PRO' || (currentUser?.subscription?.tier || subscriptionTier || '').toUpperCase() === 'FAMILY') && freeCameraSecondsToday >= 7200,
+        freeCameraSecondsRemaining: ((currentUser?.subscription?.tier || subscriptionTier || '').toUpperCase() === 'PRO' || (currentUser?.subscription?.tier || subscriptionTier || '').toUpperCase() === 'FAMILY') ? 999999 : Math.max(0, 7200 - freeCameraSecondsToday),
+        isTrialExpiredModalOpen,
+        openTrialExpiredModal: () => setIsTrialExpiredModalOpen(true),
+        closeTrialExpiredModal: () => setIsTrialExpiredModalOpen(false),
       }}
     >
       {children}

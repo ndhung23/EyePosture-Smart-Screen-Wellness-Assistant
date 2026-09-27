@@ -252,11 +252,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
         {/* Eye-to-Screen Distance Card */}
         <div
-          onClick={() => {
-            if (!currentUser) openAuthModal('login');
-            else onNavigate('monitor');
-          }}
-          className="glass-card glass-card-interactive p-6 flex items-center justify-between"
+          onClick={() => onNavigate('monitor')}
+          className="glass-card glass-card-interactive p-6 flex items-center justify-between cursor-pointer"
         >
           <div className="space-y-1">
             <span className="text-xs uppercase font-bold tracking-wider text-slate-400">
@@ -265,30 +262,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <div className="flex items-baseline gap-2">
               <span
                 className={`font-display text-2xl font-bold ${
-                  !currentUser
+                  !isMonitoring
                     ? 'text-slate-400'
                     : liveAnalysis.distanceState === 'TOO_CLOSE'
                     ? 'text-rose-400'
                     : 'text-emerald-400'
                 }`}
               >
-                {!currentUser
+                {!isMonitoring
                   ? isVi
-                    ? 'Chưa kích hoạt'
+                    ? 'Tắt camera'
                     : 'Inactive'
                   : liveAnalysis.distanceState === 'TOO_CLOSE'
                   ? t('dashboard.tooClose')
                   : t('dashboard.statusGood')}
               </span>
               <span className="text-xs text-slate-400 font-mono">
-                {currentUser && liveAnalysis.faceDetected ? `~${liveAnalysis.distanceEstimateCm} cm` : '-- cm'}
+                {isMonitoring && liveAnalysis.faceDetected ? `~${liveAnalysis.distanceEstimateCm} cm` : '-- cm'}
               </span>
             </div>
             <p className="text-xs text-slate-400 pt-1">
-              {!currentUser
+              {!isMonitoring
                 ? isVi
-                  ? 'Đăng nhập để khởi động camera đo khoảng cách'
-                  : 'Sign in to activate camera distance tracking'
+                  ? 'Bật giám sát camera để đo khoảng cách mắt'
+                  : 'Start camera to track eye distance'
                 : liveAnalysis.distanceState === 'TOO_CLOSE'
                 ? t('dashboard.leanBackHint')
                 : t('dashboard.ergonomicDistance')}
@@ -296,7 +293,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </div>
           <div
             className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${
-              !currentUser
+              !isMonitoring
                 ? 'bg-slate-800/40 border-slate-700/60 text-slate-500'
                 : liveAnalysis.distanceState === 'TOO_CLOSE'
                 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
@@ -309,11 +306,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
         {/* Sitting Posture Status Card */}
         <div
-          onClick={() => {
-            if (!currentUser) openAuthModal('login');
-            else onNavigate('monitor');
-          }}
-          className="glass-card glass-card-interactive p-6 flex items-center justify-between"
+          onClick={() => onNavigate('monitor')}
+          className="glass-card glass-card-interactive p-6 flex items-center justify-between cursor-pointer"
         >
           <div className="space-y-1">
             <span className="text-xs uppercase font-bold tracking-wider text-slate-400">
@@ -322,7 +316,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <div className="flex items-baseline gap-2">
               <span
                 className={`font-display text-2xl font-bold ${
-                  !currentUser
+                  !isMonitoring
                     ? 'text-slate-400'
                     : liveAnalysis.postureState === 'POOR'
                     ? 'text-amber-400'
@@ -331,9 +325,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                     : 'text-emerald-400'
                 }`}
               >
-                {!currentUser
+                {!isMonitoring
                   ? isVi
-                    ? 'Chưa kích hoạt'
+                    ? 'Tắt camera'
                     : 'Inactive'
                   : liveAnalysis.postureState === 'POOR'
                   ? t('dashboard.statusPoor')
@@ -341,13 +335,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   ? t('dashboard.statusAcceptable')
                   : t('dashboard.statusGood')}
               </span>
-              <span className="text-xs text-slate-400 font-mono">{currentUser ? `${liveAnalysis.postureScore}/100` : '--/100'}</span>
+              <span className="text-xs text-slate-400 font-mono">{isMonitoring ? `${liveAnalysis.postureScore}/100` : '--/100'}</span>
             </div>
             <p className="text-xs text-slate-400 pt-1">
-              {!currentUser
+              {!isMonitoring
                 ? isVi
-                  ? 'Đăng nhập để nhận diện tư thế thời gian thực'
-                  : 'Sign in for real-time posture analysis'
+                  ? 'Bật giám sát camera để nhận diện tư thế AI'
+                  : 'Start camera for real-time posture analysis'
                 : liveAnalysis.slouchDetected
                 ? t('dashboard.slouchWarning')
                 : t('dashboard.alignedGood')}
@@ -355,7 +349,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </div>
           <div
             className={`w-14 h-14 rounded-2xl border flex items-center justify-center ${
-              !currentUser
+              !isMonitoring
                 ? 'bg-slate-800/40 border-slate-700/60 text-slate-500'
                 : liveAnalysis.postureState === 'POOR'
                 ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
@@ -534,25 +528,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <h3 className="text-sm font-semibold text-slate-300 mb-4">{t('dashboard.quickActionsTitle')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button
-            onClick={() => {
-              if (!currentUser) openAuthModal('login');
-              else toggleMonitoring();
-            }}
+            onClick={() => toggleMonitoring()}
             className="p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 flex flex-col items-center gap-2 transition-all active:scale-95"
           >
             <div
               className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                isMonitoring && currentUser ? 'bg-teal-500/20 text-teal-400' : 'bg-rose-500/20 text-rose-400'
+                isMonitoring ? 'bg-teal-500/20 text-teal-400' : 'bg-rose-500/20 text-rose-400'
               }`}
             >
               <Eye className="w-5 h-5" />
             </div>
             <span className="text-xs font-semibold text-slate-200">
-              {!currentUser
-                ? isVi
-                  ? 'Đăng nhập để bật'
-                  : 'Sign in to enable'
-                : isMonitoring
+              {isMonitoring
                 ? t('dashboard.quickActions.pause')
                 : t('dashboard.quickActions.resume')}
             </span>

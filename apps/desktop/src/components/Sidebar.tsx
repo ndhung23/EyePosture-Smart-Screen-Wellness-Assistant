@@ -13,6 +13,8 @@ import {
   User as UserIcon,
   Sun,
   Moon,
+  CheckSquare,
+  Share2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { t } from '@eyeposture/i18n';
@@ -22,6 +24,7 @@ export type NavPage =
   | 'monitor'
   | 'breaks'
   | 'screenTime'
+  | 'todo'
   | 'statistics'
   | 'profiles'
   | 'settings'
@@ -48,6 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onSelectPage }) =
     openProfileModal,
   } = useApp();
 
+  const isVi = language === 'vi';
   const tier = (currentUser?.subscription?.tier || subscriptionTier || 'FREE').toUpperCase();
 
   const navItems = [
@@ -55,6 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onSelectPage }) =
     { id: 'monitor' as NavPage, labelKey: 'nav.monitor', icon: ScanFace },
     { id: 'breaks' as NavPage, labelKey: 'nav.breaks', icon: Eye },
     { id: 'screenTime' as NavPage, labelKey: 'nav.screenTime', icon: Clock },
+    { id: 'todo' as NavPage, labelKey: 'nav.todo', icon: CheckSquare },
     { id: 'statistics' as NavPage, labelKey: 'nav.statistics', icon: BarChart3 },
     { id: 'settings' as NavPage, labelKey: 'nav.settings', icon: Settings },
     { id: 'subscription' as NavPage, labelKey: 'nav.subscription', icon: Sparkles, badge: subscriptionTier },

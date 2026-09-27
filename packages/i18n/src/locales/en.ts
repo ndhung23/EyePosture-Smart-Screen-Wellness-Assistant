@@ -38,6 +38,7 @@ export const en = {
     breaks: 'Eye Breaks',
     screenTime: 'Screen Time',
     statistics: 'Statistics',
+    todo: 'Daily Tasks',
     profiles: 'Profiles',
     settings: 'Settings',
     subscription: 'Subscription',
