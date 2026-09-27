@@ -556,11 +556,14 @@ export class EyePostureApiServer {
     const bearer = this.extractBearerToken(req);
     const authResult = bearer ? this.verifyJwt(bearer) : { valid: false };
 
-    const affRes = await AffiliateService.getInstance().handleHttpRoute(
-      pathname, method || 'GET', method === 'POST' ? await this.parseBody(req) : null,
-      authResult, authResult.userId ? this.users.get(authResult.userId) : null
-    );
-    if (affRes.handled) { this.sendJson(res, affRes.status, affRes.data); return; }
+    if (pathname.startsWith('/api/v1/affiliate')) {
+      const body = method === 'POST' ? await this.parseBody(req) : null;
+      const affRes = await AffiliateService.getInstance().handleHttpRoute(
+        pathname, method || 'GET', body,
+        authResult, authResult.userId ? this.users.get(authResult.userId) : null
+      );
+      if (affRes.handled) { this.sendJson(res, affRes.status, affRes.data); return; }
+    }
 
     // 3. GET /api/v1/me
     if (pathname === '/api/v1/me' && method === 'GET') {

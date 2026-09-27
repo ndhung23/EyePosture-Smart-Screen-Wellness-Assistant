@@ -38,8 +38,8 @@ export async function handlePasswordResetRoutes(
       success: true,
       message: result.message || 'Mã xác thực đã được gửi đến email của bạn.',
       simulated: result.simulated,
-      // Include code in simulated/testing mode so developers can test without real SMTP
-      testCode: result.simulated ? code : undefined,
+      // Include code in simulated/testing mode so developers and tests can verify without real SMTP
+      testCode: (result.simulated || process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST)) ? code : undefined,
     });
     return true;
   }
