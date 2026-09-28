@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   verification: {
-    google: 'e0ffVWiYvn3qM-q90IwfzQ7xFUkwoZ589mQ2PqihCtg',
+    google: 'PRyccT98tQR9qDa2cSg1wQHgcu-9aeBIl34MdcZ1POA',
   },
   openGraph: {
     title: 'EyePosture - AI Trợ Lý Công Thái Học & Chăm Sóc Sức Khỏe Mắt',
