@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import {
   Mail,
+  Phone,
   Copy,
   Check,
   Send,
@@ -133,6 +134,14 @@ export function SupportSection() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
+            <a
+              href="tel:0359928446"
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition flex items-center gap-2 shadow-md shadow-emerald-600/20 active:scale-95"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              <span>Hotline / Zalo: 0359928446</span>
+            </a>
+
             <div className="px-4 py-2 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-300 dark:border-slate-800 text-sm font-mono text-cyan-700 dark:text-cyan-400 flex items-center gap-2 select-all shadow-sm">
               <Mail className="w-4 h-4 text-slate-500 dark:text-slate-400" />
               <span>{SUPPORT_EMAIL}</span>

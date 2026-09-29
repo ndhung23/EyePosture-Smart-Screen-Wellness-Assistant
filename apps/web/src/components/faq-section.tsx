@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { HelpCircle, ChevronDown, ShieldCheck, Sparkles, Eye, Monitor, Cpu } from 'lucide-react';
+import { HelpCircle, ChevronDown, ShieldCheck, Sparkles, Eye, Monitor, Cpu, Phone, Mail } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 
 export function FaqSection() {
@@ -136,15 +136,31 @@ export function FaqSection() {
           })}
         </div>
 
-        <div className="mt-12 text-center p-6 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-purple-500/10 border border-cyan-500/20">
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-            {isVi ? 'Bạn còn thắc mắc khác hoặc cần hỗ trợ kỹ thuật?' : 'Still have questions or need technical support?'}
+        <div className="mt-12 text-center p-6 sm:p-8 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-purple-500/10 border border-cyan-500/20">
+          <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+            {isVi ? 'Bạn còn thắc mắc khác hoặc cần hỗ trợ xử lý sự cố?' : 'Still have questions or need technical incident support?'}
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-xl mx-auto">
             {isVi
-              ? 'Đội ngũ EyePosture luôn sẵn sàng hỗ trợ trực tuyến qua Dashboard và email.'
-              : 'Our EyePosture engineering team is available 24/7 via dashboard support and email.'}
+              ? 'Đội ngũ kỹ thuật EyePosture hỗ trợ 24/7 về cài đặt, lỗi camera, kích hoạt bản quyền và tiếp nhận sự cố kỹ thuật qua Hotline & Email:'
+              : 'Our engineering team is active 24/7 for troubleshooting, camera issues, and licensing support:'}
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-3.5 mt-5">
+            <a
+              href="tel:0359928446"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-600/20 transition-all active:scale-95"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              <span>Hotline / Zalo: 0359928446</span>
+            </a>
+            <a
+              href="mailto:eyeposture@gmail.com"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-700 shadow-sm transition-all active:scale-95"
+            >
+              <Mail className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Email: eyeposture@gmail.com</span>
+            </a>
+          </div>
         </div>
       </div>
     </section>

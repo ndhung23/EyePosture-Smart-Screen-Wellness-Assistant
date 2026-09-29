@@ -14,6 +14,8 @@ import {
   Sun,
   Moon,
   Monitor,
+  Phone,
+  Mail,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { SecuritySettingsSection } from '../components/SecuritySettingsSection.js';
@@ -255,6 +257,45 @@ export const SettingsPage: React.FC = () => {
                   }
                   className="w-5 h-5 rounded bg-slate-800 border-slate-700 text-teal-500 focus:ring-0 cursor-pointer"
                 />
+              </div>
+
+              {/* Technical Support & Incident Contact Card */}
+              <div className="mt-6 pt-5 border-t border-slate-800/80 bg-slate-900/60 -mx-6 -mb-6 p-6 rounded-b-2xl">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>{language === 'vi' ? 'Hỗ trợ kỹ thuật & Báo cáo sự cố' : 'Technical Support & Incident Help'}</span>
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {language === 'vi'
+                        ? 'Nếu gặp lỗi camera, bản quyền hoặc sự cố phần mềm, hãy liên hệ ngay đội ngũ kỹ thuật:'
+                        : 'For camera issues, licensing, or software bugs, reach out to our engineering team:'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/60 border border-slate-700/60">
+                    <div className="p-2 rounded-lg bg-teal-500/10 text-teal-400">
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400 font-medium">Hotline / Zalo</div>
+                      <div className="text-xs font-mono font-bold text-teal-300">0359928446</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/60 border border-slate-700/60">
+                    <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400 font-medium">Email Hỗ Trợ</div>
+                      <div className="text-xs font-mono font-bold text-indigo-300">eyeposture@gmail.com</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

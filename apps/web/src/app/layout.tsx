@@ -131,6 +131,16 @@ const jsonLdData = [
     url: 'https://eyeposture.vercel.app',
     logo: 'https://eyeposture.vercel.app/EyePosture.png',
     sameAs: ['https://eyeposture.vercel.app'],
+    contactPoint: [
+      {
+        '@type': 'ContactPoint',
+        telephone: '+84359928446',
+        contactType: 'customer support',
+        email: 'eyeposture@gmail.com',
+        areaServed: 'VN',
+        availableLanguage: ['Vietnamese', 'English'],
+      },
+    ],
   },
   {
     '@context': 'https://schema.org',
