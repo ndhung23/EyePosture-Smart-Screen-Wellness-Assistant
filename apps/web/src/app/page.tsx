@@ -5,6 +5,7 @@ import { Navbar } from '@/components/navbar';
 import { Hero } from '@/components/hero';
 import { Features } from '@/components/features';
 import { Pricing } from '@/components/pricing';
+import { FaqSection } from '@/components/faq-section';
 import { Footer } from '@/components/footer';
 import { AuthModal } from '@/components/auth-modal';
 
@@ -18,6 +19,7 @@ export default function HomePage() {
         <Hero onOpenAuth={() => setAuthModalOpen(true)} />
         <Features />
         <Pricing onOpenAuth={() => setAuthModalOpen(true)} />
+        <FaqSection />
       </main>
       <Footer />
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />

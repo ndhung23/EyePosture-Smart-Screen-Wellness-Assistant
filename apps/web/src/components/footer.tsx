@@ -29,9 +29,10 @@ export function Footer() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-600 dark:text-slate-400">
-            <a href="#features" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition">{t('nav_features')}</a>
-            <a href="#wellness" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition">{t('nav_wellness')}</a>
-            <a href="#pricing" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition">{t('nav_pricing')}</a>
+            <a href="/#features" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition">{t('nav_features')}</a>
+            <a href="/#wellness" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition">{t('nav_wellness')}</a>
+            <a href="/#pricing" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition">{t('nav_pricing')}</a>
+            <a href="/#faq" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition">FAQ</a>
             <Link href="/affiliate" className="hover:text-amber-500 dark:hover:text-amber-400 font-semibold text-amber-600 dark:text-amber-400 transition flex items-center gap-1">
               <span>{t('nav_affiliate')}</span>
             </Link>
