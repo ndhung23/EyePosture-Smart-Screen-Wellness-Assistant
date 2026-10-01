@@ -179,7 +179,6 @@ export function Pricing({ onOpenAuth }: { onOpenAuth: () => void }) {
     const orderCode = `EP${Math.floor(100000 + Math.random() * 900000)}`;
     const bankAccount =
       process.env.NEXT_PUBLIC_PAYMENT_BANK_VIRTUAL_ACCOUNT ||
-      process.env.NEXT_PUBLIC_PAYMENT_BANK_ACCOUNT ||
       '96247BLHK7';
     const bankCode = process.env.NEXT_PUBLIC_PAYMENT_BANK_CODE || 'BIDV';
     const accountName = process.env.NEXT_PUBLIC_PAYMENT_BANK_ACCOUNT_NAME || 'NGUYEN DUY HUNG';
