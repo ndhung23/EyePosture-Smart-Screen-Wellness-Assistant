@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Check, Crown, QrCode, Copy, CheckCircle2, X, RefreshCw, Users, ShieldCheck, Zap, Tag } from 'lucide-react';
+import { Sparkles, Check, Crown, QrCode, Copy, CheckCircle2, X, RefreshCw, Users, ShieldCheck, Zap, Tag, ExternalLink } from 'lucide-react';
 import { useApp } from '../context/AppContext.js';
 import { AuthService } from '../services/AuthService.js';
 import { DesktopAffiliateService } from '../services/AffiliateService.js';
@@ -168,13 +168,41 @@ export const SubscriptionPage: React.FC = () => {
   const isVi = language === 'vi' || getLanguage() === 'vi';
 
   const bankCode = ((import.meta as any).env?.PAYMENT_BANK_CODE as string) || 'BIDV';
-  const bankAccount = ((import.meta as any).env?.PAYMENT_BANK_ACCOUNT as string) || '4661398013';
+  const bankAccount = ((import.meta as any).env?.PAYMENT_BANK_VIRTUAL_ACCOUNT as string) || '96247BLHK7';
   const bankAccountName = ((import.meta as any).env?.PAYMENT_BANK_ACCOUNT_NAME as string) || 'NGUYEN DUY HUNG';
 
   const currentPlanInfo = plansState[selectedPlan] || PLAN_DETAILS[selectedPlan];
-  const fallbackQrUrl = `https://qr.sepay.vn/img?acc=${bankAccount}&bank=${bankCode}&amount=${currentPlanInfo.amountVnd}&des=${encodeURIComponent(
+  const fallbackQrUrl = `https://img.vietqr.io/image/${bankCode}-${bankAccount}-compact2.png?amount=${currentPlanInfo.amountVnd}&addInfo=${encodeURIComponent(
     currentPlanInfo.content
-  )}`;
+  )}&accountName=${encodeURIComponent(bankAccountName)}`;
+
+  const openWebPricing = (targetTier?: 'PRO' | 'FAMILY') => {
+    let url = 'https://eyeposture.vercel.app/#pricing';
+    const params = new URLSearchParams();
+    if (targetTier) {
+      params.set('tier', targetTier.toLowerCase());
+    }
+    if (selectedInterval) {
+      params.set('interval', selectedInterval);
+    }
+    if (appliedAffiliate?.code) {
+      params.set('ref', appliedAffiliate.code);
+    }
+    if (currentUser?.email) {
+      params.set('email', currentUser.email);
+    }
+    const qs = params.toString();
+    if (qs) {
+      url = `https://eyeposture.vercel.app/#pricing?${qs}`;
+    }
+
+    const api = (window as any).electronApi || (window as any).electronAPI;
+    if (api?.openExternal) {
+      api.openExternal(url);
+    } else {
+      window.open(url, '_blank');
+    }
+  };
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -196,36 +224,36 @@ export const SubscriptionPage: React.FC = () => {
     setPaymentSuccess(false);
 
     try {
+      const orderCode = `EP${Math.floor(100000 + Math.random() * 900000)}`;
+      const qrUrl = `https://img.vietqr.io/image/${bankCode}-${bankAccount}-compact2.png?amount=${amount}&addInfo=${orderCode}&accountName=${encodeURIComponent(
+        bankAccountName
+      )}`;
+
       const payload = {
-        provider: 'sepay',
+        orderCode,
+        userId: currentUser?.id || 'desktop_user',
         tier,
         interval,
         amount,
         affiliateCode: affCode || appliedAffiliate?.code || undefined,
       };
 
-      const res = await fetch('http://localhost:8080/api/v1/subscription/checkout', {
+      // Tạo đơn hàng trên Vercel API
+      await fetch('https://eyeposture.vercel.app/api/pricing/order', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      }).catch(() =>
-        fetch('https://eyeposture.vercel.app/api/v1/subscription/checkout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify(payload),
-        })
-      );
+      }).catch((e) => console.warn('Order API network warning:', e));
 
-      if (res && res.ok) {
-        const orderData = await res.json();
-        setActiveOrder(orderData);
-      }
+      setActiveOrder({
+        orderCode,
+        qrUrl,
+        amount,
+        accountNumber: bankAccount,
+        bankName: bankCode,
+        accountHolder: bankAccountName,
+        transferContent: orderCode,
+      });
     } catch (err) {
       console.warn('Failed to create order:', err);
     } finally {
@@ -254,7 +282,7 @@ export const SubscriptionPage: React.FC = () => {
             : `Success! ${res.discountPercent}% discount applied (-${(res.discountAmount || 0).toLocaleString('vi-VN')}đ)`,
           isError: false,
         });
-        if (showQrModal && currentUser && authToken) {
+        if (showQrModal) {
           const plan = plansState[selectedPlan] || PLAN_DETAILS[selectedPlan];
           createCheckoutOrder(plan.tier, plan.interval, res.code || code, res.finalAmount);
         }
@@ -274,37 +302,21 @@ export const SubscriptionPage: React.FC = () => {
     const key = `${tier}_${interval.toUpperCase()}` as PlanKey;
     setSelectedPlan(key);
 
-    if (!currentUser || !authToken) {
-      openAuthModal('login');
-      return;
-    }
-
-    setShowQrModal(true);
-    createCheckoutOrder(tier, interval);
+    // Mở trang web pricing trực tiếp theo nhu cầu
+    openWebPricing(tier);
   };
 
-  // Realtime Auto-Polling for SePay payment confirmation
+  // Realtime Auto-Polling for SePay payment confirmation qua Vercel API
   React.useEffect(() => {
     if (!showQrModal || !activeOrder?.orderCode || paymentSuccess) return;
 
     const intervalId = setInterval(async () => {
       try {
-        const fingerprint = localStorage.getItem('eyeposture_device_fingerprint') || 'desktop_device';
-        const endpoints = [
-          `http://localhost:8080/api/v1/orders/${activeOrder.orderCode}/status?deviceId=${encodeURIComponent(fingerprint)}`,
-          `https://eyeposture.vercel.app/api/v1/orders/${activeOrder.orderCode}/status?deviceId=${encodeURIComponent(fingerprint)}`,
-        ];
-
-        let pollRes;
-        for (const ep of endpoints) {
-          try {
-            pollRes = await fetch(ep);
-            if (pollRes.ok) break;
-          } catch {}
-        }
-
-        if (pollRes && pollRes.ok) {
-          const pollData = await pollRes.json();
+        const res = await fetch(
+          `https://eyeposture.vercel.app/api/pricing/order?orderCode=${encodeURIComponent(activeOrder.orderCode)}`
+        );
+        if (res.ok) {
+          const pollData = await res.json();
           if (pollData.status === 'PAID') {
             setPaymentSuccess(true);
             await syncEntitlements();
@@ -321,6 +333,17 @@ export const SubscriptionPage: React.FC = () => {
 
     return () => clearInterval(intervalId);
   }, [showQrModal, activeOrder?.orderCode, paymentSuccess]);
+
+  // Tự động kiểm tra và đồng bộ bản quyền khi người dùng quay lại cửa sổ Desktop sau khi thanh toán trên Web
+  React.useEffect(() => {
+    const handleFocus = () => {
+      if (authToken) {
+        syncEntitlements();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [authToken]);
 
   const handleSimulateWebhookSuccess = async () => {
     setIsUpgrading(true);
@@ -402,6 +425,50 @@ export const SubscriptionPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Account Sync Status / Guest Mode Guidance Banner */}
+      {!currentUser ? (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl shrink-0">💡</span>
+            <div>
+              <p className="text-xs font-bold text-amber-300">
+                {isVi ? 'Bạn đang dùng ở Chế độ Khách (Chưa đăng nhập)' : 'You are currently in Guest Mode'}
+              </p>
+              <p className="text-[11px] text-slate-300 mt-0.5">
+                {isVi
+                  ? 'Khi nâng cấp trên Web, hãy đăng nhập cùng tài khoản trên Desktop để bản quyền được kích hoạt tự động.'
+                  : 'When upgrading on Web, sign in with the same account on Desktop to automatically activate your license.'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => openAuthModal('login')}
+            className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shrink-0 cursor-pointer active:scale-95 transition-all shadow-md shadow-amber-500/20"
+          >
+            {isVi ? 'Đăng nhập ngay' : 'Sign In'}
+          </button>
+        </div>
+      ) : (
+        <div className="p-3.5 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-between gap-3 text-xs animate-fadeIn">
+          <div className="flex items-center gap-2 text-slate-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span>
+              {isVi ? 'Tài khoản:' : 'Account:'}{' '}
+              <strong className="text-teal-300">{currentUser.email}</strong>
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => syncEntitlements()}
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 text-[11px] font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            <RefreshCw className="w-3 h-3" />
+            <span>{isVi ? 'Kiểm tra & Đồng bộ bản quyền' : 'Sync License'}</span>
+          </button>
+        </div>
+      )}
+
       {/* Current Active Plan Status Banner */}
       <div className="glass-card p-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -439,15 +506,27 @@ export const SubscriptionPage: React.FC = () => {
           </div>
         </div>
 
-        {subscriptionTier === 'FREE' && (
-          <button
-            onClick={() => handleSelectPlan('PRO', selectedInterval)}
-            className="px-5 py-2.5 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition-all flex items-center gap-1.5"
-          >
-            <QrCode className="w-4 h-4" />
-            {t('subscription.upgradeToPro')}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {authToken && (
+            <button
+              onClick={() => syncEntitlements()}
+              title={isVi ? 'Đồng bộ bản quyền từ máy chủ' : 'Sync entitlements'}
+              className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-400 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>{isVi ? 'Đồng bộ' : 'Sync'}</span>
+            </button>
+          )}
+          {subscriptionTier === 'FREE' && (
+            <button
+              onClick={() => openWebPricing('PRO')}
+              className="px-5 py-2.5 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <ExternalLink className="w-4 h-4" />
+              {t('subscription.upgradeToPro')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Pricing Cards Grid */}
@@ -532,22 +611,38 @@ export const SubscriptionPage: React.FC = () => {
               </li>
             </ul>
           </div>
-          <button
-            onClick={() => handleSelectPlan('PRO', selectedInterval)}
-            disabled={subscriptionTier === 'PRO'}
-            className="w-full py-3 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-70 disabled:cursor-default"
-          >
-            {subscriptionTier === 'PRO' ? (
-              isVi ? 'Bản quyền Pro đang kích hoạt' : 'Pro License Active'
-            ) : (
-              <>
-                <QrCode className="w-4 h-4" />
-                {isVi
-                  ? `Nâng cấp Cá nhân (${proPlan.priceVi})`
-                  : `Upgrade Personal (${proPlan.priceEn})`}
-              </>
+          <div className="space-y-2">
+            <button
+              onClick={() => handleSelectPlan('PRO', selectedInterval)}
+              disabled={subscriptionTier === 'PRO'}
+              className="w-full py-3 rounded-xl gradient-teal text-slate-950 font-bold text-xs shadow-lg shadow-teal-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-70 disabled:cursor-default"
+            >
+              {subscriptionTier === 'PRO' ? (
+                isVi ? 'Bản quyền Pro đang kích hoạt' : 'Pro License Active'
+              ) : (
+                <>
+                  <ExternalLink className="w-4 h-4" />
+                  {isVi
+                    ? `Nâng cấp Cá nhân (${proPlan.priceVi})`
+                    : `Upgrade Personal (${proPlan.priceEn})`}
+                </>
+              )}
+            </button>
+            {subscriptionTier !== 'PRO' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPlan(proKey);
+                  setShowQrModal(true);
+                  createCheckoutOrder('PRO', selectedInterval);
+                }}
+                className="w-full py-1 text-center text-[11px] text-teal-400/80 hover:text-teal-300 underline cursor-pointer flex items-center justify-center gap-1"
+              >
+                <QrCode className="w-3 h-3" />
+                <span>{isVi ? 'Hoặc quét mã QR trực tiếp trên App' : 'Or pay via in-app QR code'}</span>
+              </button>
             )}
-          </button>
+          </div>
         </div>
 
         {/* CARD 3: FAMILY / GIA ĐÌNH (1 TÀI KHOẢN ĐƯỢC 4 NGƯỜI DÙNG) */}
@@ -599,22 +694,38 @@ export const SubscriptionPage: React.FC = () => {
               </li>
             </ul>
           </div>
-          <button
-            onClick={() => handleSelectPlan('FAMILY', selectedInterval)}
-            disabled={subscriptionTier === 'FAMILY'}
-            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-70 disabled:cursor-default"
-          >
-            {subscriptionTier === 'FAMILY' ? (
-              isVi ? 'Bản quyền Family đang kích hoạt' : 'Family License Active'
-            ) : (
-              <>
-                <QrCode className="w-4 h-4" />
-                {isVi
-                  ? `Chọn gói Gia đình (${familyPlan.priceVi})`
-                  : `Choose Family Plan (${familyPlan.priceEn})`}
-              </>
+          <div className="space-y-2">
+            <button
+              onClick={() => handleSelectPlan('FAMILY', selectedInterval)}
+              disabled={subscriptionTier === 'FAMILY'}
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-70 disabled:cursor-default"
+            >
+              {subscriptionTier === 'FAMILY' ? (
+                isVi ? 'Bản quyền Family đang kích hoạt' : 'Family License Active'
+              ) : (
+                <>
+                  <ExternalLink className="w-4 h-4" />
+                  {isVi
+                    ? `Chọn gói Gia đình (${familyPlan.priceVi})`
+                    : `Choose Family Plan (${familyPlan.priceEn})`}
+                </>
+              )}
+            </button>
+            {subscriptionTier !== 'FAMILY' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPlan(familyKey);
+                  setShowQrModal(true);
+                  createCheckoutOrder('FAMILY', selectedInterval);
+                }}
+                className="w-full py-1 text-center text-[11px] text-indigo-400/80 hover:text-indigo-300 underline cursor-pointer flex items-center justify-center gap-1"
+              >
+                <QrCode className="w-3 h-3" />
+                <span>{isVi ? 'Hoặc quét mã QR trực tiếp trên App' : 'Or pay via in-app QR code'}</span>
+              </button>
             )}
-          </button>
+          </div>
         </div>
       </div>
 
@@ -833,7 +944,19 @@ export const SubscriptionPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex gap-2.5 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                openWebPricing(plansState[selectedPlan]?.tier);
+                setShowQrModal(false);
+              }}
+              className="w-full py-2.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-300 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-md shadow-teal-500/10"
+            >
+              <ExternalLink className="w-4 h-4 text-teal-400" />
+              <span>{isVi ? 'Thanh toán trực tiếp trên Trình duyệt Web (Khuyên dùng)' : 'Pay on Web Browser (Recommended)'}</span>
+            </button>
+
+            <div className="flex gap-2.5 pt-1">
               <button
                 onClick={() => setShowQrModal(false)}
                 className="flex-1 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition-all cursor-pointer"

@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-contextBridge.exposeInMainWorld('electronApi', {
+const api = {
   showNotification: (title: string, body: string) =>
     ipcRenderer.invoke('notification:show', { title, body }),
   getPowerStatus: () => ipcRenderer.invoke('power:get-status'),
@@ -47,4 +47,7 @@ contextBridge.exposeInMainWorld('electronApi', {
       ipcRenderer.removeListener('updater:download-progress', listener);
     };
   },
-});
+};
+
+contextBridge.exposeInMainWorld('electronApi', api);
+contextBridge.exposeInMainWorld('electronAPI', api);

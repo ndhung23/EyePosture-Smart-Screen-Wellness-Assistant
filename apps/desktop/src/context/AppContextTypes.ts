@@ -43,6 +43,7 @@ export interface AppContextValue {
   closeProfileModal: () => void;
   updateUserProfile: (data: { name?: string; currentPassword?: string; newPassword?: string }) => Promise<{ success: boolean; message?: string; error?: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithSession: (token: string, user: any) => Promise<{ success: boolean; error?: string }>;
   registerUser: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   syncEntitlements: (overrideToken?: string) => Promise<void>;

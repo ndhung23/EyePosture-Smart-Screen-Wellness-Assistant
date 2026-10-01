@@ -145,32 +145,35 @@ export class AuthService {
   }
 
   private static offlineCodes = new Map<string, string>();
+  private static lastResetTokens = new Map<string, string>();
 
   public static async requestPasswordReset(
     email: string
-  ): Promise<{ success: boolean; message?: string; error?: string; testCode?: string }> {
+  ): Promise<{ success: boolean; message?: string; error?: string; testCode?: string; resetToken?: string }> {
+    const cleanEmail = email.trim().toLowerCase();
     try {
       const res = await AuthService.apiFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: cleanEmail }),
       });
       const data = await AuthService.parseJson(res);
       if (res.ok) {
-        return { success: true, message: data.message, testCode: data.testCode };
+        if (data.resetToken) {
+          AuthService.lastResetTokens.set(cleanEmail, data.resetToken);
+        }
+        return { success: true, message: data.message, testCode: data.testCode, resetToken: data.resetToken };
       }
-      // If server returned 404 (e.g. cloud deployment pending), fallback to offline local code
       if (res.status === 404) {
         throw new Error('Endpoint not found');
       }
       return { success: false, error: data.error || 'Không thể gửi yêu cầu đặt lại mật khẩu' };
     } catch (err: any) {
-      // Offline fallback: Generate a local simulated OTP code
       const offlineCode = Math.floor(100000 + Math.random() * 900000).toString();
-      AuthService.offlineCodes.set(email.trim().toLowerCase(), offlineCode);
+      AuthService.offlineCodes.set(cleanEmail, offlineCode);
       return {
         success: true,
-        message: `Mã xác thực đã được gửi đến ${email}. (Thử nghiệm: ${offlineCode})`,
+        message: `Mã xác thực đã được gửi đến ${cleanEmail}. (Thử nghiệm: ${offlineCode})`,
         testCode: offlineCode,
       };
     }
@@ -179,16 +182,20 @@ export class AuthService {
   public static async resetPassword(
     email: string,
     code: string,
-    newPassword: string
+    newPassword: string,
+    tokenOverride?: string
   ): Promise<{ success: boolean; message?: string; error?: string }> {
+    const cleanEmail = email.trim().toLowerCase();
+    const resetToken = tokenOverride || AuthService.lastResetTokens.get(cleanEmail);
     try {
       const res = await AuthService.apiFetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code, newPassword }),
+        body: JSON.stringify({ email: cleanEmail, otp: code, code, newPassword, resetToken }),
       });
       const data = await AuthService.parseJson(res);
       if (res.ok) {
+        AuthService.lastResetTokens.delete(cleanEmail);
         return { success: true, message: data.message };
       }
       if (res.status === 404) {
@@ -196,12 +203,36 @@ export class AuthService {
       }
       return { success: false, error: data.error || 'Đặt lại mật khẩu không thành công' };
     } catch (err: any) {
-      const stored = AuthService.offlineCodes.get(email.trim().toLowerCase());
+      const stored = AuthService.offlineCodes.get(cleanEmail);
       if (stored && stored === code.trim()) {
-        AuthService.offlineCodes.delete(email.trim().toLowerCase());
+        AuthService.offlineCodes.delete(cleanEmail);
         return { success: true, message: 'Mật khẩu đã được đặt lại thành công.' };
       }
       return { success: false, error: err.message || 'Mã xác thực không hợp lệ' };
+    }
+  }
+
+  public static async startDesktopGoogleLogin(): Promise<{ sessionKey: string; authUrl: string }> {
+    const res = await fetch('https://eyeposture.vercel.app/api/auth/desktop-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'start' }),
+    });
+    if (!res.ok) throw new Error('Không thể khởi tạo phiên đăng nhập Google');
+    return await res.json();
+  }
+
+  public static async checkDesktopSession(
+    sessionKey: string
+  ): Promise<{ authenticated: boolean; token?: string; user?: any; expired?: boolean }> {
+    try {
+      const res = await fetch(
+        `https://eyeposture.vercel.app/api/auth/desktop-session?sessionKey=${encodeURIComponent(sessionKey)}`
+      );
+      if (!res.ok) return { authenticated: false };
+      return await res.json();
+    } catch {
+      return { authenticated: false };
     }
   }
 

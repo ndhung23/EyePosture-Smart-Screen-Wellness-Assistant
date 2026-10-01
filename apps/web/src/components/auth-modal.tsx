@@ -19,10 +19,77 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [forgotStep, setForgotStep] = useState<1 | 2>(1);
+  const [resetToken, setResetToken] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Khởi tạo Google Identity Services
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const clientId =
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      '819415316024-emjsufk1u4ql08prjoa4ch1te6327gta.apps.googleusercontent.com';
+
+    const onGoogleCredential = async (response: any) => {
+      if (!response?.credential) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch('/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: response.credential }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Đăng nhập Google thất bại');
+
+        login(data.token, data.user);
+        onClose();
+        router.push('/dashboard');
+      } catch (err: any) {
+        setError(err.message || 'Lỗi khi xác thực tài khoản Google');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const renderBtn = () => {
+      const btnEl = document.getElementById('web-google-btn');
+      if (btnEl && (window as any).google?.accounts?.id) {
+        (window as any).google.accounts.id.renderButton(btnEl, {
+          theme: 'outline',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'pill',
+          width: 320,
+        });
+      }
+    };
+
+    if ((window as any).google?.accounts?.id) {
+      (window as any).google.accounts.id.initialize({
+        client_id: clientId,
+        callback: onGoogleCredential,
+      });
+      renderBtn();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        (window as any).google?.accounts?.id?.initialize({
+          client_id: clientId,
+          callback: onGoogleCredential,
+        });
+        renderBtn();
+      };
+      document.body.appendChild(script);
+    }
+  }, [isOpen, tab]);
 
   if (!isOpen) return null;
 
@@ -85,8 +152,11 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Không thể gửi mã xác nhận');
 
+      if (data.resetToken) {
+        setResetToken(data.resetToken);
+      }
       setForgotStep(2);
-      setSuccess('Mã OTP xác thực đã được gửi về email của bạn (hoặc console server test)!');
+      setSuccess(data.message || 'Mã OTP xác thực đã được gửi về email của bạn!');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -102,12 +172,12 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, newPassword }),
+        body: JSON.stringify({ email, otp, newPassword, resetToken }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Đặt lại mật khẩu thất bại');
 
-      setSuccess('Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.');
+      setSuccess('Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bằng mật khẩu mới.');
       setTimeout(() => {
         setTab('LOGIN');
         setForgotStep(1);
@@ -373,6 +443,18 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                 </button>
               </form>
             )}
+          </div>
+        )}
+
+        {/* Google OAuth Divider & Button */}
+        {tab !== 'FORGOT' && (
+          <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="relative flex justify-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span className="bg-white dark:bg-slate-900 px-3">Hoặc đăng nhập nhanh với</span>
+            </div>
+            <div className="flex justify-center min-h-[44px]">
+              <div id="web-google-btn" className="flex justify-center" />
+            </div>
           </div>
         )}
       </div>

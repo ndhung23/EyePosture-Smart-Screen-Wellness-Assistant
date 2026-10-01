@@ -194,3 +194,105 @@ export async function sendPaymentSuccessEmail(params: PaymentSuccessEmailParams)
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Gửi email chứa mã OTP khôi phục / đặt lại mật khẩu tài khoản
+ */
+export async function sendOtpResetPasswordEmail(
+  toEmail: string,
+  otpCode: string,
+  userName?: string
+): Promise<{ success: boolean; error?: string }> {
+  const { transporter, from, isConfigured } = createTransporter();
+  const greetingName = userName ? userName : toEmail.split('@')[0];
+
+  if (!isConfigured) {
+    console.warn(`[Email] SMTP chưa được cấu hình. Bỏ qua gửi email OTP tới: ${toEmail}`);
+    return { success: false, error: 'SMTP not configured' };
+  }
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mã xác thực đặt lại mật khẩu - EyePosture</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0b0f19; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f1f5f9;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0b0f19; padding: 40px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width: 540px; background-color: #111827; border-radius: 20px; border: 1px solid #1e293b; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #0d9488 0%, #0284c7 50%, #6366f1 100%); padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800;">EyePosture Assistant</h1>
+              <p style="margin: 6px 0 0 0; color: #e0f2fe; font-size: 13px;">Yêu Cầu Đặt Lại Mật Khẩu Tài Khoản</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding: 32px 28px;">
+              <p style="margin: 0 0 16px 0; font-size: 15px; color: #e2e8f0;">Xin chào <strong>${greetingName}</strong>,</p>
+              <p style="margin: 0 0 24px 0; font-size: 13px; color: #94a3b8; line-height: 1.6;">
+                Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản <strong>${toEmail}</strong> trên hệ thống EyePosture (áp dụng đồng bộ cho cả bản Website và bản Desktop).
+              </p>
+
+              <!-- OTP Code Display Card -->
+              <div style="background-color: #0f172a; border: 2px dashed #0284c7; border-radius: 16px; padding: 24px; text-align: center; margin-bottom: 24px;">
+                <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px;">MÃ XÁC THỰC CỦA BẠN (OTP)</p>
+                <div style="font-family: monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #38bdf8; padding: 6px 0;">
+                  ${otpCode}
+                </div>
+                <p style="margin: 8px 0 0 0; font-size: 11px; color: #64748b;">Mã này có hiệu lực trong vòng 15 phút. Tuyệt đối không chia sẻ mã cho bất kỳ ai.</p>
+              </div>
+
+              <!-- Note -->
+              <div style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 0 8px 8px 0; margin-bottom: 20px;">
+                <p style="margin: 0; font-size: 12px; color: #fbbf24; line-height: 1.5;">
+                  💡 <strong>Lưu ý đồng bộ:</strong> Mật khẩu mới này sẽ dùng để đăng nhập vào cả ứng dụng EyePosture Desktop và Website. Nếu tài khoản của bạn đăng ký bằng Google, bạn vẫn có thể đăng nhập bằng Google như bình thường!
+                </p>
+              </div>
+
+              <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+                Nếu bạn không gửi yêu cầu này, vui lòng bỏ qua email. Mật khẩu hiện tại của bạn vẫn an toàn.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #0b0f19; padding: 20px 28px; text-align: center; border-top: 1px solid #1e293b;">
+              <p style="margin: 0; font-size: 11px; color: #64748b;">
+                © ${new Date().getFullYear()} EyePosture Inc. Đội ngũ An toàn thông tin.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: toEmail,
+      subject: `[EyePosture] Mã xác thực đặt lại mật khẩu: ${otpCode}`,
+      text: `Mã OTP xác thực đặt lại mật khẩu của bạn là: ${otpCode}. Mã có hiệu lực trong 15 phút.`,
+      html: htmlContent,
+    });
+    console.log(`[Email] Đã gửi mã OTP reset mật khẩu tới: ${toEmail}`);
+    return { success: true };
+  } catch (err: any) {
+    console.error(`[Email] Gửi email OTP thất bại tới ${toEmail}:`, err);
+    return { success: false, error: err.message };
+  }
+}
+

@@ -171,6 +171,13 @@ function createWindow() {
     },
   });
 
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https:') || url.startsWith('http:')) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
   mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
     // Filter out internal WebAssembly, MediaPipe, WebGL, and high-frequency logs
     const msg = (message || '').toLowerCase();

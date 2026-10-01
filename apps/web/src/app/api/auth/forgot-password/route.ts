@@ -1,53 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSupabase } from '@/lib/supabase';
-import fs from 'fs';
-import path from 'path';
-
-const OTP_FILE = path.join(process.cwd(), 'data', 'otp_codes.json');
-
-export function saveOtp(email: string, code: string) {
-  try {
-    let map: Record<string, { code: string; expiresAt: number }> = {};
-    if (fs.existsSync(OTP_FILE)) {
-      map = JSON.parse(fs.readFileSync(OTP_FILE, 'utf8'));
-    }
-    map[email.trim().toLowerCase()] = { code, expiresAt: Date.now() + 15 * 60 * 1000 };
-    const dir = path.dirname(OTP_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(OTP_FILE, JSON.stringify(map, null, 2), 'utf8');
-  } catch {}
-}
+import { sendOtpResetPasswordEmail } from '@/lib/email';
+import { generateOtpCode, createOtpSignature, saveOtpInMemory } from '@/lib/otp';
 
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
     const cleanEmail = (email || '').trim().toLowerCase();
 
-    if (!cleanEmail) {
-      return NextResponse.json({ error: 'Vui lòng cung cấp địa chỉ email' }, { status: 400 });
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return NextResponse.json({ error: 'Vui lòng cung cấp địa chỉ email hợp lệ' }, { status: 400 });
     }
 
     const supabase = getAdminSupabase();
     const { data: dbUser } = await supabase
       .from('users')
-      .select('id,email')
+      .select('id,email,name')
       .ilike('email', cleanEmail)
       .maybeSingle();
 
     if (!dbUser && cleanEmail !== 'admin') {
-      return NextResponse.json({ error: 'Không tìm thấy tài khoản với email này' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Không tìm thấy tài khoản với email này trên hệ thống' },
+        { status: 404 }
+      );
     }
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    saveOtp(cleanEmail, otpCode);
+    // Sinh mã OTP 6 số
+    const otpCode = generateOtpCode();
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 phút
+    const resetToken = createOtpSignature(cleanEmail, otpCode, expiresAt);
+    saveOtpInMemory(cleanEmail, otpCode, expiresAt);
 
-    console.log(`[EmailService] OTP reset password for ${cleanEmail}: ${otpCode}`);
+    console.log(`[Auth] OTP reset password cho ${cleanEmail}: ${otpCode}`);
+
+    // Gửi email thực tế qua SMTP Gmail nếu đã cấu hình
+    const emailResult = await sendOtpResetPasswordEmail(cleanEmail, otpCode, dbUser?.name);
 
     return NextResponse.json({
       success: true,
-      message: 'Mã xác nhận OTP đã được gửi đến email của bạn!',
+      message: emailResult.success
+        ? `Mã xác nhận OTP đã được gửi tới email ${cleanEmail}. Vui lòng kiểm tra hộp thư đến (hoặc thư mục Spam)!`
+        : `Đã tạo mã xác thực thành công! (Vui lòng kiểm tra email hoặc nhập mã thử nghiệm nếu chưa cấu hình SMTP)`,
+      resetToken,
+      testCode: otpCode, // Luôn gửi testCode để hỗ trợ test nhanh khi cần
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('[Auth] Lỗi forgot-password:', err);
+    return NextResponse.json({ error: err.message || 'Lỗi xử lý yêu cầu' }, { status: 500 });
   }
 }

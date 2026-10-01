@@ -752,10 +752,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const login = async (email: string, password: string) => {
-    const res = await AuthService.login(email, password);
-    if (!res.success) return { success: false, error: res.error };
-    const { token, user } = res.data;
+  const applyAuthenticatedSession = async (token: string, user: any, passwordToCache?: string) => {
     setAuthToken(token);
     setCurrentUser(user);
     if (user?.subscription?.tier) {
@@ -763,35 +760,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     localStorage.setItem('eyeposture_auth_token', token);
     localStorage.setItem('eyeposture_auth_user', JSON.stringify(user));
-    try {
-      const h = await hashPassword(password);
-      localStorage.setItem(`eyeposture_pwd_${(user.email || email).toLowerCase()}`, h);
-    } catch {}
+    if (passwordToCache) {
+      try {
+        const h = await hashPassword(passwordToCache);
+        localStorage.setItem(`eyeposture_pwd_${(user.email || '').toLowerCase()}`, h);
+      } catch {}
+    }
     await syncEntitlements(token);
     setIsMonitoring(true);
     startCamera();
     return { success: true };
   };
 
+  const loginWithSession = async (token: string, user: any) => {
+    return await applyAuthenticatedSession(token, user);
+  };
+
+  const login = async (email: string, password: string) => {
+    const res = await AuthService.login(email, password);
+    if (!res.success) return { success: false, error: res.error };
+    return await applyAuthenticatedSession(res.data.token, res.data.user, password);
+  };
+
   const registerUser = async (email: string, password: string, name: string) => {
     const res = await AuthService.register(email, password, name);
     if (!res.success) return { success: false, error: res.error };
-    const { token, user } = res.data;
-    setAuthToken(token);
-    setCurrentUser(user);
-    if (user?.subscription?.tier) {
-      setSubscriptionTier(user.subscription.tier);
-    }
-    localStorage.setItem('eyeposture_auth_token', token);
-    localStorage.setItem('eyeposture_auth_user', JSON.stringify(user));
-    try {
-      const h = await hashPassword(password);
-      localStorage.setItem(`eyeposture_pwd_${(user.email || email).toLowerCase()}`, h);
-    } catch {}
-    await syncEntitlements(token);
-    setIsMonitoring(true);
-    startCamera();
-    return { success: true };
+    return await applyAuthenticatedSession(res.data.token, res.data.user, password);
   };
 
   const logout = () => {
@@ -908,6 +902,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         closeProfileModal,
         updateUserProfile,
         login,
+        loginWithSession,
         registerUser,
         logout,
         syncEntitlements,
